@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Compilar y ejecutar HolaMundoWeb",
+			"type": "shell",
+			"command": "dotnet run",
+			"args": [],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		}
+	]
+}

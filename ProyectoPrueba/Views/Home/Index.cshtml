@@ -1,0 +1,67 @@
+
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+
+
+<div id="app" class="container vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);">
+    <hola-mundo></hola-mundo>
+</div>
+
+
+<!-- Vuetify y Vue 3 CDN -->
+<link href="https://cdn.jsdelivr.net/npm/vuetify@3.5.7/dist/vuetify.min.css" rel="stylesheet">
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@3.5.7/dist/vuetify.min.js"></script>
+
+<script>
+const { createApp, defineComponent } = Vue;
+const { createVuetify } = Vuetify;
+
+const HolaMundo = defineComponent({
+    name: 'HolaMundo',
+    template: `
+        <v-container class="fill-height d-flex align-center justify-center" style="min-height: 100vh; background: linear-gradient(135deg, #6dd5ed 0%, #2193b0 100%);">
+            <v-row justify="center">
+                <v-col cols="12" md="6">
+                    <v-card elevation="12" class="pa-6" rounded="xl">
+                        <v-card-title class="text-center">
+                            <v-avatar size="80" class="mb-3">
+                                <img src="https://cdn-icons-png.flaticon.com/512/1055/1055687.png" alt="Hola Mundo" />
+                            </v-avatar>
+                            <span class="text-h4 font-weight-bold text-primary">{{ mensaje }}</span>
+                        </v-card-title>
+                        <v-card-text class="text-center">
+                            <span class="text-subtitle-1">{{ descripcion }}</span>
+                        </v-card-text>
+                        <v-card-actions class="justify-center">
+                            <v-btn color="primary" size="large" v-on:click="cambiarMensaje">Cambiar mensaje</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-col>
+            </v-row>
+        </v-container>
+    `,
+    data() {
+        return {
+            mensaje: '¡Hola mundo con Vue y Vuetify!',
+            descripcion: 'Bienvenido a tu primera página ASP.NET Core MVC con Razor, Vuetify y Vue.js.'
+        }
+    },
+    methods: {
+        cambiarMensaje() {
+            this.mensaje = '¡Disfruta programando con Vuetify y ASP.NET Core!';
+            this.descripcion = 'Ahora tienes un diseño profesional y componentes avanzados.';
+        }
+    }
+});
+
+const vuetify = createVuetify();
+
+createApp({
+    components: {
+        HolaMundo
+    }
+}).use(vuetify).mount('#app');
+</script>
