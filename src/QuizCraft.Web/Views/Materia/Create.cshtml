@@ -1,0 +1,169 @@
+@model QuizCraft.Application.ViewModels.CreateMateriaViewModel
+
+@{
+    ViewData["Title"] = "Nueva Materia - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>Nueva Materia
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <!-- Nombre -->
+                        <div class="mb-3">
+                            <label asp-for="Nombre" class="form-label fw-bold">
+                                <i class="fas fa-heading me-1"></i>@Html.DisplayNameFor(model => model.Nombre)
+                            </label>
+                            <input asp-for="Nombre" class="form-control form-control-lg" placeholder="Ej: Matemáticas, Historia, Programación..." />
+                            <span asp-validation-for="Nombre" class="text-danger"></span>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="mb-3">
+                            <label asp-for="Descripcion" class="form-label fw-bold">
+                                <i class="fas fa-align-left me-1"></i>@Html.DisplayNameFor(model => model.Descripcion)
+                            </label>
+                            <textarea asp-for="Descripcion" class="form-control" rows="3" 
+                                      placeholder="Describe brevemente de qué trata esta materia..."></textarea>
+                            <span asp-validation-for="Descripcion" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Opcional. Máximo 500 caracteres.
+                            </div>
+                        </div>
+
+                        <!-- Color e Icono en una fila -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Color" class="form-label fw-bold">
+                                    <i class="fas fa-palette me-1"></i>@Html.DisplayNameFor(model => model.Color)
+                                </label>
+                                <div class="input-group">
+                                    <input asp-for="Color" type="color" class="form-control form-control-color" title="Selecciona un color" />
+                                    <input type="text" class="form-control" id="colorText" readonly />
+                                </div>
+                                <span asp-validation-for="Color" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Icono" class="form-label fw-bold">
+                                    <i class="fas fa-icons me-1"></i>@Html.DisplayNameFor(model => model.Icono)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="iconPreview">
+                                        <i class="fas fa-book"></i>
+                                    </span>
+                                    <select asp-for="Icono" class="form-select" id="iconSelect">
+                                        <option value="fas fa-book">📚 Libro</option>
+                                        <option value="fas fa-calculator">🧮 Calculadora</option>
+                                        <option value="fas fa-flask">🧪 Ciencias</option>
+                                        <option value="fas fa-globe">🌍 Geografía</option>
+                                        <option value="fas fa-language">🗣️ Idiomas</option>
+                                        <option value="fas fa-paint-brush">🎨 Arte</option>
+                                        <option value="fas fa-music">🎵 Música</option>
+                                        <option value="fas fa-dumbbell">💪 Deportes</option>
+                                        <option value="fas fa-laptop-code">💻 Programación</option>
+                                        <option value="fas fa-heartbeat">❤️ Medicina</option>
+                                        <option value="fas fa-balance-scale">⚖️ Derecho</option>
+                                        <option value="fas fa-chart-line">📈 Economía</option>
+                                        <option value="fas fa-atom">⚛️ Física</option>
+                                        <option value="fas fa-leaf">🌿 Biología</option>
+                                        <option value="fas fa-history">🕐 Historia</option>
+                                    </select>
+                                </div>
+                                <span asp-validation-for="Icono" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Vista Previa -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-eye me-1"></i>Vista Previa
+                            </label>
+                            <div class="card border-2" id="previewCard" style="border-color: #007bff !important;">
+                                <div class="card-body text-center p-4">
+                                    <div class="rounded-circle p-3 text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                                         id="previewIcon" style="background-color: #007bff; width: 80px; height: 80px;">
+                                        <i class="fas fa-book fa-2x"></i>
+                                    </div>
+                                    <h5 class="card-title" id="previewName">Nombre de la Materia</h5>
+                                    <p class="card-text text-muted" id="previewDescription">Descripción de la materia</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-action="Index" class="btn btn-outline-secondary btn-lg me-md-2">
+                                <i class="fas fa-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Crear Materia
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const colorInput = document.getElementById('Color');
+            const colorText = document.getElementById('colorText');
+            const iconSelect = document.getElementById('iconSelect');
+            const iconPreview = document.getElementById('iconPreview');
+            const nameInput = document.getElementById('Nombre');
+            const descriptionInput = document.getElementById('Descripcion');
+            
+            const previewCard = document.getElementById('previewCard');
+            const previewIcon = document.getElementById('previewIcon');
+            const previewName = document.getElementById('previewName');
+            const previewDescription = document.getElementById('previewDescription');
+
+            // Actualizar vista previa en tiempo real
+            function updatePreview() {
+                const color = colorInput.value;
+                const icon = iconSelect.value;
+                const name = nameInput.value || 'Nombre de la Materia';
+                const description = descriptionInput.value || 'Descripción de la materia';
+
+                // Actualizar colores
+                previewCard.style.borderColor = color + ' !important';
+                previewIcon.style.backgroundColor = color;
+                
+                // Actualizar icono
+                const iconElement = previewIcon.querySelector('i');
+                iconElement.className = icon + ' fa-2x';
+                iconPreview.querySelector('i').className = icon;
+                
+                // Actualizar textos
+                previewName.textContent = name;
+                previewDescription.textContent = description;
+                
+                // Actualizar color text
+                colorText.value = color;
+            }
+
+            // Event listeners
+            colorInput.addEventListener('input', updatePreview);
+            iconSelect.addEventListener('change', updatePreview);
+            nameInput.addEventListener('input', updatePreview);
+            descriptionInput.addEventListener('input', updatePreview);
+
+            // Inicializar vista previa
+            updatePreview();
+        });
+    </script>
+}

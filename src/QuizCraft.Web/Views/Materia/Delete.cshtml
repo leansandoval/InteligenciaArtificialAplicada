@@ -1,0 +1,176 @@
+@model QuizCraft.Application.ViewModels.MateriaViewModel
+
+@{
+    ViewData["Title"] = $"Eliminar: {Model.Nombre} - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Mensaje de Advertencia -->
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                    </div>
+
+                    <!-- Información de la Materia -->
+                    <div class="text-center mb-4">
+                        <div class="rounded-circle p-4 text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                             style="background-color: @Model.Color; width: 100px; height: 100px;">
+                            <i class="@Model.Icono fa-3x"></i>
+                        </div>
+                        <h3 class="text-danger mb-2">@Model.Nombre</h3>
+                        @if (!string.IsNullOrEmpty(Model.Descripcion))
+                        {
+                            <p class="text-muted mb-3">@Model.Descripcion</p>
+                        }
+                    </div>
+
+                    <!-- Estadísticas de Contenido -->
+                    <div class="row text-center mb-4">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <div class="h4 text-primary mb-1">@Model.TotalFlashcards</div>
+                                <small class="text-muted">Flashcards</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded">
+                                <div class="h4 text-success mb-1">@Model.TotalQuizzes</div>
+                                <small class="text-muted">Quizzes</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información Adicional -->
+                    <div class="bg-light p-3 rounded mb-4">
+                        <h6 class="text-secondary mb-2">
+                            <i class="fas fa-info-circle me-1"></i>Información de la Materia
+                        </h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Estado:</small>
+                                @if (Model.EstaActivo)
+                                {
+                                    <br><span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <br><span class="badge bg-secondary">Inactivo</span>
+                                }
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Creado:</small>
+                                <br><span class="fw-bold">@Model.FechaCreacion.ToString("dd/MM/yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advertencias Específicas -->
+                    @if (Model.TotalFlashcards > 0 || Model.TotalQuizzes > 0)
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Contenido Asociado:</strong>
+                            Esta materia tiene contenido asociado que también será eliminado:
+                            <ul class="mb-0 mt-2">
+                                @if (Model.TotalFlashcards > 0)
+                                {
+                                    <li>@Model.TotalFlashcards flashcard(s)</li>
+                                }
+                                @if (Model.TotalQuizzes > 0)
+                                {
+                                    <li>@Model.TotalQuizzes quiz(zes)</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Esta materia no tiene contenido asociado, por lo que se puede eliminar sin problemas.
+                        </div>
+                    }
+
+                    <!-- Confirmación -->
+                    <div class="mb-4">
+                        <p class="text-center mb-3">
+                            <strong>¿Estás seguro de que deseas eliminar esta materia?</strong>
+                        </p>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a asp-action="Index" class="btn btn-secondary btn-lg me-md-3">
+                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                        </a>
+                        
+                        <form asp-action="Delete" method="post" class="d-inline">
+                            <input asp-for="Id" type="hidden" />
+                            <button type="submit" class="btn btn-danger btn-lg" 
+                                    onclick="return confirm('¿Estás completamente seguro? Esta acción no se puede deshacer.')">
+                                <i class="fas fa-trash me-2"></i>Sí, Eliminar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-footer bg-light text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Consejo: Si no estás seguro, puedes desactivar la materia en lugar de eliminarla.
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="text-decoration-none">Editar materia</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Confirmación adicional para eliminación
+        document.addEventListener('DOMContentLoaded', function() {
+            const deleteForm = document.querySelector('form[asp-action="Delete"]');
+            if (deleteForm) {
+                deleteForm.addEventListener('submit', function(e) {
+                    const hasContent = @(Model.TotalFlashcards > 0 || Model.TotalQuizzes > 0 ? "true" : "false");
+                    
+                    if (hasContent) {
+                        let confirmMessage = 
+                            'ADVERTENCIA: Esta materia tiene contenido asociado que será eliminado permanentemente.\n\n' +
+                            'Contenido que se eliminará:\n';
+                        
+                        @if (Model.TotalFlashcards > 0) {
+                            <text>confirmMessage += '- @Model.TotalFlashcards flashcard(s)\n';</text>
+                        }
+                        @if (Model.TotalQuizzes > 0) {
+                            <text>confirmMessage += '- @Model.TotalQuizzes quiz(zes)\n';</text>
+                        }
+                        
+                        confirmMessage += '\n¿Proceder con la eliminación?';
+                        
+                        if (!confirm(confirmMessage)) {
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                    
+                    // Confirmación final
+                    if (!confirm('Última confirmación: ¿Eliminar "@Model.Nombre" definitivamente?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
+}

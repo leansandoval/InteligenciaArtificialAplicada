@@ -1,0 +1,124 @@
+@model QuizCraft.Application.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Iniciar Sesión - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h4><i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión</h4>
+                    <p class="mb-0">Accede a tu cuenta QuizCraft</p>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Login" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Correo Electrónico
+                            </label>
+                            <input asp-for="Email" class="form-control form-control-lg" type="email" placeholder="correo@ejemplo.com" autofocus />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Contraseña
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="Password" class="form-control form-control-lg" type="password" placeholder="Tu contraseña" id="passwordInput" />
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                            <label asp-for="RememberMe" class="form-check-label">
+                                <i class="fas fa-remember me-1"></i>Recordarme
+                            </label>
+                        </div>
+
+                        <input asp-for="ReturnUrl" type="hidden" />
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="text-center">
+                        <p class="mb-2">
+                            <a href="#" class="text-decoration-none">
+                                <i class="fas fa-key me-1"></i>¿Olvidaste tu contraseña?
+                            </a>
+                        </p>
+                        <hr class="my-2">
+                        <p class="mb-0">
+                            ¿No tienes cuenta?
+                            <a asp-action="Register" class="text-decoration-none">
+                                <i class="fas fa-user-plus me-1"></i>Regístrate aquí
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo Credentials Card -->
+            <div class="card mt-3 bg-light border-info">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-info">
+                        <i class="fas fa-info-circle me-1"></i>Cuenta de Demostración
+                    </h6>
+                    <p class="card-text small mb-2">
+                        <strong>Usuario:</strong> admin@quizcraft.com<br>
+                        <strong>Contraseña:</strong> Admin123!
+                    </p>
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="fillDemoCredentials()">
+                        <i class="fas fa-magic me-1"></i>Usar Credenciales Demo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Toggle password visibility
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('passwordInput');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (togglePassword && passwordInput && toggleIcon) {
+                togglePassword.addEventListener('click', function() {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    if (type === 'password') {
+                        toggleIcon.className = 'fas fa-eye';
+                    } else {
+                        toggleIcon.className = 'fas fa-eye-slash';
+                    }
+                });
+            }
+        });
+        
+        // Fill demo credentials
+        function fillDemoCredentials() {
+            document.getElementById('Email').value = 'admin@quizcraft.com';
+            document.getElementById('passwordInput').value = 'Admin123!';
+        }
+    </script>
+}

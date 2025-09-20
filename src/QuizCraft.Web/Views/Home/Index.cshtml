@@ -1,0 +1,149 @@
+﻿@model QuizCraft.Web.ViewModels.Home.HomeIndexViewModel
+@{
+    ViewData["Title"] = "QuizCraft - Plataforma de Aprendizaje";
+}
+
+<div class="container-fluid">
+    @if (Model.EsUsuarioAutenticado)
+    {
+        <!-- Vista para usuario autenticado -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="jumbotron bg-primary text-white p-4 rounded">
+                    <h1 class="display-4">¡Bienvenido, @Model.NombreUsuario!</h1>
+                    <p class="lead">Continúa tu aprendizaje con QuizCraft</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Materias</h5>
+                        <h2 class="text-primary">@Model.TotalMaterias</h2>
+                        <p class="card-text">Materias organizadas</p>
+                        <a href="#" class="btn btn-primary">Ver Materias</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-layer-group fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Flashcards</h5>
+                        <h2 class="text-success">@Model.TotalFlashcards</h2>
+                        <p class="card-text">Tarjetas de estudio</p>
+                        <a href="#" class="btn btn-success">Estudiar</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-question-circle fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">Quizzes</h5>
+                        <h2 class="text-warning">@Model.QuizzesRecientes.Count</h2>
+                        <p class="card-text">Quizzes recientes</p>
+                        <a href="#" class="btn btn-warning">Realizar Quiz</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.QuizzesRecientes.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Quizzes Recientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                @foreach (var quiz in Model.QuizzesRecientes)
+                                {
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">@quiz.Titulo</h6>
+                                            <small class="text-muted">@quiz.Materia?.Nombre</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-primary">@quiz.NumeroPreguntas preguntas</span>
+                                            <a href="#" class="btn btn-sm btn-outline-primary ml-2">Realizar</a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <!-- Vista para visitantes no autenticados -->
+        <div class="text-center">
+            <div class="jumbotron">
+                <h1 class="display-3">
+                    <i class="fas fa-graduation-cap text-primary"></i>
+                    QuizCraft
+                </h1>
+                <p class="lead">Tu plataforma de aprendizaje personalizada</p>
+                <hr class="my-4">
+                <p class="text-muted">
+                    Crea flashcards, realiza quizzes y mejora tu conocimiento de manera eficiente
+                </p>
+                <div class="mt-4">
+                    <a class="btn btn-primary btn-lg mr-3" href="@Url.Action("Register", "Account")" role="button">
+                        <i class="fas fa-user-plus"></i> Registrarse
+                    </a>
+                    <a class="btn btn-outline-primary btn-lg" href="@Url.Action("Login", "Account")" role="button">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row text-center mb-5">
+            <div class="col-md-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <i class="fas fa-layer-group fa-4x text-primary mb-3"></i>
+                        <h4 class="card-title">Flashcards Inteligentes</h4>
+                        <p class="card-text">
+                            Crea y estudia flashcards con un sistema de repetición espaciada 
+                            que se adapta a tu progreso de aprendizaje.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <i class="fas fa-question-circle fa-4x text-success mb-3"></i>
+                        <h4 class="card-title">Quizzes Personalizados</h4>
+                        <p class="card-text">
+                            Diseña quizzes adaptados a tus necesidades con diferentes tipos 
+                            de preguntas y niveles de dificultad.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 h-100">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line fa-4x text-warning mb-3"></i>
+                        <h4 class="card-title">Progreso Detallado</h4>
+                        <p class="card-text">
+                            Monitorea tu progreso con estadísticas detalladas y 
+                            visualizaciones que te ayudan a mejorar continuamente.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

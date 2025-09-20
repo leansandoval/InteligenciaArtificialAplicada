@@ -1,0 +1,223 @@
+@model QuizCraft.Application.ViewModels.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Mi Perfil - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-circle me-2"></i>Mi Perfil
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Profile" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <!-- Información Personal -->
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-address-card me-2"></i>Información Personal
+                        </h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Nombre" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Nombre
+                                </label>
+                                <input asp-for="Nombre" class="form-control" />
+                                <span asp-validation-for="Nombre" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Apellido" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Apellido
+                                </label>
+                                <input asp-for="Apellido" class="form-control" />
+                                <span asp-validation-for="Apellido" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Correo Electrónico
+                            </label>
+                            <input asp-for="Email" class="form-control" type="email" readonly />
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                El correo electrónico no se puede modificar. Contacta al soporte si necesitas cambiarlo.
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Preferencias -->
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-cog me-2"></i>Preferencias
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PreferenciaIdioma" class="form-label">
+                                    <i class="fas fa-globe me-1"></i>Idioma Preferido
+                                </label>
+                                <select asp-for="PreferenciaIdioma" class="form-select">
+                                    <option value="es">Español</option>
+                                    <option value="en">English</option>
+                                    <option value="fr">Français</option>
+                                    <option value="de">Deutsch</option>
+                                </select>
+                                <span asp-validation-for="PreferenciaIdioma" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TemaPreferido" class="form-label">
+                                    <i class="fas fa-paint-brush me-1"></i>Tema Visual
+                                </label>
+                                <select asp-for="TemaPreferido" class="form-select">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Oscuro</option>
+                                    <option value="auto">Automático</option>
+                                </select>
+                                <span asp-validation-for="TemaPreferido" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Notificaciones -->
+                        <h6 class="text-secondary mb-3">
+                            <i class="fas fa-bell me-2"></i>Configuración de Notificaciones
+                        </h6>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input asp-for="NotificacionesHabilitadas" class="form-check-input" type="checkbox" />
+                                    <label asp-for="NotificacionesHabilitadas" class="form-check-label">
+                                        Notificaciones Habilitadas
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input asp-for="NotificacionesEmail" class="form-check-input" type="checkbox" />
+                                    <label asp-for="NotificacionesEmail" class="form-check-label">
+                                        Notificaciones por Email
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    <input asp-for="NotificacionesWeb" class="form-check-input" type="checkbox" />
+                                    <label asp-for="NotificacionesWeb" class="form-check-label">
+                                        Notificaciones Web
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Información de la Cuenta -->
+                        <h6 class="text-secondary mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Información de la Cuenta
+                        </h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de Registro</label>
+                                <input value="@Model.FechaRegistro.ToString("dd/MM/yyyy")" class="form-control" readonly />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Último Acceso</label>
+                                <input value="@(Model.UltimoAcceso?.ToString("dd/MM/yyyy HH:mm") ?? "Nunca")" class="form-control" readonly />
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Cambiar Contraseña Card -->
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-key me-2"></i>Cambiar Contraseña
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Por tu seguridad, te recomendamos cambiar tu contraseña regularmente.
+                    </p>
+                    <a href="#" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <i class="fas fa-key me-1"></i>Cambiar Contraseña
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-key me-2"></i>Cambiar Contraseña
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="mb-3">
+                        <label for="currentPassword" class="form-label">Contraseña Actual</label>
+                        <input type="password" class="form-control" id="currentPassword" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="newPassword" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirmNewPassword" class="form-label">Confirmar Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="confirmNewPassword" required />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="changePassword()">
+                    <i class="fas fa-save me-1"></i>Cambiar Contraseña
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        function changePassword() {
+            // Implementar cambio de contraseña
+            alert('Funcionalidad de cambio de contraseña por implementar');
+        }
+    </script>
+}

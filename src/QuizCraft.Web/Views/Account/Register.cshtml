@@ -1,0 +1,130 @@
+@model QuizCraft.Application.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Registro - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4><i class="fas fa-user-plus me-2"></i>Crear Cuenta</h4>
+                    <p class="mb-0">Únete a la comunidad QuizCraft</p>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Register" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Nombre" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Nombre
+                                </label>
+                                <input asp-for="Nombre" class="form-control" placeholder="Tu nombre" />
+                                <span asp-validation-for="Nombre" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Apellido" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Apellido
+                                </label>
+                                <input asp-for="Apellido" class="form-control" placeholder="Tu apellido" />
+                                <span asp-validation-for="Apellido" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Correo Electrónico
+                            </label>
+                            <input asp-for="Email" class="form-control" type="email" placeholder="correo@ejemplo.com" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Contraseña
+                            </label>
+                            <input asp-for="Password" class="form-control" type="password" placeholder="Mínimo 8 caracteres" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un número.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ConfirmPassword" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Confirmar Contraseña
+                            </label>
+                            <input asp-for="ConfirmPassword" class="form-control" type="password" placeholder="Repite tu contraseña" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PreferenciaIdioma" class="form-label">
+                                <i class="fas fa-globe me-1"></i>Idioma Preferido
+                            </label>
+                            <select asp-for="PreferenciaIdioma" class="form-select">
+                                <option value="es">Español</option>
+                                <option value="en">English</option>
+                                <option value="fr">Français</option>
+                                <option value="de">Deutsch</option>
+                            </select>
+                            <span asp-validation-for="PreferenciaIdioma" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="NotificacionesHabilitadas" class="form-check-input" type="checkbox" />
+                            <label asp-for="NotificacionesHabilitadas" class="form-check-label">
+                                <i class="fas fa-bell me-1"></i>Recibir notificaciones
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Crear Cuenta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <p class="mb-0">
+                        ¿Ya tienes cuenta?
+                        <a asp-action="Login" class="text-decoration-none">
+                            <i class="fas fa-sign-in-alt me-1"></i>Iniciar Sesión
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Validación en tiempo real de contraseñas
+        document.addEventListener('DOMContentLoaded', function() {
+            const password = document.getElementById('Password');
+            const confirmPassword = document.getElementById('ConfirmPassword');
+            
+            function validatePasswords() {
+                if (password.value && confirmPassword.value) {
+                    if (password.value !== confirmPassword.value) {
+                        confirmPassword.setCustomValidity('Las contraseñas no coinciden');
+                    } else {
+                        confirmPassword.setCustomValidity('');
+                    }
+                }
+            }
+            
+            if (password && confirmPassword) {
+                password.addEventListener('input', validatePasswords);
+                confirmPassword.addEventListener('input', validatePasswords);
+            }
+        });
+    </script>
+}
