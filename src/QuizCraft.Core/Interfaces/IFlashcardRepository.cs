@@ -25,4 +25,6 @@ public interface IFlashcardRepository : IGenericRepository<Flashcard>
         string? terminoBusqueda = null);
     Task<double> GetPromedioComplejidadAsync(int materiaId);
     Task ActualizarDificultadesEnLoteAsync(int materiaId, NivelDificultad nuevaDificultad);
+    Task<IEnumerable<Flashcard>> GetFlashcardsByUsuarioIdAsync(string usuarioId);
+    Task<Flashcard?> GetByIdWithMateriaAsync(int id);
 }

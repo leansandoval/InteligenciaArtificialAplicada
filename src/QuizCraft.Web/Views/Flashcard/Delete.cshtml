@@ -1,0 +1,302 @@
+@model QuizCraft.Application.ViewModels.FlashcardViewModel
+
+@{
+    ViewBag.Title = "Confirmar Eliminación";
+    ViewBag.PageTitle = "Eliminar Flashcard";
+    ViewBag.PageSubtitle = "Confirma la eliminación de la tarjeta de estudio";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">
+            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+            Eliminar Flashcard
+        </h2>
+        <p class="text-muted mb-0">
+            <i class="fas fa-warning me-1"></i>
+            Esta acción no se puede deshacer
+        </p>
+    </div>
+    <div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-info me-2">
+            <i class="fas fa-eye me-1"></i>
+            Ver Detalles
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Volver a la lista
+        </a>
+    </div>
+</div>
+
+<!-- Alerta de confirmación -->
+<div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+    <div>
+        <h5 class="alert-heading mb-1">¡Atención!</h5>
+        <p class="mb-0">
+            Estás a punto de eliminar permanentemente esta flashcard. 
+            Una vez eliminada, no podrás recuperar la información ni las estadísticas de estudio asociadas.
+        </p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Tarjeta con la información de la flashcard a eliminar -->
+        <div class="card shadow-lg border-danger border-2 mb-4">
+            <div class="card-header bg-danger text-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-trash-alt fa-lg me-2"></i>
+                        <h5 class="mb-0">Flashcard a Eliminar</h5>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="@Model.MateriaIcono me-1"></i>
+                        <span>@Model.MateriaNombre</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <!-- Información de la flashcard -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-2">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Pregunta
+                        </h6>
+                        <div class="p-3 bg-light rounded border-start border-primary border-3">
+                            <p class="mb-0">@Model.Pregunta</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-success mb-2">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Respuesta
+                        </h6>
+                        <div class="p-3 bg-light rounded border-start border-success border-3">
+                            <p class="mb-0">@Model.Respuesta</p>
+                        </div>
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Pista))
+                {
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-warning mb-2">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Pista
+                            </h6>
+                            <div class="p-3 bg-light rounded border-start border-warning border-3">
+                                <p class="mb-0">@Model.Pista</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+                
+                <!-- Información adicional -->
+                <div class="row">
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <i class="fas fa-calendar text-muted fa-lg mb-2"></i>
+                            <h6 class="mb-1">Creación</h6>
+                            <small class="text-muted">@Model.FechaCreacion.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            <i class="fas fa-redo text-primary fa-lg mb-2"></i>
+                            <h6 class="mb-1">Repasos</h6>
+                            <small class="text-muted">@Model.VecesRepasada veces</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            @{
+                                var difficultyClass = Model.Dificultad switch
+                                {
+                                    QuizCraft.Core.Enums.NivelDificultad.MuyFacil => "success",
+                                    QuizCraft.Core.Enums.NivelDificultad.Facil => "info", 
+                                    QuizCraft.Core.Enums.NivelDificultad.Intermedio => "warning",
+                                    QuizCraft.Core.Enums.NivelDificultad.Dificil => "orange",
+                                    QuizCraft.Core.Enums.NivelDificultad.MuyDificil => "danger",
+                                    _ => "secondary"
+                                };
+                            }
+                            <i class="fas fa-signal text-@difficultyClass fa-lg mb-2"></i>
+                            <h6 class="mb-1">Dificultad</h6>
+                            <small class="text-muted">@Model.DificultadTexto</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="text-center p-3 bg-light rounded">
+                            @if (Model.EstaActiva)
+                            {
+                                <i class="fas fa-check-circle text-success fa-lg mb-2"></i>
+                                <h6 class="mb-1">Estado</h6>
+                                <small class="text-muted">Activa</small>
+                            }
+                            else
+                            {
+                                <i class="fas fa-pause-circle text-secondary fa-lg mb-2"></i>
+                                <h6 class="mb-1">Estado</h6>
+                                <small class="text-muted">Inactiva</small>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información sobre las consecuencias -->
+        <div class="card border-warning mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    ¿Qué sucederá al eliminar esta flashcard?
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-times-circle text-danger me-2"></i>
+                        La flashcard se eliminará permanentemente de tu cuenta
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-chart-line text-danger me-2"></i>
+                        Se perderán todas las estadísticas de estudio (@Model.VecesRepasada repasos registrados)
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-history text-danger me-2"></i>
+                        No se podrá recuperar el contenido ni el historial de modificaciones
+                    </li>
+                    <li class="mb-0">
+                        <i class="fas fa-database text-warning me-2"></i>
+                        Esta acción no afectará otras flashcards ni la materia "@Model.MateriaNombre"
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Formulario de confirmación -->
+        <div class="card border-0">
+            <div class="card-body text-center py-4">
+                <form asp-action="Delete" method="post" id="deleteForm">
+                    <input type="hidden" asp-for="Id" />
+                    
+                    <!-- Checkbox de confirmación -->
+                    <div class="form-check d-inline-block mb-4">
+                        <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                        <label class="form-check-label fw-bold text-danger" for="confirmDelete">
+                            Entiendo que esta acción es irreversible y deseo eliminar la flashcard
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <a asp-action="Index" class="btn btn-secondary btn-lg px-4">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancelar
+                        </a>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-info btn-lg px-4">
+                            <i class="fas fa-eye me-2"></i>
+                            Ver Detalles
+                        </a>
+                        <button type="submit" class="btn btn-danger btn-lg px-4" id="deleteButton" disabled>
+                            <i class="fas fa-trash-alt me-2"></i>
+                            Eliminar Definitivamente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmCheckbox = document.getElementById('confirmDelete');
+            const deleteButton = document.getElementById('deleteButton');
+            const deleteForm = document.getElementById('deleteForm');
+
+            // Habilitar/deshabilitar botón según checkbox
+            confirmCheckbox.addEventListener('change', function() {
+                deleteButton.disabled = !this.checked;
+                
+                if (this.checked) {
+                    deleteButton.classList.remove('btn-outline-danger');
+                    deleteButton.classList.add('btn-danger');
+                } else {
+                    deleteButton.classList.add('btn-outline-danger');
+                    deleteButton.classList.remove('btn-danger');
+                }
+            });
+
+            // Confirmación adicional al enviar formulario
+            deleteForm.addEventListener('submit', function(e) {
+                if (!confirmCheckbox.checked) {
+                    e.preventDefault();
+                    alert('Debes confirmar que entiendes que esta acción es irreversible.');
+                    return false;
+                }
+
+                const confirmMessage = 
+                    'ÚLTIMA CONFIRMACIÓN:\n\n' +
+                    '¿Estás completamente seguro de que deseas eliminar esta flashcard?\n\n' +
+                    'Pregunta: "@Model.Pregunta.Replace("\"", "\\\"")"\n' +
+                    'Materia: @Model.MateriaNombre\n' +
+                    'Repasos registrados: @Model.VecesRepasada\n\n' +
+                    'Esta acción NO SE PUEDE DESHACER.';
+
+                if (!confirm(confirmMessage)) {
+                    e.preventDefault();
+                    return false;
+                }
+
+                // Cambiar botón para mostrar loading
+                deleteButton.disabled = true;
+                deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .border-3 {
+            border-width: 3px !important;
+        }
+        
+        .text-orange {
+            color: #fd7e14 !important;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+        }
+        
+        .form-check-input:checked {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        
+        .form-check-input:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .alert-heading {
+            font-weight: 600;
+        }
+        
+        .list-unstyled li {
+            padding: 0.25rem 0;
+        }
+    </style>
+}

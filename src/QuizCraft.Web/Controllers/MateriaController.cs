@@ -31,7 +31,10 @@ namespace QuizCraft.Web.Controllers
                     return RedirectToAction("Login", "Account");
                 }
 
+                // Obtener materias con sus estadísticas de una sola vez
+                var estadisticasGenerales = await _unitOfWork.MateriaRepository.GetEstadisticasGeneralesByUsuarioAsync(user.Id);
                 var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
+                
                 var materiasViewModel = materias.Select(m => new MateriaViewModel
                 {
                     Id = m.Id,
@@ -41,8 +44,8 @@ namespace QuizCraft.Web.Controllers
                     Icono = m.Icono,
                     FechaCreacion = m.FechaCreacion,
                     EstaActivo = m.EstaActivo,
-                    TotalFlashcards = m.Flashcards?.Count ?? 0,
-                    TotalQuizzes = m.Quizzes?.Count ?? 0
+                    TotalFlashcards = estadisticasGenerales.ContainsKey(m.Id) ? estadisticasGenerales[m.Id] : 0,
+                    TotalQuizzes = 0 // Por ahora, hasta que implementemos los quizzes
                 }).ToList();
 
                 return View(materiasViewModel);
@@ -65,7 +68,7 @@ namespace QuizCraft.Web.Controllers
                     return RedirectToAction("Login", "Account");
                 }
 
-                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(id);
+                var materia = await _unitOfWork.MateriaRepository.GetMateriaCompletaAsync(id);
                 if (materia == null || materia.UsuarioId != user.Id)
                 {
                     TempData["ErrorMessage"] = "Materia no encontrada.";

@@ -1,0 +1,514 @@
+@model QuizCraft.Application.ViewModels.EditFlashcardViewModel
+@using QuizCraft.Core.Enums
+
+@{
+    ViewBag.Title = $"Editar Flashcard - {Model.Pregunta}";
+    ViewBag.PageTitle = "Editar Flashcard";
+    ViewBag.PageSubtitle = "Modifica tu tarjeta de estudio";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">
+            <i class="fas fa-edit text-warning me-2"></i>
+            Editar Flashcard
+        </h2>
+        <p class="text-muted mb-0">
+            <i class="fas fa-info-circle me-1"></i>
+            Actualiza la información de tu tarjeta de estudio
+        </p>
+    </div>
+    <div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-info me-2">
+            <i class="fas fa-eye me-1"></i>
+            Ver Detalles
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Volver a la lista
+        </a>
+    </div>
+</div>
+
+<!-- Información de la flashcard existente -->
+<div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+    <i class="fas fa-info-circle fa-lg me-3"></i>
+    <div>
+        <h6 class="mb-1">Información actual de la flashcard</h6>
+        <small class="mb-0">
+            <strong>Creada:</strong> @Model.FechaCreacion.ToString("dd 'de' MMMM 'de' yyyy 'a las' HH:mm")
+            @if (Model.VecesRepasada > 0)
+            {
+                <span class="ms-2">
+                    | <strong>Repasada:</strong> @Model.VecesRepasada vez@(Model.VecesRepasada != 1 ? "es" : "")
+                </span>
+            }
+        </small>
+    </div>
+</div>
+
+<!-- Tarjeta principal del formulario -->
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-gradient-warning text-dark">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-layer-group fa-lg me-2"></i>
+                        <h5 class="mb-0">Modificar Información</h5>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="estadoSwitch" 
+                               @(Model.EstaActiva ? "checked" : "") onchange="toggleEstadoFlashcard()">
+                        <label class="form-check-label fw-bold" for="estadoSwitch" id="estadoLabel">
+                            @(Model.EstaActiva ? "Activa" : "Inactiva")
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Edit" method="post" id="flashcardForm">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="FechaCreacion" />
+                    <input type="hidden" asp-for="VecesRepasada" />
+                    <input type="hidden" asp-for="EstaActiva" id="estadoHidden" />
+                    
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <div class="row">
+                        <!-- Columna izquierda -->
+                        <div class="col-md-6">
+                            <!-- Materia -->
+                            <div class="mb-4">
+                                <label asp-for="MateriaId" class="form-label fw-bold">
+                                    <i class="fas fa-book text-primary me-1"></i>
+                                    @Html.DisplayNameFor(m => m.MateriaId) *
+                                </label>
+                                <select asp-for="MateriaId" class="form-select form-select-lg" id="materiaSelect">
+                                    <option value="">Seleccionar materia...</option>
+                                    @foreach (var materia in Model.MateriasDisponibles)
+                                    {
+                                        <option value="@materia.Id" 
+                                                data-color="@materia.Color" 
+                                                data-icon="@materia.Icono"
+                                                selected="@(Model.MateriaId == materia.Id)">
+                                            @materia.Nombre
+                                        </option>
+                                    }
+                                </select>
+                                <span asp-validation-for="MateriaId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Pregunta -->
+                            <div class="mb-4">
+                                <label asp-for="Pregunta" class="form-label fw-bold">
+                                    <i class="fas fa-question-circle text-info me-1"></i>
+                                    @Html.DisplayNameFor(m => m.Pregunta) *
+                                </label>
+                                <textarea asp-for="Pregunta" 
+                                          class="form-control form-control-lg" 
+                                          rows="4" 
+                                          placeholder="Escribe tu pregunta aquí..."
+                                          id="preguntaInput"></textarea>
+                                <span asp-validation-for="Pregunta" class="text-danger"></span>
+                                <div class="form-text d-flex justify-content-between">
+                                    <span>
+                                        <i class="fas fa-info-circle text-muted me-1"></i>
+                                        Formula una pregunta clara y específica
+                                    </span>
+                                    <span class="text-muted" id="preguntaCounter">0/1000 caracteres</span>
+                                </div>
+                            </div>
+
+                            <!-- Dificultad -->
+                            <div class="mb-4">
+                                <label asp-for="Dificultad" class="form-label fw-bold">
+                                    <i class="fas fa-signal text-warning me-1"></i>
+                                    @Html.DisplayNameFor(m => m.Dificultad) *
+                                </label>
+                                <div class="row g-2">
+                                    @foreach (NivelDificultad nivel in Enum.GetValues<NivelDificultad>())
+                                    {
+                                        var isSelected = Model.Dificultad == nivel;
+                                        var badgeClass = nivel switch
+                                        {
+                                            NivelDificultad.MuyFacil => "success",
+                                            NivelDificultad.Facil => "info",
+                                            NivelDificultad.Intermedio => "warning",
+                                            NivelDificultad.Dificil => "orange",
+                                            NivelDificultad.MuyDificil => "danger",
+                                            _ => "secondary"
+                                        };
+                                        
+                                        <div class="col-6">
+                                            <input type="radio" 
+                                                   class="btn-check" 
+                                                   name="Dificultad" 
+                                                   id="dificultad@((int)nivel)" 
+                                                   value="@((int)nivel)"
+                                                   checked="@isSelected">
+                                            <label class="btn btn-outline-@badgeClass w-100 py-2" 
+                                                   for="dificultad@((int)nivel)">
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <i class="fas fa-star mb-1"></i>
+                                                    <small>@nivel.ToString()</small>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                                <span asp-validation-for="Dificultad" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- Columna derecha -->
+                        <div class="col-md-6">
+                            <!-- Respuesta -->
+                            <div class="mb-4">
+                                <label asp-for="Respuesta" class="form-label fw-bold">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    @Html.DisplayNameFor(m => m.Respuesta) *
+                                </label>
+                                <textarea asp-for="Respuesta" 
+                                          class="form-control form-control-lg" 
+                                          rows="4" 
+                                          placeholder="Escribe la respuesta correcta aquí..."
+                                          id="respuestaInput"></textarea>
+                                <span asp-validation-for="Respuesta" class="text-danger"></span>
+                                <div class="form-text d-flex justify-content-between">
+                                    <span>
+                                        <i class="fas fa-info-circle text-muted me-1"></i>
+                                        Proporciona una respuesta completa y precisa
+                                    </span>
+                                    <span class="text-muted" id="respuestaCounter">0/2000 caracteres</span>
+                                </div>
+                            </div>
+
+                            <!-- Pista (Opcional) -->
+                            <div class="mb-4">
+                                <label asp-for="Pista" class="form-label fw-bold">
+                                    <i class="fas fa-lightbulb text-warning me-1"></i>
+                                    @Html.DisplayNameFor(m => m.Pista)
+                                    <span class="badge bg-info ms-2">Opcional</span>
+                                </label>
+                                <textarea asp-for="Pista" 
+                                          class="form-control" 
+                                          rows="3" 
+                                          placeholder="Añade una pista para ayudar a recordar la respuesta..."
+                                          id="pistaInput"></textarea>
+                                <span asp-validation-for="Pista" class="text-danger"></span>
+                                <div class="form-text d-flex justify-content-between">
+                                    <span>
+                                        <i class="fas fa-info-circle text-muted me-1"></i>
+                                        Una pista útil puede facilitar el aprendizaje
+                                    </span>
+                                    <span class="text-muted" id="pistaCounter">0/500 caracteres</span>
+                                </div>
+                            </div>
+
+                            <!-- Etiquetas (Opcional) -->
+                            <div class="mb-4">
+                                <label asp-for="Etiquetas" class="form-label fw-bold">
+                                    <i class="fas fa-tags text-secondary me-1"></i>
+                                    @Html.DisplayNameFor(m => m.Etiquetas)
+                                    <span class="badge bg-info ms-2">Opcional</span>
+                                </label>
+                                <input asp-for="Etiquetas" 
+                                       class="form-control" 
+                                       placeholder="Ej: matemáticas, álgebra, ecuaciones..."
+                                       id="etiquetasInput">
+                                <span asp-validation-for="Etiquetas" class="text-danger"></span>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-muted me-1"></i>
+                                    Separa las etiquetas con comas para facilitar la búsqueda
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vista previa comparativa -->
+                    <div class="card mb-4 border-2" id="previsualizacion" style="display: none;">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-eye text-primary me-1"></i>
+                                Vista Previa de los Cambios
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="border-start border-primary border-3 ps-3">
+                                        <h6 class="text-primary">
+                                            <i class="fas fa-question-circle me-1"></i>
+                                            Pregunta:
+                                        </h6>
+                                        <p id="preguntaPreview" class="mb-3"></p>
+                                        
+                                        <h6 class="text-success">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Respuesta:
+                                        </h6>
+                                        <p id="respuestaPreview" class="mb-3"></p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border-start border-warning border-3 ps-3">
+                                        <div id="pistaPreview" style="display: none;">
+                                            <h6 class="text-warning">
+                                                <i class="fas fa-lightbulb me-1"></i>
+                                                Pista:
+                                            </h6>
+                                            <p id="pistaTextoPreview" class="mb-3"></p>
+                                        </div>
+                                        
+                                        <div id="etiquetasPreview" style="display: none;">
+                                            <h6 class="text-secondary">
+                                                <i class="fas fa-tags me-1"></i>
+                                                Etiquetas:
+                                            </h6>
+                                            <p id="etiquetasTextoPreview" class="mb-0"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <div>
+                            <button type="button" class="btn btn-outline-info me-2" id="togglePreview">
+                                <i class="fas fa-eye me-1"></i>
+                                Vista Previa
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                <i class="fas fa-undo me-1"></i>
+                                Restaurar
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-times me-1"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos del formulario
+            const preguntaInput = document.getElementById('preguntaInput');
+            const respuestaInput = document.getElementById('respuestaInput');
+            const pistaInput = document.getElementById('pistaInput');
+            const etiquetasInput = document.getElementById('etiquetasInput');
+            const estadoSwitch = document.getElementById('estadoSwitch');
+            const estadoHidden = document.getElementById('estadoHidden');
+            const estadoLabel = document.getElementById('estadoLabel');
+            
+            // Contadores de caracteres
+            const preguntaCounter = document.getElementById('preguntaCounter');
+            const respuestaCounter = document.getElementById('respuestaCounter');
+            const pistaCounter = document.getElementById('pistaCounter');
+            
+            // Vista previa
+            const previsualizacion = document.getElementById('previsualizacion');
+            const togglePreview = document.getElementById('togglePreview');
+            const preguntaPreview = document.getElementById('preguntaPreview');
+            const respuestaPreview = document.getElementById('respuestaPreview');
+            const pistaPreview = document.getElementById('pistaPreview');
+            const pistaTextoPreview = document.getElementById('pistaTextoPreview');
+            const etiquetasPreview = document.getElementById('etiquetasPreview');
+            const etiquetasTextoPreview = document.getElementById('etiquetasTextoPreview');
+            
+            let previewVisible = false;
+
+            // Valores originales para restaurar
+            const valoresOriginales = {
+                pregunta: preguntaInput.value,
+                respuesta: respuestaInput.value,
+                pista: pistaInput.value,
+                etiquetas: etiquetasInput.value
+            };
+
+            // Toggle estado de la flashcard
+            window.toggleEstadoFlashcard = function() {
+                const isActive = estadoSwitch.checked;
+                estadoHidden.value = isActive;
+                estadoLabel.textContent = isActive ? 'Activa' : 'Inactiva';
+                estadoLabel.classList.toggle('text-success', isActive);
+                estadoLabel.classList.toggle('text-muted', !isActive);
+            };
+
+            // Restaurar formulario
+            window.resetForm = function() {
+                if (confirm('¿Estás seguro de que deseas restaurar todos los campos a su estado original?')) {
+                    preguntaInput.value = valoresOriginales.pregunta;
+                    respuestaInput.value = valoresOriginales.respuesta;
+                    pistaInput.value = valoresOriginales.pista;
+                    etiquetasInput.value = valoresOriginales.etiquetas;
+                    
+                    updateCounter(preguntaInput, preguntaCounter, 1000);
+                    updateCounter(respuestaInput, respuestaCounter, 2000);
+                    updateCounter(pistaInput, pistaCounter, 500);
+                    updatePreview();
+                }
+            };
+
+            // Función para actualizar contadores
+            function updateCounter(input, counter, maxLength) {
+                const currentLength = input.value.length;
+                counter.textContent = `${currentLength}/${maxLength} caracteres`;
+                
+                if (currentLength > maxLength * 0.9) {
+                    counter.classList.add('text-warning');
+                } else {
+                    counter.classList.remove('text-warning');
+                }
+                
+                if (currentLength >= maxLength) {
+                    counter.classList.add('text-danger');
+                    counter.classList.remove('text-warning');
+                } else {
+                    counter.classList.remove('text-danger');
+                }
+            }
+
+            // Event listeners para contadores
+            preguntaInput.addEventListener('input', () => updateCounter(preguntaInput, preguntaCounter, 1000));
+            respuestaInput.addEventListener('input', () => updateCounter(respuestaInput, respuestaCounter, 2000));
+            pistaInput.addEventListener('input', () => updateCounter(pistaInput, pistaCounter, 500));
+
+            // Función para actualizar vista previa
+            function updatePreview() {
+                if (!previewVisible) return;
+
+                preguntaPreview.textContent = preguntaInput.value || 'Sin pregunta...';
+                respuestaPreview.textContent = respuestaInput.value || 'Sin respuesta...';
+                
+                if (pistaInput.value.trim()) {
+                    pistaTextoPreview.textContent = pistaInput.value;
+                    pistaPreview.style.display = 'block';
+                } else {
+                    pistaPreview.style.display = 'none';
+                }
+                
+                if (etiquetasInput.value.trim()) {
+                    etiquetasTextoPreview.textContent = etiquetasInput.value;
+                    etiquetasPreview.style.display = 'block';
+                } else {
+                    etiquetasPreview.style.display = 'none';
+                }
+            }
+
+            // Toggle vista previa
+            togglePreview.addEventListener('click', function() {
+                previewVisible = !previewVisible;
+                
+                if (previewVisible) {
+                    previsualizacion.style.display = 'block';
+                    togglePreview.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Ocultar Vista Previa';
+                    updatePreview();
+                } else {
+                    previsualizacion.style.display = 'none';
+                    togglePreview.innerHTML = '<i class="fas fa-eye me-1"></i>Vista Previa';
+                }
+            });
+
+            // Event listeners para actualizar vista previa
+            preguntaInput.addEventListener('input', updatePreview);
+            respuestaInput.addEventListener('input', updatePreview);
+            pistaInput.addEventListener('input', updatePreview);
+            etiquetasInput.addEventListener('input', updatePreview);
+
+            // Validación del formulario
+            const form = document.getElementById('flashcardForm');
+            form.addEventListener('submit', function(e) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+            });
+
+            // Inicializar
+            updateCounter(preguntaInput, preguntaCounter, 1000);
+            updateCounter(respuestaInput, respuestaCounter, 2000);
+            updateCounter(pistaInput, pistaCounter, 500);
+            toggleEstadoFlashcard(); // Inicializar el estado del switch
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .bg-gradient-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+        }
+        
+        .btn-outline-orange {
+            color: #fd7e14;
+            border-color: #fd7e14;
+        }
+        
+        .btn-outline-orange:hover,
+        .btn-outline-orange:focus,
+        .btn-outline-orange:active,
+        .btn-outline-orange.active,
+        .btn-check:checked + .btn-outline-orange {
+            color: white;
+            background-color: #fd7e14;
+            border-color: #fd7e14;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #ffc107;
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+        }
+        
+        .btn-check:checked + .btn {
+            transform: scale(1.05);
+            transition: all 0.2s ease;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+        }
+        
+        .form-check-input:checked {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        
+        .form-check-label.text-success {
+            color: #28a745 !important;
+        }
+        
+        .form-check-label.text-muted {
+            color: #6c757d !important;
+        }
+        
+        #previsualizacion {
+            border-color: #ffc107 !important;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .border-3 {
+            border-width: 3px !important;
+        }
+    </style>
+}

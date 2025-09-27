@@ -76,17 +76,24 @@ public class HomeController : Controller
                 return RedirectToAction("Login", "Account");
             }
 
+            // Obtener estadísticas dinámicas del usuario
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
+            var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
+            
+            ViewBag.TotalMaterias = materias.Count();
+            ViewBag.TotalFlashcards = flashcards.Count();
+            ViewBag.NombreUsuario = user.NombreCompleto;
+
             var model = new DashboardViewModel
             {
                 NombreUsuario = user.NombreCompleto,
                 FechaUltimoAcceso = user.UltimoAcceso?.ToString("yyyy-MM-dd HH:mm") ?? "Nunca",
                 
-                // Por ahora, usar valores de ejemplo hasta que arreglemos el UnitOfWork
-                TotalMaterias = 0,
-                TotalFlashcards = 0,
-                FlashcardsParaRevisar = 0,
+                TotalMaterias = materias.Count(),
+                TotalFlashcards = flashcards.Count(),
+                FlashcardsParaRevisar = flashcards.Count(f => f.ProximaRevision <= DateTime.Now),
                 QuizzesRecientes = new List<Core.Entities.Quiz>(),
-                MateriasRecientes = new List<Core.Entities.Materia>()
+                MateriasRecientes = materias.OrderByDescending(m => m.FechaCreacion).Take(3).ToList()
             };
 
             return View(model);
@@ -95,7 +102,22 @@ public class HomeController : Controller
         {
             _logger.LogError(ex, "Error al cargar el dashboard del usuario {UserId}", 
                 _userManager.GetUserId(User));
-            return RedirectToAction(nameof(Index));
+            
+            // En caso de error, usar valores por defecto
+            ViewBag.TotalMaterias = 0;
+            ViewBag.TotalFlashcards = 0;
+            ViewBag.NombreUsuario = User.Identity?.Name ?? "Usuario";
+            
+            return View(new DashboardViewModel
+            {
+                NombreUsuario = User.Identity?.Name ?? "Usuario",
+                FechaUltimoAcceso = "Error",
+                TotalMaterias = 0,
+                TotalFlashcards = 0,
+                FlashcardsParaRevisar = 0,
+                QuizzesRecientes = new List<Core.Entities.Quiz>(),
+                MateriasRecientes = new List<Core.Entities.Materia>()
+            });
         }
     }
 

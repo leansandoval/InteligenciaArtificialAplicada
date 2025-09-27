@@ -174,5 +174,21 @@ namespace QuizCraft.Infrastructure.Repositories
 
             _dbSet.UpdateRange(flashcards);
         }
+
+        public async Task<IEnumerable<Flashcard>> GetFlashcardsByUsuarioIdAsync(string usuarioId)
+        {
+            return await _dbSet
+                .Include(f => f.Materia)
+                .Where(f => f.Materia.UsuarioId == usuarioId)
+                .OrderByDescending(f => f.FechaCreacion)
+                .ToListAsync();
+        }
+
+        public async Task<Flashcard?> GetByIdWithMateriaAsync(int id)
+        {
+            return await _dbSet
+                .Include(f => f.Materia)
+                .FirstOrDefaultAsync(f => f.Id == id);
+        }
     }
 }

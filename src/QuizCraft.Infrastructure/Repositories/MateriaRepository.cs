@@ -97,12 +97,11 @@ namespace QuizCraft.Infrastructure.Repositories
             var materias = await _dbSet
                 .Where(m => m.UsuarioId == usuarioId)
                 .Include(m => m.Flashcards)
-                .Include(m => m.Quizzes)
                 .ToListAsync();
 
             return materias.ToDictionary(
                 m => m.Id,
-                m => (m.Flashcards?.Count ?? 0) + (m.Quizzes?.Count ?? 0)
+                m => m.Flashcards?.Count ?? 0
             );
         }
 

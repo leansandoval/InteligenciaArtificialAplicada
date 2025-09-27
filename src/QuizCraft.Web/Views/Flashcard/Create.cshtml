@@ -1,0 +1,413 @@
+@model QuizCraft.Application.ViewModels.CreateFlashcardViewModel
+@using QuizCraft.Core.Enums
+
+@{
+    ViewBag.Title = "Crear Nueva Flashcard";
+    ViewBag.PageTitle = "Nueva Flashcard";
+    ViewBag.PageSubtitle = "Crea una nueva tarjeta de estudio personalizada";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">
+            <i class="fas fa-plus-circle text-success me-2"></i>
+            Nueva Flashcard
+        </h2>
+        <p class="text-muted mb-0">
+            <i class="fas fa-info-circle me-1"></i>
+            Crea una tarjeta de estudio para mejorar tu aprendizaje
+        </p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Volver a la lista
+        </a>
+    </div>
+</div>
+
+<!-- Tarjeta principal del formulario -->
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-lg border-0">
+            <div class="card-header bg-gradient-primary text-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-layer-group fa-lg me-2"></i>
+                    <h5 class="mb-0">Información de la Flashcard</h5>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Create" method="post" id="flashcardForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <!-- Materia -->
+                    <div class="mb-4">
+                        <label asp-for="MateriaId" class="form-label fw-bold">
+                            <i class="fas fa-book text-primary me-1"></i>
+                            @Html.DisplayNameFor(m => m.MateriaId) *
+                        </label>
+                        <select asp-for="MateriaId" class="form-select form-select-lg" id="materiaSelect">
+                            <option value="">Seleccionar materia...</option>
+                            @foreach (var materia in Model.MateriasDisponibles)
+                            {
+                                <option value="@materia.Id" 
+                                        data-color="@materia.Color" 
+                                        data-icon="@materia.Icono">
+                                    @materia.Nombre
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="MateriaId" class="text-danger"></span>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb text-warning me-1"></i>
+                            Selecciona la materia a la que pertenece esta flashcard
+                        </div>
+                    </div>
+
+                    <!-- Pregunta -->
+                    <div class="mb-4">
+                        <label asp-for="Pregunta" class="form-label fw-bold">
+                            <i class="fas fa-question-circle text-info me-1"></i>
+                            @Html.DisplayNameFor(m => m.Pregunta) *
+                        </label>
+                        <textarea asp-for="Pregunta" 
+                                  class="form-control form-control-lg" 
+                                  rows="3" 
+                                  placeholder="Escribe tu pregunta aquí..."
+                                  id="preguntaInput"></textarea>
+                        <span asp-validation-for="Pregunta" class="text-danger"></span>
+                        <div class="form-text d-flex justify-content-between">
+                            <span>
+                                <i class="fas fa-info-circle text-muted me-1"></i>
+                                Formula una pregunta clara y específica
+                            </span>
+                            <span class="text-muted" id="preguntaCounter">0/1000 caracteres</span>
+                        </div>
+                    </div>
+
+                    <!-- Respuesta -->
+                    <div class="mb-4">
+                        <label asp-for="Respuesta" class="form-label fw-bold">
+                            <i class="fas fa-check-circle text-success me-1"></i>
+                            @Html.DisplayNameFor(m => m.Respuesta) *
+                        </label>
+                        <textarea asp-for="Respuesta" 
+                                  class="form-control form-control-lg" 
+                                  rows="4" 
+                                  placeholder="Escribe la respuesta correcta aquí..."
+                                  id="respuestaInput"></textarea>
+                        <span asp-validation-for="Respuesta" class="text-danger"></span>
+                        <div class="form-text d-flex justify-content-between">
+                            <span>
+                                <i class="fas fa-info-circle text-muted me-1"></i>
+                                Proporciona una respuesta completa y precisa
+                            </span>
+                            <span class="text-muted" id="respuestaCounter">0/2000 caracteres</span>
+                        </div>
+                    </div>
+
+                    <!-- Pista (Opcional) -->
+                    <div class="mb-4">
+                        <label asp-for="Pista" class="form-label fw-bold">
+                            <i class="fas fa-lightbulb text-warning me-1"></i>
+                            @Html.DisplayNameFor(m => m.Pista)
+                            <span class="badge bg-info ms-2">Opcional</span>
+                        </label>
+                        <textarea asp-for="Pista" 
+                                  class="form-control" 
+                                  rows="2" 
+                                  placeholder="Añade una pista para ayudar a recordar la respuesta..."
+                                  id="pistaInput"></textarea>
+                        <span asp-validation-for="Pista" class="text-danger"></span>
+                        <div class="form-text d-flex justify-content-between">
+                            <span>
+                                <i class="fas fa-info-circle text-muted me-1"></i>
+                                Una pista útil puede facilitar el aprendizaje
+                            </span>
+                            <span class="text-muted" id="pistaCounter">0/500 caracteres</span>
+                        </div>
+                    </div>
+
+                    <!-- Dificultad -->
+                    <div class="mb-4">
+                        <label asp-for="Dificultad" class="form-label fw-bold">
+                            <i class="fas fa-signal text-warning me-1"></i>
+                            @Html.DisplayNameFor(m => m.Dificultad) *
+                        </label>
+                        <div class="row g-2">
+                            @foreach (NivelDificultad nivel in Enum.GetValues<NivelDificultad>())
+                            {
+                                var isSelected = Model.Dificultad == nivel;
+                                var badgeClass = nivel switch
+                                {
+                                    NivelDificultad.MuyFacil => "success",
+                                    NivelDificultad.Facil => "info",
+                                    NivelDificultad.Intermedio => "warning",
+                                    NivelDificultad.Dificil => "orange",
+                                    NivelDificultad.MuyDificil => "danger",
+                                    _ => "secondary"
+                                };
+                                
+                                <div class="col-6 col-md-4">
+                                    <input type="radio" 
+                                           class="btn-check" 
+                                           name="Dificultad" 
+                                           id="dificultad@((int)nivel)" 
+                                           value="@((int)nivel)"
+                                           checked="@isSelected">
+                                    <label class="btn btn-outline-@badgeClass w-100 py-2" 
+                                           for="dificultad@((int)nivel)">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-star mb-1"></i>
+                                            <small>@nivel.ToString()</small>
+                                        </div>
+                                    </label>
+                                </div>
+                            }
+                        </div>
+                        <span asp-validation-for="Dificultad" class="text-danger"></span>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle text-muted me-1"></i>
+                            Selecciona el nivel de dificultad que consideres apropiado
+                        </div>
+                    </div>
+
+                    <!-- Etiquetas (Opcional) -->
+                    <div class="mb-4">
+                        <label asp-for="Etiquetas" class="form-label fw-bold">
+                            <i class="fas fa-tags text-secondary me-1"></i>
+                            @Html.DisplayNameFor(m => m.Etiquetas)
+                            <span class="badge bg-info ms-2">Opcional</span>
+                        </label>
+                        <input asp-for="Etiquetas" 
+                               class="form-control" 
+                               placeholder="Ej: matemáticas, álgebra, ecuaciones..."
+                               id="etiquetasInput">
+                        <span asp-validation-for="Etiquetas" class="text-danger"></span>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle text-muted me-1"></i>
+                            Separa las etiquetas con comas para facilitar la búsqueda posterior
+                        </div>
+                    </div>
+
+                    <!-- Vista previa de la flashcard -->
+                    <div class="card mb-4 border-2" id="previsualizacion" style="display: none;">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-eye text-primary me-1"></i>
+                                Vista Previa de la Flashcard
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">
+                                        <i class="fas fa-question-circle me-1"></i>
+                                        Pregunta:
+                                    </h6>
+                                    <p id="preguntaPreview" class="mb-3"></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        Respuesta:
+                                    </h6>
+                                    <p id="respuestaPreview" class="mb-3"></p>
+                                </div>
+                            </div>
+                            <div id="pistaPreview" style="display: none;">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Pista:
+                                </h6>
+                                <p id="pistaTextoPreview"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center pt-3">
+                        <button type="button" class="btn btn-outline-info" id="togglePreview">
+                            <i class="fas fa-eye me-1"></i>
+                            Mostrar Vista Previa
+                        </button>
+                        
+                        <div>
+                            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-times me-1"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                Crear Flashcard
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos del formulario
+            const preguntaInput = document.getElementById('preguntaInput');
+            const respuestaInput = document.getElementById('respuestaInput');
+            const pistaInput = document.getElementById('pistaInput');
+            const etiquetasInput = document.getElementById('etiquetasInput');
+            const materiaSelect = document.getElementById('materiaSelect');
+            
+            // Contadores de caracteres
+            const preguntaCounter = document.getElementById('preguntaCounter');
+            const respuestaCounter = document.getElementById('respuestaCounter');
+            const pistaCounter = document.getElementById('pistaCounter');
+            
+            // Vista previa
+            const previsualizacion = document.getElementById('previsualizacion');
+            const togglePreview = document.getElementById('togglePreview');
+            const preguntaPreview = document.getElementById('preguntaPreview');
+            const respuestaPreview = document.getElementById('respuestaPreview');
+            const pistaPreview = document.getElementById('pistaPreview');
+            const pistaTextoPreview = document.getElementById('pistaTextoPreview');
+            
+            let previewVisible = false;
+
+            // Función para actualizar contadores
+            function updateCounter(input, counter, maxLength) {
+                const currentLength = input.value.length;
+                counter.textContent = `${currentLength}/${maxLength} caracteres`;
+                
+                if (currentLength > maxLength * 0.9) {
+                    counter.classList.add('text-warning');
+                } else {
+                    counter.classList.remove('text-warning');
+                }
+                
+                if (currentLength >= maxLength) {
+                    counter.classList.add('text-danger');
+                    counter.classList.remove('text-warning');
+                } else {
+                    counter.classList.remove('text-danger');
+                }
+            }
+
+            // Event listeners para contadores
+            preguntaInput.addEventListener('input', () => updateCounter(preguntaInput, preguntaCounter, 1000));
+            respuestaInput.addEventListener('input', () => updateCounter(respuestaInput, respuestaCounter, 2000));
+            pistaInput.addEventListener('input', () => updateCounter(pistaInput, pistaCounter, 500));
+
+            // Función para actualizar vista previa
+            function updatePreview() {
+                if (!previewVisible) return;
+
+                preguntaPreview.textContent = preguntaInput.value || 'Sin pregunta...';
+                respuestaPreview.textContent = respuestaInput.value || 'Sin respuesta...';
+                
+                if (pistaInput.value.trim()) {
+                    pistaTextoPreview.textContent = pistaInput.value;
+                    pistaPreview.style.display = 'block';
+                } else {
+                    pistaPreview.style.display = 'none';
+                }
+            }
+
+            // Toggle vista previa
+            togglePreview.addEventListener('click', function() {
+                previewVisible = !previewVisible;
+                
+                if (previewVisible) {
+                    previsualizacion.style.display = 'block';
+                    togglePreview.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Ocultar Vista Previa';
+                    updatePreview();
+                } else {
+                    previsualizacion.style.display = 'none';
+                    togglePreview.innerHTML = '<i class="fas fa-eye me-1"></i>Mostrar Vista Previa';
+                }
+            });
+
+            // Event listeners para actualizar vista previa
+            preguntaInput.addEventListener('input', updatePreview);
+            respuestaInput.addEventListener('input', updatePreview);
+            pistaInput.addEventListener('input', updatePreview);
+
+            // Validación del formulario
+            const form = document.getElementById('flashcardForm');
+            form.addEventListener('submit', function(e) {
+                const materiaSeleccionada = materiaSelect.value;
+                const pregunta = preguntaInput.value.trim();
+                const respuesta = respuestaInput.value.trim();
+
+                if (!materiaSeleccionada || !pregunta || !respuesta) {
+                    e.preventDefault();
+                    alert('Por favor, completa todos los campos obligatorios.');
+                    return false;
+                }
+
+                // Mostrar loading
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creando...';
+            });
+
+            // Inicializar contadores
+            updateCounter(preguntaInput, preguntaCounter, 1000);
+            updateCounter(respuestaInput, respuestaCounter, 2000);
+            updateCounter(pistaInput, pistaCounter, 500);
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .btn-outline-orange {
+            color: #fd7e14;
+            border-color: #fd7e14;
+        }
+        
+        .btn-outline-orange:hover,
+        .btn-outline-orange:focus,
+        .btn-outline-orange:active,
+        .btn-outline-orange.active,
+        .btn-check:checked + .btn-outline-orange {
+            color: white;
+            background-color: #fd7e14;
+            border-color: #fd7e14;
+        }
+        
+        .form-control:focus,
+        .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-check:checked + .btn {
+            transform: scale(1.05);
+            transition: all 0.2s ease;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        #previsualizacion {
+            border-color: #667eea !important;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+}

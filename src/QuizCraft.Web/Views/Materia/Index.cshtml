@@ -79,10 +79,12 @@
                                     <!-- Estadísticas -->
                                     <div class="row text-center mb-3 mt-auto">
                                         <div class="col-6">
-                                            <div class="p-2 bg-light rounded">
-                                                <div class="fw-bold text-primary">@materia.TotalFlashcards</div>
-                                                <small class="text-muted">Flashcards</small>
-                                            </div>
+                                            <a asp-controller="Flashcard" asp-action="Index" asp-route-materiaId="@materia.Id" class="text-decoration-none">
+                                                <div class="p-2 bg-light rounded hover-card">
+                                                    <div class="fw-bold text-primary">@materia.TotalFlashcards</div>
+                                                    <small class="text-muted">Flashcards</small>
+                                                </div>
+                                            </a>
                                         </div>
                                         <div class="col-6">
                                             <div class="p-2 bg-light rounded">
@@ -163,4 +165,22 @@
             });
         });
     </script>
+}
+
+@section Styles {
+    <style>
+        .hover-card {
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .hover-card:hover {
+            background-color: #e9ecef !important;
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .text-decoration-none:hover {
+            text-decoration: none !important;
+        }
+    </style>
 }
