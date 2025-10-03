@@ -24,7 +24,7 @@
                         <h5 class="card-title">Materias</h5>
                         <h2 class="text-primary">@Model.TotalMaterias</h2>
                         <p class="card-text">Materias organizadas</p>
-                        <a href="#" class="btn btn-primary">Ver Materias</a>
+                        <a asp-controller="Materia" asp-action="Index" class="btn btn-primary">Ver Materias</a>
                     </div>
                 </div>
             </div>
@@ -35,7 +35,7 @@
                         <h5 class="card-title">Flashcards</h5>
                         <h2 class="text-success">@Model.TotalFlashcards</h2>
                         <p class="card-text">Tarjetas de estudio</p>
-                        <a href="#" class="btn btn-success">Estudiar</a>
+                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-success">Estudiar</a>
                     </div>
                 </div>
             </div>
@@ -46,7 +46,7 @@
                         <h5 class="card-title">Quizzes</h5>
                         <h2 class="text-warning">@Model.QuizzesRecientes.Count</h2>
                         <p class="card-text">Quizzes recientes</p>
-                        <a href="#" class="btn btn-warning">Realizar Quiz</a>
+                        <a asp-controller="Quiz" asp-action="Index" class="btn btn-warning">Realizar Quiz</a>
                     </div>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                                         </div>
                                         <div>
                                             <span class="badge badge-primary">@quiz.NumeroPreguntas preguntas</span>
-                                            <a href="#" class="btn btn-sm btn-outline-primary ml-2">Realizar</a>
+                                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.Id" class="btn btn-sm btn-outline-primary ml-2">Realizar</a>
                                         </div>
                                     </div>
                                 }

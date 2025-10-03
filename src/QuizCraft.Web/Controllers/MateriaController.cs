@@ -35,18 +35,26 @@ namespace QuizCraft.Web.Controllers
                 var estadisticasGenerales = await _unitOfWork.MateriaRepository.GetEstadisticasGeneralesByUsuarioAsync(user.Id);
                 var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
                 
-                var materiasViewModel = materias.Select(m => new MateriaViewModel
+                var materiasViewModel = new List<MateriaViewModel>();
+                
+                foreach (var m in materias)
                 {
-                    Id = m.Id,
-                    Nombre = m.Nombre,
-                    Descripcion = m.Descripcion,
-                    Color = m.Color,
-                    Icono = m.Icono,
-                    FechaCreacion = m.FechaCreacion,
-                    EstaActivo = m.EstaActivo,
-                    TotalFlashcards = estadisticasGenerales.ContainsKey(m.Id) ? estadisticasGenerales[m.Id] : 0,
-                    TotalQuizzes = 0 // Por ahora, hasta que implementemos los quizzes
-                }).ToList();
+                    // Obtener estadísticas de quizzes por materia
+                    var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByMateriaIdAsync(m.Id);
+                    
+                    materiasViewModel.Add(new MateriaViewModel
+                    {
+                        Id = m.Id,
+                        Nombre = m.Nombre,
+                        Descripcion = m.Descripcion,
+                        Color = m.Color,
+                        Icono = m.Icono,
+                        FechaCreacion = m.FechaCreacion,
+                        EstaActivo = m.EstaActivo,
+                        TotalFlashcards = estadisticasGenerales.ContainsKey(m.Id) ? estadisticasGenerales[m.Id] : 0,
+                        TotalQuizzes = quizzes.Count()
+                    });
+                }
 
                 return View(materiasViewModel);
             }

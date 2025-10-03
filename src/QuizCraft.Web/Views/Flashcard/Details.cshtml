@@ -146,6 +146,10 @@
                     <i class="fas fa-play me-1"></i>
                     Iniciar Repaso
                 </button>
+                <a asp-controller="Quiz" asp-action="Create" asp-route-materiaId="@Model.MateriaId" class="btn btn-outline-warning">
+                    <i class="fas fa-question-circle me-1"></i>
+                    Crear Quiz
+                </a>
                 <button type="button" class="btn btn-outline-info" onclick="duplicarFlashcard()">
                     <i class="fas fa-copy me-1"></i>
                     Duplicar

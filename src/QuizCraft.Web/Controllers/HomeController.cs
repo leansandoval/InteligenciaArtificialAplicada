@@ -35,20 +35,27 @@ public class HomeController : Controller
     {
         try
         {
-            var model = new HomeIndexViewModel();
+            var model = new HomeIndexViewModel
+            {
+                EsUsuarioAutenticado = User.Identity?.IsAuthenticated == true
+            };
 
+            // Si el usuario está autenticado, cargar sus datos
             if (User.Identity?.IsAuthenticated == true)
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user != null)
                 {
+                    // Obtener estadísticas del usuario
+                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
+                    var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
+                    var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
+
                     model.NombreUsuario = user.NombreCompleto;
-                    model.EsUsuarioAutenticado = true;
-                    
-                    // Por ahora, usar valores de ejemplo hasta que arreglemos el UnitOfWork
-                    model.TotalMaterias = 0;
-                    model.TotalFlashcards = 0;
-                    model.QuizzesRecientes = new List<Core.Entities.Quiz>();
+                    model.TotalMaterias = materias.Count();
+                    model.TotalFlashcards = flashcards.Count();
+                    model.TotalQuizzes = quizzes.Count();
+                    model.QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(5).ToList();
                 }
             }
 
@@ -58,6 +65,46 @@ public class HomeController : Controller
         {
             _logger.LogError(ex, "Error al cargar la página de inicio");
             return View(new HomeIndexViewModel());
+        }
+    }
+
+    /// <summary>
+    /// FUNC_MostrarPaginaHome - Página de inicio para todos los usuarios
+    /// </summary>
+    public async Task<IActionResult> Home()
+    {
+        try
+        {
+            var model = new HomeIndexViewModel
+            {
+                EsUsuarioAutenticado = User.Identity?.IsAuthenticated == true
+            };
+
+            // Si el usuario está autenticado, cargar sus datos
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user != null)
+                {
+                    // Obtener estadísticas del usuario
+                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
+                    var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
+                    var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
+
+                    model.NombreUsuario = user.NombreCompleto;
+                    model.TotalMaterias = materias.Count();
+                    model.TotalFlashcards = flashcards.Count();
+                    model.TotalQuizzes = quizzes.Count();
+                    model.QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(5).ToList();
+                }
+            }
+
+            return View("Index", model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al cargar la página de inicio");
+            return View("Index", new HomeIndexViewModel());
         }
     }
 
@@ -79,9 +126,11 @@ public class HomeController : Controller
             // Obtener estadísticas dinámicas del usuario
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
             var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
+            var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
             
             ViewBag.TotalMaterias = materias.Count();
             ViewBag.TotalFlashcards = flashcards.Count();
+            ViewBag.TotalQuizzes = quizzes.Count();
             ViewBag.NombreUsuario = user.NombreCompleto;
 
             var model = new DashboardViewModel
@@ -91,8 +140,9 @@ public class HomeController : Controller
                 
                 TotalMaterias = materias.Count(),
                 TotalFlashcards = flashcards.Count(),
+                TotalQuizzes = quizzes.Count(),
                 FlashcardsParaRevisar = flashcards.Count(f => f.ProximaRevision <= DateTime.Now),
-                QuizzesRecientes = new List<Core.Entities.Quiz>(),
+                QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(5).ToList(),
                 MateriasRecientes = materias.OrderByDescending(m => m.FechaCreacion).Take(3).ToList()
             };
 
@@ -106,6 +156,7 @@ public class HomeController : Controller
             // En caso de error, usar valores por defecto
             ViewBag.TotalMaterias = 0;
             ViewBag.TotalFlashcards = 0;
+            ViewBag.TotalQuizzes = 0;
             ViewBag.NombreUsuario = User.Identity?.Name ?? "Usuario";
             
             return View(new DashboardViewModel
@@ -114,6 +165,7 @@ public class HomeController : Controller
                 FechaUltimoAcceso = "Error",
                 TotalMaterias = 0,
                 TotalFlashcards = 0,
+                TotalQuizzes = 0,
                 FlashcardsParaRevisar = 0,
                 QuizzesRecientes = new List<Core.Entities.Quiz>(),
                 MateriasRecientes = new List<Core.Entities.Materia>()
@@ -135,6 +187,17 @@ public class HomeController : Controller
     public IActionResult Privacy()
     {
         return View();
+    }
+
+    /// <summary>
+    /// FUNC_MostrarEstadisticas - Página de estadísticas del usuario
+    /// </summary>
+    [Authorize]
+    public IActionResult Statistics()
+    {
+        // Por ahora, redirigir al Dashboard
+        // En el futuro se puede crear una vista específica de estadísticas
+        return RedirectToAction("Dashboard");
     }
 
     /// <summary>

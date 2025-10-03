@@ -87,10 +87,12 @@
                                             </a>
                                         </div>
                                         <div class="col-6">
-                                            <div class="p-2 bg-light rounded">
-                                                <div class="fw-bold text-success">@materia.TotalQuizzes</div>
-                                                <small class="text-muted">Quizzes</small>
-                                            </div>
+                                            <a asp-controller="Quiz" asp-action="Index" asp-route-materiaId="@materia.Id" class="text-decoration-none">
+                                                <div class="p-2 bg-light rounded hover-card">
+                                                    <div class="fw-bold text-success">@materia.TotalQuizzes</div>
+                                                    <small class="text-muted">Quizzes</small>
+                                                </div>
+                                            </a>
                                         </div>
                                     </div>
 

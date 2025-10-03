@@ -1,0 +1,292 @@
+@model QuizCraft.Application.ViewModels.QuizIndexViewModel
+@{
+    ViewData["Title"] = "Mis Quizzes";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-question-circle text-primary me-2"></i>
+                    Mis Quizzes
+                </h2>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    Crear Nuevo Quiz
+                </a>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="filtroMateria" class="form-label">Filtrar por Materia</label>
+                            <select name="filtroMateria" id="filtroMateria" class="form-select">
+                                <option value="">Todas las materias</option>
+                                @foreach (var materia in Model.MateriasDisponibles)
+                                {
+                                    <option value="@materia.Id" selected="@(Model.MateriaSeleccionada == materia.Id)">
+                                        @materia.Nombre (@materia.TotalFlashcards flashcards)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-filter me-1"></i>
+                                Filtrar
+                            </button>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="text-muted">
+                                Total: @Model.TotalQuizzes quizzes
+                            </span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" id="quizTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="mis-quizzes-tab" data-bs-toggle="tab" 
+                            data-bs-target="#mis-quizzes" type="button" role="tab">
+                        <i class="fas fa-user me-1"></i>
+                        Mis Quizzes (@Model.QuizzesCreados.Count)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="publicos-tab" data-bs-toggle="tab" 
+                            data-bs-target="#publicos" type="button" role="tab">
+                        <i class="fas fa-globe me-1"></i>
+                        Quizzes Públicos (@Model.QuizzesPublicos.Count)
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="quizTabsContent">
+                <!-- Mis Quizzes -->
+                <div class="tab-pane fade show active" id="mis-quizzes" role="tabpanel">
+                    @if (Model.QuizzesCreados.Any())
+                    {
+                        <div class="row">
+                            @foreach (var quiz in Model.QuizzesCreados)
+                            {
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-primary">@quiz.MateriaNombre</span>
+                                            <span class="badge bg-secondary">@quiz.Dificultad</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <h5 class="card-title">@quiz.Titulo</h5>
+                                            @if (!string.IsNullOrEmpty(quiz.Descripcion))
+                                            {
+                                                <p class="card-text text-muted small">
+                                                    @(quiz.Descripcion.Length > 100 ? quiz.Descripcion.Substring(0, 100) + "..." : quiz.Descripcion)
+                                                </p>
+                                            }
+                                            
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-question me-1"></i>
+                                                        @quiz.NumeroPreguntas preguntas
+                                                    </small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        @if (quiz.TiempoLimite > 0)
+                                                        {
+                                                            <text>@quiz.TiempoLimite min</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>Sin límite</text>
+                                                        }
+                                                    </small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-chart-line me-1"></i>
+                                                        @quiz.TotalResultados realizaciones
+                                                    </small>
+                                                </div>
+                                                <div class="col-6">
+                                                    @if (quiz.EsPublico)
+                                                    {
+                                                        <span class="badge bg-success">Público</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-warning">Privado</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="btn-group w-100" role="group">
+                                                <a asp-action="Details" asp-route-id="@quiz.Id" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a asp-action="Take" asp-route-id="@quiz.Id" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-play me-1"></i>
+                                                    Realizar
+                                                </a>
+                                                <a asp-action="Delete" asp-route-id="@quiz.Id" 
+                                                   class="btn btn-outline-danger btn-sm">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            </div>
+                                            <small class="text-muted d-block mt-2 text-center">
+                                                Creado: @quiz.FechaCreacion.ToString("dd/MM/yyyy")
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No has creado ningún quiz aún</h4>
+                            <p class="text-muted">Crea tu primer quiz para empezar a evaluar tus conocimientos</p>
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>
+                                Crear Mi Primer Quiz
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <!-- Quizzes Públicos -->
+                <div class="tab-pane fade" id="publicos" role="tabpanel">
+                    @if (Model.QuizzesPublicos.Any())
+                    {
+                        <div class="row">
+                            @foreach (var quiz in Model.QuizzesPublicos)
+                            {
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-info">@quiz.MateriaNombre</span>
+                                            <span class="badge bg-secondary">@quiz.Dificultad</span>
+                                        </div>
+                                        <div class="card-body">
+                                            <h5 class="card-title">@quiz.Titulo</h5>
+                                            @if (!string.IsNullOrEmpty(quiz.Descripcion))
+                                            {
+                                                <p class="card-text text-muted small">
+                                                    @(quiz.Descripcion.Length > 100 ? quiz.Descripcion.Substring(0, 100) + "..." : quiz.Descripcion)
+                                                </p>
+                                            }
+                                            
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-question me-1"></i>
+                                                        @quiz.NumeroPreguntas preguntas
+                                                    </small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        @if (quiz.TiempoLimite > 0)
+                                                        {
+                                                            <text>@quiz.TiempoLimite min</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>Sin límite</text>
+                                                        }
+                                                    </small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user me-1"></i>
+                                                        @quiz.CreadorNombre
+                                                    </small>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-chart-line me-1"></i>
+                                                        @quiz.TotalResultados realizaciones
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            @if (quiz.YaRealizado && quiz.UltimoResultado.HasValue)
+                                            {
+                                                <div class="alert alert-info py-1 px-2 mb-2">
+                                                    <small>
+                                                        <i class="fas fa-check-circle me-1"></i>
+                                                        Ya realizado: @quiz.UltimoResultado%
+                                                    </small>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="btn-group w-100" role="group">
+                                                <a asp-action="Details" asp-route-id="@quiz.Id" 
+                                                   class="btn btn-outline-info btn-sm">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a asp-action="Take" asp-route-id="@quiz.Id" 
+                                                   class="btn btn-info btn-sm">
+                                                    <i class="fas fa-play me-1"></i>
+                                                    @(quiz.YaRealizado ? "Repetir" : "Realizar")
+                                                </a>
+                                                @if (quiz.YaRealizado)
+                                                {
+                                                    <a asp-action="Results" asp-route-id="@quiz.Id" 
+                                                       class="btn btn-outline-success btn-sm">
+                                                        <i class="fas fa-chart-bar"></i>
+                                                    </a>
+                                                }
+                                            </div>
+                                            <small class="text-muted d-block mt-2 text-center">
+                                                Por @quiz.CreadorNombre - @quiz.FechaCreacion.ToString("dd/MM/yyyy")
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-globe fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No hay quizzes públicos disponibles</h4>
+                            <p class="text-muted">Sé el primero en crear un quiz público para que otros usuarios puedan practicar</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Mantener la tab activa al filtrar
+            var activeTab = localStorage.getItem('activeQuizTab');
+            if (activeTab) {
+                $('#' + activeTab).tab('show');
+            }
+
+            // Guardar la tab activa
+            $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                localStorage.setItem('activeQuizTab', e.target.id);
+            });
+        });
+    </script>
+}

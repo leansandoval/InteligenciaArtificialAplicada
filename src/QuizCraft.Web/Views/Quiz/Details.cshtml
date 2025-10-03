@@ -1,0 +1,431 @@
+@model QuizCraft.Application.ViewModels.QuizDetailsViewModel
+@{
+    ViewData["Title"] = Model.Titulo;
+}
+
+<div class="container">
+    <div class="row">
+        <!-- Información Principal del Quiz -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-quiz me-2"></i>
+                            @Model.Titulo
+                        </h4>
+                        <div class="d-flex gap-2">
+                            @if (Model.PuedeEditar)
+                            {
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-light btn-sm">
+                                    <i class="fas fa-edit me-1"></i>
+                                    Editar
+                                </a>
+                            }
+                            @if (Model.PuedeEliminar)
+                            {
+                                <button type="button" class="btn btn-outline-light btn-sm" 
+                                        onclick="confirmarEliminacion(@Model.Id, '@Model.Titulo')">
+                                    <i class="fas fa-trash me-1"></i>
+                                    Eliminar
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-book me-1"></i>
+                                Materia
+                            </h6>
+                            <p class="mb-0">@Model.MateriaNombre</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-user me-1"></i>
+                                Creado por
+                            </h6>
+                            <p class="mb-0">@Model.CreadorNombre</p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Descripcion))
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-2">
+                                <i class="fas fa-align-left me-1"></i>
+                                Descripción
+                            </h6>
+                            <p class="text-justify">@Model.Descripcion</p>
+                        </div>
+                    }
+
+                    <div class="row text-center">
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-primary mb-1">@Model.CantidadPreguntas</h4>
+                                <small class="text-muted">Preguntas</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-info mb-1">
+                                    @if (Model.TiempoPorPregunta.HasValue)
+                                    {
+                                        @Model.TiempoPorPregunta
+                                    }
+                                    else
+                                    {
+                                        <span>∞</span>
+                                    }
+                                </h4>
+                                <small class="text-muted">Seg/Pregunta</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-warning mb-1">@Model.NivelDificultad</h4>
+                                <small class="text-muted">Dificultad</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-success mb-1">@Model.CantidadIntentos</h4>
+                                <small class="text-muted">Intentos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preguntas del Quiz -->
+            @if (Model.MostrarPreguntas && Model.Preguntas.Any())
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Preguntas del Quiz
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="accordionPreguntas">
+                            @for (int i = 0; i < Model.Preguntas.Count; i++)
+                            {
+                                var pregunta = Model.Preguntas[i];
+                                <div class="accordion-item mb-2">
+                                    <h2 class="accordion-header" id="heading@i">
+                                        <button class="accordion-button collapsed" type="button" 
+                                                data-bs-toggle="collapse" data-bs-target="#collapse@i">
+                                            <strong>Pregunta @(i + 1):</strong>
+                                            <span class="ms-2">@pregunta.TextoPregunta</span>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse@i" class="accordion-collapse collapse" 
+                                         data-bs-parent="#accordionPreguntas">
+                                        <div class="accordion-body">
+                                            <div class="row">
+                                                @foreach (var opcion in pregunta.Opciones)
+                                                {
+                                                    var letra = pregunta.Opciones.IndexOf(opcion) switch {
+                                                        0 => "A",
+                                                        1 => "B",
+                                                        2 => "C", 
+                                                        3 => "D",
+                                                        _ => "X"
+                                                    };
+
+                                                    <div class="col-md-6 mb-2">
+                                                        <div class="border rounded p-2 @(opcion.EsCorrecta ? "border-success bg-success bg-opacity-10" : "")">
+                                                            <small>
+                                                                <strong>@letra)</strong> @opcion.Texto
+                                                                @if (opcion.EsCorrecta)
+                                                                {
+                                                                    <i class="fas fa-check text-success ms-1"></i>
+                                                                }
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                            
+                                            @if (!string.IsNullOrEmpty(pregunta.Explicacion))
+                                            {
+                                                <div class="mt-3 p-2 bg-light rounded">
+                                                    <small>
+                                                        <i class="fas fa-lightbulb text-warning me-1"></i>
+                                                        <strong>Explicación:</strong> @pregunta.Explicacion
+                                                    </small>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Panel Lateral -->
+        <div class="col-lg-4">
+            <!-- Acciones del Quiz -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-play me-1"></i>
+                        Acciones
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.PuedeRealizarQuiz)
+                    {
+                        <a asp-action="Take" asp-route-id="@Model.Id" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-play me-1"></i>
+                            Realizar Quiz
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-2">
+                            <small>
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                @Model.MensajeNoDisponible
+                            </small>
+                        </div>
+                    }
+
+                    <a asp-action="Index" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Volver a la Lista
+                    </a>
+
+                    @if (Model.UltimoResultado != null)
+                    {
+                        <a asp-action="Results" asp-route-id="@Model.UltimoResultado" class="btn btn-outline-info w-100">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Ver Último Resultado
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Información
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Fecha de Creación</small>
+                        <strong>@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</strong>
+                    </div>
+
+                    @if (Model.FechaActualizacion.HasValue)
+                    {
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Última Actualización</small>
+                            <strong>@Model.FechaActualizacion.Value.ToString("dd/MM/yyyy HH:mm")</strong>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Estado</small>
+                        <span class="badge bg-@(Model.EsPublico ? "success" : "secondary")">
+                            @(Model.EsPublico ? "Público" : "Privado")
+                        </span>
+                    </div>
+
+                    @if (Model.TotalIntentos > 0)
+                    {
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Total de Intentos</small>
+                            <strong>@Model.TotalIntentos</strong>
+                        </div>
+                    }
+
+                    @if (Model.PromedioCalificacion.HasValue)
+                    {
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Promedio de Calificaciones</small>
+                            <div class="d-flex align-items-center">
+                                <strong>@Model.PromedioCalificacion.Value.ToString("F1")%</strong>
+                                <div class="ms-2">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        var percentage = Model.PromedioCalificacion.Value / 20; // Convertir 0-100 a 0-5
+                                        if (i <= percentage)
+                                        {
+                                            <i class="fas fa-star text-warning"></i>
+                                        }
+                                        else if (i - 0.5 <= percentage)
+                                        {
+                                            <i class="fas fa-star-half-alt text-warning"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="far fa-star text-warning"></i>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Mis Resultados -->
+            @if (Model.MisResultados.Any())
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-history me-1"></i>
+                            Mis Resultados
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var resultado in Model.MisResultados.Take(5))
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                                <div>
+                                    <small class="text-muted">@resultado.FechaRealizacion.ToString("dd/MM/yyyy HH:mm")</small>
+                                    <div class="fw-bold">@resultado.PorcentajeAcierto%</div>
+                                </div>
+                                <a asp-action="Results" asp-route-id="@resultado.Id" class="btn btn-sm btn-outline-primary">
+                                    Ver
+                                </a>
+                            </div>
+                        }
+                        
+                        @if (Model.MisResultados.Count > 5)
+                        {
+                            <div class="text-center mt-2">
+                                <small class="text-muted">Y @(Model.MisResultados.Count - 5) más...</small>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar el quiz <strong id="quizTituloEliminar"></strong>?</p>
+                <p class="text-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Esta acción no se puede deshacer. Se eliminarán todos los resultados asociados.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmarEliminacion(quizId, titulo) {
+            document.getElementById('quizTituloEliminar').textContent = titulo;
+            document.getElementById('deleteForm').action = '@Url.Action("Delete", "Quiz")/' + quizId;
+            
+            var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            deleteModal.show();
+        }
+
+        // Funcionalidad para expandir/colapsar todas las preguntas
+        $(document).ready(function() {
+            // Agregar botón para expandir/colapsar todo
+            if ($('.accordion-item').length > 0) {
+                const toggleAllBtn = `
+                    <div class="mb-3 text-end">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleAllQuestions()">
+                            <i class="fas fa-expand-arrows-alt me-1"></i>
+                            <span id="toggleText">Expandir Todo</span>
+                        </button>
+                    </div>
+                `;
+                $('.accordion').before(toggleAllBtn);
+            }
+        });
+
+        let allExpanded = false;
+        function toggleAllQuestions() {
+            const collapses = document.querySelectorAll('#accordionPreguntas .accordion-collapse');
+            const toggleText = document.getElementById('toggleText');
+            
+            collapses.forEach(collapse => {
+                if (allExpanded) {
+                    bootstrap.Collapse.getOrCreateInstance(collapse).hide();
+                } else {
+                    bootstrap.Collapse.getOrCreateInstance(collapse).show();
+                }
+            });
+            
+            allExpanded = !allExpanded;
+            toggleText.textContent = allExpanded ? 'Colapsar Todo' : 'Expandir Todo';
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .accordion-button:not(.collapsed) {
+            background-color: rgba(13, 110, 253, 0.1);
+            border-color: rgba(13, 110, 253, 0.25);
+        }
+        
+        .accordion-button:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .bg-opacity-10 {
+            background-color: rgba(25, 135, 84, 0.1) !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+        }
+        
+        .btn {
+            border-radius: 6px;
+        }
+        
+        .alert {
+            border-radius: 6px;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+        }
+        
+        .text-justify {
+            text-align: justify;
+        }
+    </style>
+}

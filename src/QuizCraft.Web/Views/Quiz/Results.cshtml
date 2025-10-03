@@ -1,0 +1,358 @@
+@model QuizCraft.Application.ViewModels.QuizResultsViewModel
+@{
+    ViewData["Title"] = "Resultados del Quiz";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Encabezado de Resultados -->
+            <div class="text-center mb-4">
+                <h1 class="display-4 mb-2">
+                    <i class="fas fa-chart-line text-primary me-2"></i>
+                    Resultados del Quiz
+                </h1>
+                <h3 class="text-muted">@Model.Titulo</h3>
+                <p class="lead text-muted">@Model.MateriaNombre</p>
+            </div>
+
+            <!-- Tarjeta Principal de Resultados -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-@Model.ColorResultado text-white text-center py-4">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h2 class="display-3 mb-0">@Model.PorcentajeAcierto<small class="fs-4">%</small></h2>
+                            <p class="mb-0">Puntuación</p>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center justify-content-center">
+                            <div>
+                                <h4 class="mb-1">@Model.MensajeResultado</h4>
+                                <p class="mb-0 opacity-75">
+                                    @Model.RespuestasCorrectas de @Model.TotalPreguntas preguntas correctas
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="mb-0">
+                                @if (Model.TiempoTotal.Hours > 0)
+                                {
+                                    @($"{Model.TiempoTotal.Hours:D2}:{Model.TiempoTotal.Minutes:D2}:{Model.TiempoTotal.Seconds:D2}")
+                                }
+                                else
+                                {
+                                    @($"{Model.TiempoTotal.Minutes:D2}:{Model.TiempoTotal.Seconds:D2}")
+                                }
+                            </h3>
+                            <p class="mb-0">Tiempo Total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <i class="fas fa-question-circle fa-2x text-primary mb-2"></i>
+                                <h5>@Model.TotalPreguntas</h5>
+                                <small class="text-muted">Total Preguntas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                <h5>@Model.RespuestasCorrectas</h5>
+                                <small class="text-muted">Correctas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                                <h5>@(Model.TotalPreguntas - Model.RespuestasCorrectas)</h5>
+                                <small class="text-muted">Incorrectas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                                <h5>@Model.PuntuacionTotal</h5>
+                                <small class="text-muted">Puntos</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico de Progreso -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">Progreso</span>
+                            <span class="text-muted">@Model.PorcentajeAcierto% completado</span>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: @Model.PorcentajeAcierto%" 
+                                 aria-valuenow="@Model.PorcentajeAcierto" aria-valuemin="0" aria-valuemax="100">
+                                @Model.PorcentajeAcierto%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-2">
+                            <a asp-action="Take" asp-route-id="@Model.QuizId" class="btn btn-primary w-100">
+                                <i class="fas fa-redo me-1"></i>
+                                Repetir Quiz
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-action="Index" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-list me-1"></i>
+                                Mis Quizzes
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-info w-100">
+                                <i class="fas fa-cards-blank me-1"></i>
+                                Repasar Flashcards
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button type="button" class="btn btn-outline-success w-100" onclick="compartirResultados()">
+                                <i class="fas fa-share me-1"></i>
+                                Compartir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalle de Respuestas -->
+            @if (Model.MostrarRespuestasDetalle && Model.DetalleRespuestas.Any())
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link text-decoration-none" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#detalleRespuestas">
+                                <i class="fas fa-eye me-1"></i>
+                                Ver Detalle de Respuestas
+                                <i class="fas fa-chevron-down ms-1"></i>
+                            </button>
+                        </h5>
+                    </div>
+                    <div class="collapse" id="detalleRespuestas">
+                        <div class="card-body">
+                            @foreach (var respuesta in Model.DetalleRespuestas)
+                            {
+                                <div class="card mb-3 @(respuesta.EsCorrecta ? "border-success" : "border-danger")">
+                                    <div class="card-header d-flex justify-content-between align-items-center
+                                                @(respuesta.EsCorrecta ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
+                                        <span class="fw-bold">
+                                            Pregunta @respuesta.Orden
+                                            @if (respuesta.EsCorrecta)
+                                            {
+                                                <i class="fas fa-check-circle text-success ms-1"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-times-circle text-danger ms-1"></i>
+                                            }
+                                        </span>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            @respuesta.TiempoRespuesta seg
+                                        </small>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">@respuesta.Pregunta</h6>
+                                        
+                                        <div class="row">
+                                            @foreach (var opcion in respuesta.TodasLasOpciones)
+                                            {
+                                                var letra = respuesta.TodasLasOpciones.IndexOf(opcion) switch {
+                                                    0 => "A",
+                                                    1 => "B", 
+                                                    2 => "C",
+                                                    3 => "D",
+                                                    _ => "X"
+                                                };
+
+                                                var claseOpcion = "";
+                                                var icono = "";
+                                                
+                                                if (opcion.EsCorrecta)
+                                                {
+                                                    claseOpcion = "border-success bg-success bg-opacity-10";
+                                                    icono = "<i class='fas fa-check text-success'></i>";
+                                                }
+                                                else if (opcion.Texto == respuesta.RespuestaUsuario && !respuesta.EsCorrecta)
+                                                {
+                                                    claseOpcion = "border-danger bg-danger bg-opacity-10";
+                                                    icono = "<i class='fas fa-times text-danger'></i>";
+                                                }
+                                                else
+                                                {
+                                                    claseOpcion = "border-light";
+                                                }
+
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="border rounded p-2 @claseOpcion">
+                                                        <small>
+                                                            <strong>@letra)</strong> @opcion.Texto
+                                                            @Html.Raw(icono)
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        @if (!respuesta.EsCorrecta)
+                                        {
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <strong>Tu respuesta:</strong> @respuesta.RespuestaUsuario<br>
+                                                    <strong>Respuesta correcta:</strong> @respuesta.RespuestaCorrecta
+                                                </small>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrEmpty(respuesta.Explicacion))
+                                        {
+                                            <div class="mt-2 p-2 bg-light rounded">
+                                                <small>
+                                                    <i class="fas fa-lightbulb text-warning me-1"></i>
+                                                    <strong>Explicación:</strong> @respuesta.Explicacion
+                                                </small>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Información Adicional -->
+            <div class="text-center mt-4 mb-5">
+                <small class="text-muted">
+                    Quiz realizado el @Model.FechaRealizacion.ToString("dd/MM/yyyy 'a las' HH:mm")
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function compartirResultados() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Mis resultados en @Model.Titulo',
+                    text: 'Obtuve @Model.PorcentajeAcierto% en el quiz "@Model.Titulo" (@Model.RespuestasCorrectas/@Model.TotalPreguntas correctas)',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback para navegadores que no soportan Web Share API
+                const texto = `Obtuve ${@Model.PorcentajeAcierto}% en el quiz "${@Html.Raw(Json.Serialize(Model.Titulo))}" (${@Model.RespuestasCorrectas}/${@Model.TotalPreguntas} correctas)`;
+                
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(texto + ' - ' + window.location.href).then(function() {
+                        alert('¡Resultado copiado al portapapeles!');
+                    });
+                } else {
+                    // Fallback manual
+                    const textArea = document.createElement('textarea');
+                    textArea.value = texto + ' - ' + window.location.href;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('¡Resultado copiado al portapapeles!');
+                }
+            }
+        }
+
+        // Animación de entrada para las estadísticas
+        $(document).ready(function() {
+            $('.display-3').each(function() {
+                const $this = $(this);
+                const countTo = parseInt($this.text());
+                
+                $({ countNum: 0 }).animate({
+                    countNum: countTo
+                }, {
+                    duration: 2000,
+                    easing: 'swing',
+                    step: function() {
+                        $this.html(Math.floor(this.countNum) + '<small class="fs-4">%</small>');
+                    },
+                    complete: function() {
+                        $this.html(countTo + '<small class="fs-4">%</small>');
+                    }
+                });
+            });
+
+            // Animar barra de progreso
+            setTimeout(function() {
+                $('.progress-bar').css('width', '0%').animate({
+                    width: '@Model.PorcentajeAcierto%'
+                }, 1500);
+            }, 500);
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .display-3 {
+            font-weight: 700;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+        }
+        
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+        }
+        
+        .progress {
+            border-radius: 10px;
+            background-color: #e9ecef;
+        }
+        
+        .progress-bar {
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .shadow-lg {
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+        }
+        
+        .bg-opacity-10 {
+            background-color: rgba(var(--bs-success-rgb), 0.1) !important;
+        }
+        
+        .border-success.bg-success.bg-opacity-10 {
+            background-color: rgba(25, 135, 84, 0.1) !important;
+        }
+        
+        .border-danger.bg-danger.bg-opacity-10 {
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+
+        .collapse .card {
+            transition: all 0.3s ease;
+        }
+    </style>
+}

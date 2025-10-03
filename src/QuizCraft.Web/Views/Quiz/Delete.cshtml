@@ -1,0 +1,337 @@
+@model QuizCraft.Application.ViewModels.QuizDetailsViewModel
+@{
+    ViewData["Title"] = "Eliminar Quiz";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Eliminación
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Información del Quiz a Eliminar -->
+                    <div class="text-center mb-4">
+                        <h4 class="text-danger mb-3">¿Estás seguro de que deseas eliminar este quiz?</h4>
+                        
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">
+                                    <i class="fas fa-quiz me-2"></i>
+                                    @Model.Titulo
+                                </h5>
+                                <p class="card-text text-muted mb-2">
+                                    <i class="fas fa-book me-1"></i>
+                                    Materia: @Model.MateriaNombre
+                                </p>
+                                <p class="card-text text-muted mb-2">
+                                    <i class="fas fa-user me-1"></i>
+                                    Creado por: @Model.CreadorNombre
+                                </p>
+                                <p class="card-text text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Fecha de creación: @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas del Quiz -->
+                    <div class="row text-center mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-primary mb-1">@Model.CantidadPreguntas</h4>
+                                <small class="text-muted">Preguntas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-info mb-1">@Model.CantidadIntentos</h4>
+                                <small class="text-muted">Intentos Realizados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-warning mb-1">@Model.MisResultados.Count</h4>
+                                <small class="text-muted">Mis Resultados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="bg-light rounded p-3">
+                                <h4 class="text-success mb-1">
+                                    @if (Model.PromedioCalificacion.HasValue)
+                                    {
+                                        @Model.PromedioCalificacion.Value.ToString("F1")<small>%</small>
+                                    }
+                                    else
+                                    {
+                                        <span>N/A</span>
+                                    }
+                                </h4>
+                                <small class="text-muted">Promedio</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advertencias -->
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            ¡Atención! Esta acción es irreversible
+                        </h6>
+                        <hr>
+                        <ul class="mb-0">
+                            <li>Se eliminará permanentemente el quiz y todas sus preguntas</li>
+                            <li>Se eliminarán todos los resultados asociados (@Model.CantidadIntentos intentos)</li>
+                            <li>Los usuarios que hayan realizado este quiz perderán su historial</li>
+                            <li>Esta acción no se puede deshacer</li>
+                        </ul>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Descripcion))
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-2">Descripción del Quiz:</h6>
+                            <div class="border rounded p-3 bg-light">
+                                <p class="mb-0 text-muted">@Model.Descripcion</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Últimos Resultados -->
+                    @if (Model.MisResultados.Any())
+                    {
+                        <div class="mb-4">
+                            <h6 class="text-muted mb-3">Mis Últimos Resultados:</h6>
+                            <div class="row">
+                                @foreach (var resultado in Model.MisResultados.Take(3))
+                                {
+                                    <div class="col-md-4 mb-2">
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center py-2">
+                                                <h6 class="text-primary mb-1">@resultado.PorcentajeAcierto%</h6>
+                                                <small class="text-muted">@resultado.FechaRealizacion.ToString("dd/MM")</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            @if (Model.MisResultados.Count > 3)
+                            {
+                                <small class="text-muted">Y @(Model.MisResultados.Count - 3) resultados más que se perderán...</small>
+                            }
+                        </div>
+                    }
+
+                    <!-- Botones de Acción -->
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary btn-lg w-100">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post" class="w-100">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger btn-lg w-100" onclick="return confirmarEliminacion()">
+                                    <i class="fas fa-trash me-2"></i>
+                                    Eliminar Definitivamente
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Alternativas -->
+                    <div class="text-center mt-4">
+                        <small class="text-muted">
+                            ¿No estás seguro? Puedes 
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="text-decoration-none">editar el quiz</a>
+                            o hacerlo 
+                            <a href="#" onclick="togglePrivacy()" class="text-decoration-none">
+                                @(Model.EsPublico ? "privado" : "público")
+                            </a> en su lugar.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Seguridad -->
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Por tu seguridad, esta acción requiere confirmación adicional
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación Final -->
+<div class="modal fade" id="finalConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmación Final
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-trash fa-3x text-danger mb-3"></i>
+                    <h5>¿Realmente deseas eliminar este quiz?</h5>
+                    <p class="text-muted">Escribe <strong>"ELIMINAR"</strong> para confirmar:</p>
+                </div>
+                
+                <div class="mb-3">
+                    <input type="text" id="confirmText" class="form-control text-center" 
+                           placeholder="Escribe ELIMINAR aquí" maxlength="8">
+                </div>
+                
+                <div id="confirmError" class="text-danger small mb-3" style="display: none;">
+                    Debes escribir exactamente "ELIMINAR" para continuar
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" id="finalDeleteBtn" class="btn btn-danger" disabled onclick="procederEliminacion()">
+                    <i class="fas fa-trash me-1"></i>
+                    Eliminar Definitivamente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmarEliminacion() {
+            // Mostrar modal de confirmación final
+            var modal = new bootstrap.Modal(document.getElementById('finalConfirmModal'));
+            modal.show();
+            return false; // Prevenir el envío del formulario
+        }
+
+        function procederEliminacion() {
+            // Enviar el formulario
+            document.querySelector('form[asp-action="DeleteConfirmed"]').submit();
+        }
+
+        function togglePrivacy() {
+            // Esta función podría implementar un toggle rápido de privacidad
+            // Por ahora solo redirige a editar
+            window.location.href = '@Url.Action("Edit", "Quiz", new { id = Model.Id })';
+        }
+
+        // Validar texto de confirmación
+        $(document).ready(function() {
+            $('#confirmText').on('input', function() {
+                const text = $(this).val().toUpperCase();
+                const deleteBtn = $('#finalDeleteBtn');
+                const errorDiv = $('#confirmError');
+                
+                if (text === 'ELIMINAR') {
+                    deleteBtn.prop('disabled', false);
+                    errorDiv.hide();
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                } else {
+                    deleteBtn.prop('disabled', true);
+                    if (text.length > 0) {
+                        errorDiv.show();
+                        $(this).removeClass('is-valid').addClass('is-invalid');
+                    } else {
+                        errorDiv.hide();
+                        $(this).removeClass('is-invalid is-valid');
+                    }
+                }
+            });
+
+            // Limpiar modal al cerrar
+            $('#finalConfirmModal').on('hidden.bs.modal', function() {
+                $('#confirmText').val('').removeClass('is-valid is-invalid');
+                $('#confirmError').hide();
+                $('#finalDeleteBtn').prop('disabled', true);
+            });
+
+            // Auto-focus en el input cuando se abre el modal
+            $('#finalConfirmModal').on('shown.bs.modal', function() {
+                $('#confirmText').focus();
+            });
+        });
+
+        // Prevenir envío accidental con Enter
+        $(document).keypress(function(e) {
+            if (e.which === 13) { // Enter key
+                if (!$('#finalConfirmModal').hasClass('show')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .card {
+            border: none;
+            border-radius: 15px;
+        }
+        
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .btn-lg {
+            padding: 12px 20px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+        }
+        
+        .shadow-lg {
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.175) !important;
+        }
+        
+        .border-danger {
+            border-color: #dc3545 !important;
+        }
+        
+        .modal-content.border-danger {
+            border-width: 2px;
+        }
+        
+        .is-valid {
+            border-color: #198754;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='m2.3 6.73.67-.67L4.7 4.33l1.73 1.73.67-.67-2.4-2.4z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .is-invalid {
+            border-color: #dc3545;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 4.6 2.4 2.4m0-2.4L5.8 7'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        #confirmText:focus {
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+        }
+    </style>
+}

@@ -26,6 +26,9 @@
                             <a asp-controller="Flashcard" asp-action="Index" class="btn btn-light btn-lg">
                                 <i class="fas fa-layer-group me-2"></i>Mis Flashcards
                             </a>
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-light btn-lg">
+                                <i class="fas fa-question-circle me-2"></i>Mis Quizzes
+                            </a>
                             <a asp-controller="Materia" asp-action="Create" class="btn btn-outline-light btn-lg">
                                 <i class="fas fa-plus me-2"></i>Nueva Materia
                             </a>
@@ -42,39 +45,38 @@
             <!-- Estadísticas Rápidas -->
             <div class="row mb-4">
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <a asp-controller="Materia" asp-action="Index" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm h-100 card-hover">
-                            <div class="card-body text-center">
-                                <div class="display-4 text-primary mb-2">
-                                    <i class="fas fa-books"></i>
-                                </div>
-                                <h3 class="text-primary mb-1" id="totalMaterias">@Model.TotalMaterias</h3>
-                                <p class="text-muted mb-0">Materias</p>
+                    <div class="card border-0 shadow-sm h-100 card-hover">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-primary mb-2">
+                                <i class="fas fa-book"></i>
                             </div>
+                            <h3 class="text-primary mb-1" id="totalMaterias">@Model.TotalMaterias</h3>
+                            <p class="text-muted mb-2">Materias organizadas</p>
+                            <a asp-controller="Materia" asp-action="Index" class="btn btn-sm btn-primary">Ver Materias</a>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <a asp-controller="Flashcard" asp-action="Index" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm h-100 card-hover">
-                            <div class="card-body text-center">
-                                <div class="display-4 text-success mb-2">
-                                    <i class="fas fa-layer-group"></i>
-                                </div>
-                                <h3 class="text-success mb-1" id="totalFlashcards">@Model.TotalFlashcards</h3>
-                                <p class="text-muted mb-0">Flashcards</p>
+                    <div class="card border-0 shadow-sm h-100 card-hover">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-success mb-2">
+                                <i class="fas fa-layer-group"></i>
                             </div>
+                            <h3 class="text-success mb-1" id="totalFlashcards">@Model.TotalFlashcards</h3>
+                            <p class="text-muted mb-2">Tarjetas de estudio</p>
+                            <a asp-controller="Flashcard" asp-action="Index" class="btn btn-sm btn-success">Estudiar</a>
                         </div>
-                    </a>
+                    </div>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">
-                    <div class="card border-0 shadow-sm h-100">
+                    <div class="card border-0 shadow-sm h-100 card-hover">
                         <div class="card-body text-center">
                             <div class="display-4 text-warning mb-2">
                                 <i class="fas fa-question-circle"></i>
                             </div>
-                            <h3 class="text-warning mb-1">0</h3>
-                            <p class="text-muted mb-0">Quizzes</p>
+                            <h3 class="text-warning mb-1" id="totalQuizzes">@Model.TotalQuizzes</h3>
+                            <p class="text-muted mb-2">Quizzes recientes</p>
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-warning">Realizar Quiz</a>
                         </div>
                     </div>
                 </div>
@@ -105,7 +107,7 @@
                                 <div class="col-md-6">
                                     <div class="d-grid">
                                         <a asp-controller="Materia" asp-action="Create" class="btn btn-outline-primary btn-lg">
-                                            <i class="fas fa-plus-circle me-2"></i>
+                                            <i class="fas fa-plus me-2"></i>
                                             <div class="fw-bold">Crear Materia</div>
                                             <small class="text-muted">Organiza tu nuevo tema de estudio</small>
                                         </a>
@@ -114,7 +116,7 @@
                                 <div class="col-md-6">
                                     <div class="d-grid">
                                         <a asp-controller="Flashcard" asp-action="Create" class="btn btn-outline-success btn-lg">
-                                            <i class="fas fa-layer-group me-2"></i>
+                                            <i class="fas fa-file me-2"></i>
                                             <div class="fw-bold">Crear Flashcard</div>
                                             <small class="text-muted">Nueva tarjeta de estudio</small>
                                         </a>
@@ -122,7 +124,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a href="#" class="btn btn-outline-warning btn-lg">
+                                        <a asp-controller="Quiz" asp-action="Create" class="btn btn-outline-warning btn-lg">
                                             <i class="fas fa-question-circle me-2"></i>
                                             <div class="fw-bold">Crear Quiz</div>
                                             <small class="text-muted">Nuevo cuestionario de práctica</small>
@@ -218,7 +220,7 @@
                         </div>
                         <div class="text-center mt-3">
                             <a asp-controller="Materia" asp-action="Index" class="btn btn-primary">
-                                <i class="fas fa-books me-2"></i>Ver Todas las Materias
+                                <i class="fas fa-books me-2"></i>Ver Materias
                             </a>
                         </div>
                     }
@@ -230,6 +232,66 @@
                             <p class="mb-3">Las materias te ayudan a organizar tu contenido de estudio por temas.</p>
                             <a asp-controller="Materia" asp-action="Create" class="btn btn-primary">
                                 <i class="fas fa-plus me-2"></i>Crear Primera Materia
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Quizzes Recientes -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle me-2 text-warning"></i>Mis Quizzes
+                    </h5>
+                    <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-outline-warning">
+                        Ver todos <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (Model.QuizzesRecientes.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var quiz in Model.QuizzesRecientes.Take(3))
+                            {
+                                <div class="list-group-item border-0 px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 text-truncate" style="max-width: 200px;">
+                                                <a asp-controller="Quiz" asp-action="Details" asp-route-id="@quiz.Id" class="text-decoration-none">
+                                                    @quiz.Titulo
+                                                </a>
+                                            </h6>
+                                            <p class="mb-1 text-muted small">
+                                                <i class="fas fa-folder me-1"></i>@(quiz.Materia?.Nombre ?? "Sin materia")
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>@quiz.FechaCreacion.ToString("dd/MM/yyyy")
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.Id" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-play me-1"></i>Realizar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="text-center mt-3">
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>Ver Todos los Quizzes
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-question-circle fa-2x mb-3 opacity-50"></i>
+                            <h6 class="mb-2">No tienes quizzes creados</h6>
+                            <p class="mb-3">Los quizzes te ayudan a evaluar tu conocimiento.</p>
+                            <a asp-controller="Quiz" asp-action="Create" class="btn btn-warning">
+                                <i class="fas fa-plus me-2"></i>Crear Primer Quiz
                             </a>
                         </div>
                     }
@@ -268,11 +330,22 @@
     a.text-decoration-none:hover {
         text-decoration: none !important;
     }
+    
+    /* Asegurar que los botones sean clickeables */
+    .btn {
+        pointer-events: auto !important;
+        z-index: 10;
+        position: relative;
+    }
+    
+    .card-body {
+        position: relative;
+    }
 </style>
 
 @section Scripts {
     <script>
-        // Función para los enlaces temporales
+        // Función para los enlaces temporales - solo aplica a enlaces con href="#"
         document.addEventListener('DOMContentLoaded', function() {
             const tempLinks = document.querySelectorAll('a[href="#"]');
             tempLinks.forEach(link => {
@@ -280,6 +353,12 @@
                     e.preventDefault();
                     alert('Esta funcionalidad estará disponible pronto. Por ahora puedes gestionar tus materias.');
                 });
+            });
+            
+            // Debug: Mostrar todos los enlaces para verificar
+            console.log('Enlaces encontrados en la página:');
+            document.querySelectorAll('a').forEach((link, index) => {
+                console.log(`Link ${index}: href="${link.href}", text="${link.textContent.trim()}"`);
             });
         });
     </script>

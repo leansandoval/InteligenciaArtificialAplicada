@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/QuizCraft.Web.styles.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -24,7 +25,7 @@
                 <div class="navbar-collapse collapse d-lg-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Home">
                                 <i class="fas fa-home"></i> Inicio
                             </a>
                         </li>
@@ -41,19 +42,20 @@
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-book"></i> Estudio
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" asp-controller="Flashcard" asp-action="Index"><i class="fas fa-layer-group"></i> Flashcards</a></li>
-                                    <li><a class="dropdown-item" href="#"><i class="fas fa-question-circle"></i> Quizzes</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Quiz" asp-action="Index"><i class="fas fa-question-circle"></i> Quizzes</a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" asp-controller="Flashcard" asp-action="Create"><i class="fas fa-plus"></i> Nueva Flashcard</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Quiz" asp-action="Create"><i class="fas fa-plus"></i> Nuevo Quiz</a></li>
                                     <li><a class="dropdown-item" asp-controller="Materia" asp-action="Create"><i class="fas fa-plus"></i> Nueva Materia</a></li>
                                 </ul>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">
+                                <a class="nav-link" asp-controller="Home" asp-action="Statistics">
                                     <i class="fas fa-chart-bar"></i> Estadísticas
                                 </a>
                             </li>
@@ -68,7 +70,7 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fas fa-user"></i> @User.Identity.Name
                                 </a>
                                 <ul class="dropdown-menu">

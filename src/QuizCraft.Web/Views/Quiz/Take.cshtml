@@ -1,0 +1,393 @@
+@model QuizCraft.Application.ViewModels.TakeQuizViewModel
+@{
+    ViewData["Title"] = "Realizar Quiz: " + Model.Titulo;
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header del Quiz -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-0">@Model.Titulo</h4>
+                            <small class="opacity-75">@Model.MateriaNombre</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            @if (Model.TiempoLimite > 0)
+                            {
+                                <div class="d-flex align-items-center justify-content-end">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <span id="cronometro" class="fs-5 fw-bold">@(Model.TiempoLimite):00</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body py-2">
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: 0%" id="progreso"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <small class="text-muted">
+                            Pregunta <span id="preguntaActual">1</span> de @Model.TotalPreguntas
+                        </small>
+                        <small class="text-muted">
+                            Progreso: <span id="porcentajeProgreso">0</span>%
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pregunta Actual -->
+            <div class="card shadow-sm" id="preguntaCard">
+                <div class="card-body">
+                    <div id="preguntaContenido">
+                        <!-- Aquí se carga dinámicamente cada pregunta -->
+                    </div>
+
+                    <!-- Controles de navegación -->
+                    <div class="d-flex justify-content-between mt-4" id="navegacionControles">
+                        <button type="button" class="btn btn-outline-secondary" id="btnAnterior" disabled>
+                            <i class="fas fa-arrow-left me-1"></i>
+                            Anterior
+                        </button>
+                        
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Selecciona una respuesta para continuar
+                            </small>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="btnSiguiente" disabled>
+                            Siguiente
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+
+                    <!-- Feedback de respuesta -->
+                    <div id="feedbackRespuesta" class="mt-3" style="display: none;">
+                        <!-- Aquí se muestra el feedback después de responder -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de confirmación de envío -->
+            <div class="modal fade" id="modalConfirmacion" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                Finalizar Quiz
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>¿Estás seguro de que quieres finalizar el quiz?</p>
+                            <div class="alert alert-info">
+                                <small>
+                                    <strong>Resumen:</strong><br>
+                                    • Preguntas respondidas: <span id="preguntasRespondidas">0</span> de @Model.TotalPreguntas<br>
+                                    • Tiempo transcurrido: <span id="tiempoTranscurrido">00:00</span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                            <button type="button" class="btn btn-success" id="btnFinalizarQuiz">
+                                <i class="fas fa-flag-checkered me-1"></i>
+                                Finalizar Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let quizData = @Html.Raw(Json.Serialize(Model));
+        let preguntaActual = 0;
+        let respuestasUsuario = {};
+        let tiempoInicio = new Date();
+        let cronometroInterval;
+        let tiempoPreguntaInicio = new Date();
+
+        $(document).ready(function() {
+            inicializarQuiz();
+            mostrarPregunta(0);
+            
+            if (quizData.tiempoLimite > 0) {
+                iniciarCronometro();
+            }
+        });
+
+        function inicializarQuiz() {
+            // Configurar eventos
+            $('#btnSiguiente').click(function() {
+                if (preguntaActual < quizData.totalPreguntas - 1) {
+                    siguientePregunta();
+                } else {
+                    mostrarModalConfirmacion();
+                }
+            });
+
+            $('#btnAnterior').click(function() {
+                if (preguntaActual > 0) {
+                    anteriorPregunta();
+                }
+            });
+
+            $('#btnFinalizarQuiz').click(function() {
+                finalizarQuiz();
+            });
+
+            // Prevenir salir de la página accidentalmente
+            window.addEventListener('beforeunload', function(e) {
+                e.preventDefault();
+                e.returnValue = '';
+            });
+        }
+
+        function mostrarPregunta(indice) {
+            if (indice < 0 || indice >= quizData.preguntas.length) return;
+
+            const pregunta = quizData.preguntas[indice];
+            preguntaActual = indice;
+            tiempoPreguntaInicio = new Date();
+
+            // Actualizar UI
+            $('#preguntaActual').text(indice + 1);
+            $('#porcentajeProgreso').text(Math.round(((indice + 1) / quizData.totalPreguntas) * 100));
+            $('#progreso').css('width', ((indice + 1) / quizData.totalPreguntas) * 100 + '%');
+
+            // Construir HTML de la pregunta
+            let html = `
+                <div class="mb-4">
+                    <h5 class="mb-3">
+                        <span class="badge bg-primary me-2">${indice + 1}</span>
+                        ${pregunta.textoPregunta}
+                    </h5>
+                    <div class="row">
+            `;
+
+            // Agregar opciones
+            pregunta.opciones.forEach((opcion, i) => {
+                const letra = String.fromCharCode(65 + i); // A, B, C, D
+                const isSelected = respuestasUsuario[pregunta.id] === opcion.valor;
+                
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input opcion-radio" type="radio" 
+                                   name="respuesta_${pregunta.id}" 
+                                   value="${opcion.valor}" 
+                                   id="opcion_${pregunta.id}_${opcion.valor}"
+                                   ${isSelected ? 'checked' : ''}>
+                            <label class="form-check-label w-100" for="opcion_${pregunta.id}_${opcion.valor}">
+                                <div class="border rounded p-3 opcion-label ${isSelected ? 'bg-light border-primary' : ''}">
+                                    <strong>${letra})</strong> ${opcion.texto}
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div></div>';
+            $('#preguntaContenido').html(html);
+
+            // Configurar eventos de las opciones
+            $('.opcion-radio').change(function() {
+                const preguntaId = pregunta.id;
+                const respuestaSeleccionada = $(this).val();
+                
+                // Guardar respuesta
+                respuestasUsuario[preguntaId] = respuestaSeleccionada;
+                
+                // Actualizar UI
+                $('.opcion-label').removeClass('bg-light border-primary');
+                $(this).closest('.form-check').find('.opcion-label').addClass('bg-light border-primary');
+                
+                // Habilitar botón siguiente
+                $('#btnSiguiente').prop('disabled', false);
+                $('.navegacion-ayuda').html('<i class="fas fa-check text-success me-1"></i>Respuesta seleccionada');
+
+                // Si mostrar respuestas inmediato está habilitado
+                if (quizData.mostrarRespuestasInmediato) {
+                    setTimeout(() => {
+                        mostrarFeedback(preguntaId, respuestaSeleccionada);
+                    }, 500);
+                }
+            });
+
+            // Actualizar controles de navegación
+            $('#btnAnterior').prop('disabled', indice === 0);
+            $('#btnSiguiente').prop('disabled', !respuestasUsuario[pregunta.id]);
+            
+            if (indice === quizData.totalPreguntas - 1) {
+                $('#btnSiguiente').html('<i class="fas fa-flag-checkered me-1"></i>Finalizar');
+            } else {
+                $('#btnSiguiente').html('Siguiente <i class="fas fa-arrow-right ms-1"></i>');
+            }
+
+            // Ocultar feedback previo
+            $('#feedbackRespuesta').hide();
+        }
+
+        function mostrarFeedback(preguntaId, respuestaSeleccionada) {
+            // Enviar respuesta al servidor
+            const tiempoRespuesta = Math.round((new Date() - tiempoPreguntaInicio) / 1000);
+            
+            $.ajax({
+                url: '@Url.Action("SubmitAnswer")',
+                type: 'POST',
+                data: {
+                    QuizId: quizData.quizId,
+                    PreguntaId: preguntaId,
+                    RespuestaSeleccionada: respuestaSeleccionada,
+                    TiempoRespuesta: tiempoRespuesta,
+                    EsUltimaPregnta: preguntaActual === quizData.totalPreguntas - 1,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        mostrarFeedbackUI(response);
+                    }
+                },
+                error: function() {
+                    console.error('Error al enviar respuesta');
+                }
+            });
+        }
+
+        function mostrarFeedbackUI(response) {
+            let feedbackClass = response.esCorrecta ? 'alert-success' : 'alert-danger';
+            let icono = response.esCorrecta ? 'fa-check-circle' : 'fa-times-circle';
+            
+            let html = `
+                <div class="alert ${feedbackClass} d-flex align-items-center">
+                    <i class="fas ${icono} fa-2x me-3"></i>
+                    <div>
+                        <strong>${response.esCorrecta ? '¡Correcto!' : 'Incorrecto'}</strong><br>
+                        <small>${response.explicacion}</small>
+                    </div>
+                </div>
+            `;
+            
+            $('#feedbackRespuesta').html(html).show();
+        }
+
+        function siguientePregunta() {
+            if (preguntaActual < quizData.totalPreguntas - 1) {
+                mostrarPregunta(preguntaActual + 1);
+            }
+        }
+
+        function anteriorPregunta() {
+            if (preguntaActual > 0) {
+                mostrarPregunta(preguntaActual - 1);
+            }
+        }
+
+        function mostrarModalConfirmacion() {
+            const preguntasRespondidas = Object.keys(respuestasUsuario).length;
+            const tiempoTranscurrido = Math.round((new Date() - tiempoInicio) / 1000 / 60);
+            
+            $('#preguntasRespondidas').text(preguntasRespondidas);
+            $('#tiempoTranscurrido').text(tiempoTranscurrido + ' min');
+            
+            $('#modalConfirmacion').modal('show');
+        }
+
+        function finalizarQuiz() {
+            // Detener cronómetro
+            if (cronometroInterval) {
+                clearInterval(cronometroInterval);
+            }
+
+            // Remover el evento beforeunload
+            window.removeEventListener('beforeunload', function() {});
+
+            // Redirigir a resultados
+            window.location.href = '@Url.Action("Results", new { id = Model.QuizId })';
+        }
+
+        function iniciarCronometro() {
+            let tiempoRestante = quizData.tiempoLimite * 60; // convertir a segundos
+            
+            cronometroInterval = setInterval(function() {
+                tiempoRestante--;
+                
+                const minutos = Math.floor(tiempoRestante / 60);
+                const segundos = tiempoRestante % 60;
+                
+                $('#cronometro').text(
+                    minutos.toString().padStart(2, '0') + ':' + 
+                    segundos.toString().padStart(2, '0')
+                );
+                
+                // Cambiar color cuando queda poco tiempo
+                if (tiempoRestante <= 300) { // 5 minutos
+                    $('#cronometro').removeClass('text-white').addClass('text-warning');
+                }
+                if (tiempoRestante <= 60) { // 1 minuto
+                    $('#cronometro').removeClass('text-warning').addClass('text-danger');
+                }
+                
+                // Tiempo agotado
+                if (tiempoRestante <= 0) {
+                    clearInterval(cronometroInterval);
+                    alert('¡Tiempo agotado! El quiz se finalizará automáticamente.');
+                    finalizarQuiz();
+                }
+            }, 1000);
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .opcion-label {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .opcion-label:hover {
+            background-color: #f8f9fa !important;
+            border-color: #6c757d !important;
+        }
+        
+        .form-check-input:checked + .form-check-label .opcion-label {
+            background-color: #e3f2fd !important;
+            border-color: #2196f3 !important;
+            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+        }
+        
+        .progress {
+            background-color: #e9ecef;
+        }
+        
+        #cronometro {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+        
+        .card {
+            border: none;
+        }
+        
+        .navegacion-ayuda {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+    </style>
+}

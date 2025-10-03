@@ -1,0 +1,392 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using QuizCraft.Core.Entities;
+using QuizCraft.Core.Interfaces;
+using QuizCraft.Application.ViewModels;
+using QuizCraft.Core.Enums;
+
+namespace QuizCraft.Web.Controllers
+{
+    [Authorize]
+    public class QuizController : Controller
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public QuizController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
+        {
+            _unitOfWork = unitOfWork;
+            _userManager = userManager;
+        }
+
+        // GET: Quiz
+        public async Task<IActionResult> Index(int? materiaId, NivelDificultad? dificultad)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            
+            // Obtener datos de forma secuencial para evitar problemas de concurrencia
+            var misQuizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(usuarioId);
+            var quizzesPublicos = await _unitOfWork.QuizRepository.GetQuizzesPublicosAsync();
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+
+            var viewModel = new QuizIndexViewModel
+            {
+                MisQuizzes = misQuizzes.Select(q => new QuizItemViewModel
+                {
+                    Id = q.Id,
+                    Titulo = q.Titulo,
+                    Descripcion = q.Descripcion,
+                    NumeroPreguntas = q.NumeroPreguntas,
+                    MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
+                    CreadorNombre = q.Creador?.UserName ?? "Usuario",
+                    FechaCreacion = q.FechaCreacion,
+                    EsPublico = q.EsPublico,
+                    TotalResultados = q.Resultados?.Count ?? 0,
+                    Dificultad = (NivelDificultad)q.NivelDificultad,
+                    TiempoLimite = q.TiempoLimite,
+                    YaRealizado = q.Resultados?.Any(r => r.UsuarioId == usuarioId) == true,
+                    UltimoResultado = q.Resultados?
+                        .Where(r => r.UsuarioId == usuarioId)
+                        .OrderByDescending(r => r.FechaRealizacion)
+                        .FirstOrDefault()?.PorcentajeAcierto
+                }).ToList(),
+                
+                QuizzesPublicos = quizzesPublicos
+                    .Where(q => q.CreadorId != usuarioId)
+                    .Where(q => !materiaId.HasValue || q.MateriaId == materiaId)
+                    .Where(q => !dificultad.HasValue || q.NivelDificultad == (int)dificultad)
+                    .Select(q => new QuizItemViewModel
+                    {
+                        Id = q.Id,
+                        Titulo = q.Titulo,
+                        Descripcion = q.Descripcion,
+                        NumeroPreguntas = q.NumeroPreguntas,
+                        MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
+                        CreadorNombre = q.Creador?.UserName ?? "Usuario",
+                        FechaCreacion = q.FechaCreacion,
+                        EsPublico = q.EsPublico,
+                        TotalResultados = q.Resultados?.Count ?? 0,
+                        Dificultad = (NivelDificultad)q.NivelDificultad,
+                        TiempoLimite = q.TiempoLimite,
+                        YaRealizado = q.Resultados?.Any(r => r.UsuarioId == usuarioId) == true,
+                        UltimoResultado = q.Resultados?
+                            .Where(r => r.UsuarioId == usuarioId)
+                            .OrderByDescending(r => r.FechaRealizacion)
+                            .FirstOrDefault()?.PorcentajeAcierto
+                    }).ToList(),
+                
+                MateriaSeleccionada = materiaId,
+                DificultadSeleccionada = dificultad,
+                MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
+                {
+                    Id = m.Id,
+                    Nombre = m.Nombre
+                }).ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: Quiz/Create
+        [HttpGet]
+        public async Task<IActionResult> Create(int? materiaId = null)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var viewModel = new CreateQuizViewModel();
+
+            // Cargar materias del usuario autenticado
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+            
+            var materiasConFlashcards = new List<MateriaSelectViewModel>();
+            
+            foreach (var materia in materias)
+            {
+                // Obtener el conteo real de flashcards por materia
+                var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materia.Id);
+                
+                materiasConFlashcards.Add(new MateriaSelectViewModel
+                {
+                    Id = materia.Id,
+                    Nombre = materia.Nombre,
+                    TotalFlashcards = flashcards.Count()
+                });
+            }
+            
+            viewModel.MateriasDisponibles = materiasConFlashcards;
+            
+            // Preseleccionar materia si se especifica
+            if (materiaId.HasValue)
+            {
+                viewModel.MateriaId = materiaId.Value;
+            }
+
+            return View(viewModel);
+        }
+
+        // POST: Quiz/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(CreateQuizViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                // Recargar materias en caso de error
+                var materias = await _unitOfWork.MateriaRepository.GetAllAsync();
+                model.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
+                {
+                    Id = m.Id,
+                    Nombre = m.Nombre,
+                    TotalFlashcards = m.Flashcards?.Count ?? 0
+                }).ToList();
+                return View(model);
+            }
+
+            var usuarioId = _userManager.GetUserId(User);
+            
+            // Obtener flashcards de la materia seleccionada
+            var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
+            
+            if (!flashcards.Any())
+            {
+                ModelState.AddModelError("", "No hay flashcards disponibles en la materia seleccionada.");
+                var materias = await _unitOfWork.MateriaRepository.GetAllAsync();
+                model.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
+                {
+                    Id = m.Id,
+                    Nombre = m.Nombre,
+                    TotalFlashcards = m.Flashcards?.Count ?? 0
+                }).ToList();
+                return View(model);
+            }
+
+            // Crear el quiz
+            var quiz = new Quiz
+            {
+                Titulo = model.Titulo,
+                Descripcion = model.Descripcion,
+                NumeroPreguntas = model.NumeroPreguntas,
+                TiempoLimite = model.TiempoLimite,
+                TiempoPorPregunta = 30,
+                NivelDificultad = (int)model.Dificultad,
+                EsPublico = model.EsPublico,
+                MostrarRespuestasInmediato = model.MostrarRespuestasInmediato,
+                PermitirReintento = true,
+                MateriaId = model.MateriaId,
+                CreadorId = usuarioId,
+                FechaCreacion = DateTime.UtcNow
+            };
+
+            // Seleccionar flashcards aleatoriamente
+            var flashcardsSeleccionadas = flashcards
+                .OrderBy(x => Guid.NewGuid())
+                .Take(model.NumeroPreguntas)
+                .ToList();
+
+            // Crear preguntas basadas en las flashcards
+            var preguntas = new List<PreguntaQuiz>();
+            for (int i = 0; i < flashcardsSeleccionadas.Count; i++)
+            {
+                var flashcard = flashcardsSeleccionadas[i];
+                var pregunta = new PreguntaQuiz
+                {
+                    TextoPregunta = flashcard.Pregunta,
+                    RespuestaCorrecta = flashcard.Respuesta,
+                    OpcionA = flashcard.Respuesta,
+                    OpcionB = GenerarOpcionIncorrecta(),
+                    OpcionC = GenerarOpcionIncorrecta(),
+                    OpcionD = GenerarOpcionIncorrecta(),
+                    Explicacion = flashcard.Pista ?? "",
+                    Orden = i + 1,
+                    Puntos = 1,
+                    TipoPregunta = 1,
+                    FlashcardId = flashcard.Id
+                };
+                
+                // Mezclar las opciones
+                var opciones = new List<string> { pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD }
+                    .Where(o => !string.IsNullOrEmpty(o))
+                    .OrderBy(x => Guid.NewGuid())
+                    .ToList();
+                
+                if (opciones.Count >= 4)
+                {
+                    pregunta.OpcionA = opciones[0];
+                    pregunta.OpcionB = opciones[1];
+                    pregunta.OpcionC = opciones[2];
+                    pregunta.OpcionD = opciones[3];
+                    
+                    // Determinar cuál opción es la correcta después del mezclado
+                    var indiceCorrecta = opciones.IndexOf(flashcard.Respuesta);
+                    pregunta.RespuestaCorrecta = ((char)('A' + indiceCorrecta)).ToString();
+                }
+                
+                preguntas.Add(pregunta);
+            }
+
+            quiz.Preguntas = preguntas;
+
+            await _unitOfWork.QuizRepository.AddAsync(quiz);
+            await _unitOfWork.SaveChangesAsync();
+
+            TempData["Success"] = "Quiz creado exitosamente.";
+            return RedirectToAction(nameof(Details), new { id = quiz.Id });
+        }
+
+        // GET: Quiz/Take/5
+        public async Task<IActionResult> Take(int id)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var quiz = await _unitOfWork.QuizRepository.GetQuizConPreguntasAsync(id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            // Verificar permisos
+            if (!quiz.EsPublico && quiz.CreadorId != usuarioId)
+            {
+                return Forbid();
+            }
+
+            var viewModel = new TakeQuizViewModel
+            {
+                Id = quiz.Id,
+                Titulo = quiz.Titulo,
+                Descripcion = quiz.Descripcion,
+                NumeroPreguntas = quiz.NumeroPreguntas,
+                TiempoPorPregunta = quiz.TiempoPorPregunta,
+                TiempoLimite = quiz.TiempoLimite,
+                MostrarRespuestasInmediato = quiz.MostrarRespuestasInmediato,
+                MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
+                PreguntaActual = 1,
+                Preguntas = quiz.Preguntas.OrderBy(p => p.Orden).Select(p => new PreguntaQuizViewModel
+                {
+                    Id = p.Id,
+                    TextoPregunta = p.TextoPregunta,
+                    OpcionA = p.OpcionA ?? "",
+                    OpcionB = p.OpcionB ?? "",
+                    OpcionC = p.OpcionC ?? "",
+                    OpcionD = p.OpcionD ?? "",
+                    Orden = p.Orden,
+                    Puntos = p.Puntos
+                }).ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: Quiz/Details/5
+        public async Task<IActionResult> Details(int id)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var quiz = await _unitOfWork.QuizRepository.GetQuizCompletoAsync(id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            // Verificar permisos para ver el quiz
+            if (!quiz.EsPublico && quiz.CreadorId != usuarioId)
+            {
+                return Forbid();
+            }
+
+            var viewModel = new QuizDetailsViewModel
+            {
+                Id = quiz.Id,
+                Titulo = quiz.Titulo,
+                Descripcion = quiz.Descripcion,
+                MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
+                CreadorNombre = quiz.Creador?.UserName ?? "Usuario",
+                FechaCreacion = quiz.FechaCreacion,
+                EsPublico = quiz.EsPublico,
+                NumeroPreguntas = quiz.NumeroPreguntas,
+                TiempoLimite = quiz.TiempoLimite,
+                NivelDificultad = (NivelDificultad)quiz.NivelDificultad,
+                PuedeEditar = quiz.CreadorId == usuarioId,
+                PuedeEliminar = quiz.CreadorId == usuarioId,
+                PuedeRealizarQuiz = quiz.EsPublico || quiz.CreadorId == usuarioId,
+                MensajeNoDisponible = quiz.EsPublico || quiz.CreadorId == usuarioId 
+                    ? "" : "Este quiz no está disponible públicamente."
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: Quiz/Delete/5
+        public async Task<IActionResult> Delete(int id)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var quiz = await _unitOfWork.QuizRepository.GetQuizCompletoAsync(id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            // Solo el creador puede eliminar
+            if (quiz.CreadorId != usuarioId)
+            {
+                return Forbid();
+            }
+
+            var viewModel = new QuizDetailsViewModel
+            {
+                Id = quiz.Id,
+                Titulo = quiz.Titulo,
+                Descripcion = quiz.Descripcion,
+                MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
+                CreadorNombre = quiz.Creador?.UserName ?? "Usuario",
+                FechaCreacion = quiz.FechaCreacion,
+                EsPublico = quiz.EsPublico,
+                NumeroPreguntas = quiz.NumeroPreguntas
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: Quiz/DeleteConfirmed/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            // Solo el creador puede eliminar
+            if (quiz.CreadorId != usuarioId)
+            {
+                return Forbid();
+            }
+
+            _unitOfWork.QuizRepository.Remove(quiz);
+            await _unitOfWork.SaveChangesAsync();
+
+            TempData["Success"] = "Quiz eliminado exitosamente.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Método auxiliar para generar opciones incorrectas
+        private string GenerarOpcionIncorrecta()
+        {
+            var opciones = new[]
+            {
+                "Opción incorrecta A",
+                "Opción incorrecta B", 
+                "Opción incorrecta C",
+                "Respuesta falsa",
+                "Alternativa incorrecta"
+            };
+            
+            return opciones[new Random().Next(opciones.Length)];
+        }
+    }
+}

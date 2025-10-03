@@ -106,10 +106,10 @@
                             <h2 class="display-5 text-success mb-1">@Model.TotalQuizzes</h2>
                             <h6 class="text-muted">Quizzes Creados</h6>
                             <div class="mt-3">
-                                <a href="#" class="btn btn-outline-success">
+                                <a asp-controller="Quiz" asp-action="Index" asp-route-materiaId="@Model.Id" class="btn btn-outline-success">
                                     <i class="fas fa-eye me-1"></i>Ver Quizzes
                                 </a>
-                                <a href="#" class="btn btn-success">
+                                <a asp-controller="Quiz" asp-action="Create" asp-route-materiaId="@Model.Id" class="btn btn-success">
                                     <i class="fas fa-plus me-1"></i>Nuevo Quiz
                                 </a>
                             </div>
@@ -129,7 +129,7 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <div class="d-grid">
-                                <a href="#" class="btn btn-outline-primary btn-lg">
+                                <a asp-controller="Flashcard" asp-action="Create" asp-route-materiaId="@Model.Id" class="btn btn-outline-primary btn-lg">
                                     <i class="fas fa-plus-circle me-2"></i>
                                     <div>Crear Flashcard</div>
                                     <small class="text-muted">Agregar nueva tarjeta de estudio</small>
@@ -138,7 +138,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="d-grid">
-                                <a href="#" class="btn btn-outline-success btn-lg">
+                                <a asp-controller="Quiz" asp-action="Create" asp-route-materiaId="@Model.Id" class="btn btn-outline-success btn-lg">
                                     <i class="fas fa-question-circle me-2"></i>
                                     <div>Crear Quiz</div>
                                     <small class="text-muted">Nuevo cuestionario de práctica</small>

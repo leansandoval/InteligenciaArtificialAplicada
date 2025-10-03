@@ -1,0 +1,280 @@
+@model QuizCraft.Application.ViewModels.CreateQuizViewModel
+@using QuizCraft.Core.Enums
+@{
+    ViewData["Title"] = "Crear Nuevo Quiz";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Crear Nuevo Quiz
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div class="row">
+                            <!-- Información Básica -->
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Información Básica
+                                </h5>
+                            </div>
+                            
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Titulo" class="form-label">Título del Quiz</label>
+                                <input asp-for="Titulo" class="form-control" placeholder="Ej: Quiz de Matemáticas - Álgebra Básica">
+                                <span asp-validation-for="Titulo" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Descripcion" class="form-label">Descripción (Opcional)</label>
+                                <textarea asp-for="Descripcion" class="form-control" rows="3" 
+                                          placeholder="Describe brevemente el contenido del quiz..."></textarea>
+                                <span asp-validation-for="Descripcion" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="MateriaId" class="form-label">Materia</label>
+                                <select asp-for="MateriaId" class="form-select" id="materiaSelect">
+                                    <option value="">Selecciona una materia</option>
+                                    @foreach (var materia in Model.MateriasDisponibles)
+                                    {
+                                        <option value="@materia.Id" 
+                                                data-flashcards="@materia.TotalFlashcards"
+                                                selected="@(Model.MateriaId == materia.Id)">
+                                            @materia.Nombre (@materia.TotalFlashcards flashcards)
+                                        </option>
+                                    }
+                                </select>
+                                <span asp-validation-for="MateriaId" class="text-danger"></span>
+                                <div id="flashcardsInfo" class="form-text"></div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Dificultad" class="form-label">Nivel de Dificultad</label>
+                                <select asp-for="Dificultad" class="form-select" asp-items="Html.GetEnumSelectList<QuizCraft.Core.Enums.NivelDificultad>()">
+                                    <option value="">Selecciona dificultad</option>
+                                </select>
+                                <span asp-validation-for="Dificultad" class="text-danger"></span>
+                            </div>
+
+                            <!-- Configuración del Quiz -->
+                            <div class="col-12 mt-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-cog me-1"></i>
+                                    Configuración del Quiz
+                                </h5>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="NumeroPreguntas" class="form-label">Número de Preguntas</label>
+                                <input asp-for="NumeroPreguntas" type="number" class="form-control" 
+                                       min="1" max="50" id="numPreguntasInput">
+                                <span asp-validation-for="NumeroPreguntas" class="text-danger"></span>
+                                <div class="form-text">
+                                    <span id="preguntasHelp">Las preguntas se generarán automáticamente desde las flashcards</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TiempoLimite" class="form-label">Tiempo Límite (minutos)</label>
+                                <input asp-for="TiempoLimite" type="number" class="form-control" 
+                                       min="0" max="180" placeholder="0 = Sin límite">
+                                <span asp-validation-for="TiempoLimite" class="text-danger"></span>
+                                <div class="form-text">0 = Sin límite de tiempo</div>
+                            </div>
+
+                            <!-- Opciones Avanzadas -->
+                            <div class="col-12 mt-4">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-sliders-h me-1"></i>
+                                    Opciones Avanzadas
+                                </h5>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="MezclarPreguntas" class="form-check-input" type="checkbox" checked>
+                                    <label asp-for="MezclarPreguntas" class="form-check-label">
+                                        <i class="fas fa-random me-1"></i>
+                                        Mezclar orden de preguntas
+                                    </label>
+                                </div>
+                                <div class="form-text">Las preguntas aparecerán en orden aleatorio</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="MezclarOpciones" class="form-check-input" type="checkbox" checked>
+                                    <label asp-for="MezclarOpciones" class="form-check-label">
+                                        <i class="fas fa-shuffle me-1"></i>
+                                        Mezclar opciones de respuesta
+                                    </label>
+                                </div>
+                                <div class="form-text">Las opciones A, B, C, D se mostrarán aleatoriamente</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="MostrarRespuestasInmediato" class="form-check-input" type="checkbox" checked>
+                                    <label asp-for="MostrarRespuestasInmediato" class="form-check-label">
+                                        <i class="fas fa-eye me-1"></i>
+                                        Mostrar respuestas inmediatas
+                                    </label>
+                                </div>
+                                <div class="form-text">Mostrar la respuesta correcta después de cada pregunta</div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="EsPublico" class="form-check-input" type="checkbox">
+                                    <label asp-for="EsPublico" class="form-check-label">
+                                        <i class="fas fa-globe me-1"></i>
+                                        Quiz público
+                                    </label>
+                                </div>
+                                <div class="form-text">Otros usuarios podrán realizar este quiz</div>
+                            </div>
+
+                            <!-- Información de Generación -->
+                            <div class="col-12 mt-4">
+                                <div class="alert alert-info">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-lightbulb me-1"></i>
+                                        ¿Cómo se generan las preguntas?
+                                    </h6>
+                                    <p class="mb-2">Las preguntas se crean automáticamente usando tus flashcards:</p>
+                                    <ul class="mb-0">
+                                        <li>La <strong>pregunta</strong> de la flashcard se convierte en la pregunta del quiz</li>
+                                        <li>La <strong>respuesta</strong> de la flashcard es la opción correcta</li>
+                                        <li>Se generan 3 <strong>distractores</strong> (opciones incorrectas) desde otras flashcards</li>
+                                        <li>Las opciones se mezclan automáticamente (A, B, C, D)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="crearBtn">
+                                <i class="fas fa-magic me-1"></i>
+                                Generar Quiz
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Actualizar información cuando cambia la materia seleccionada
+            $('#materiaSelect').change(function() {
+                var selectedOption = $(this).find(':selected');
+                var flashcardsCount = selectedOption.data('flashcards');
+                var numPreguntas = $('#numPreguntasInput').val();
+                
+                if (flashcardsCount) {
+                    $('#flashcardsInfo').html(
+                        '<i class="fas fa-info-circle text-info"></i> ' +
+                        'Esta materia tiene <strong>' + flashcardsCount + '</strong> flashcards disponibles'
+                    );
+                    
+                    // Actualizar máximo número de preguntas
+                    $('#numPreguntasInput').attr('max', flashcardsCount);
+                    
+                    // Validar número actual de preguntas
+                    if (numPreguntas > flashcardsCount) {
+                        $('#numPreguntasInput').val(flashcardsCount);
+                        $('#preguntasHelp').html(
+                            '<i class="fas fa-exclamation-triangle text-warning"></i> ' +
+                            'Máximo ' + flashcardsCount + ' preguntas para esta materia'
+                        );
+                    }
+                } else {
+                    $('#flashcardsInfo').html('');
+                    $('#preguntasHelp').html('Las preguntas se generarán automáticamente desde las flashcards');
+                }
+                
+                actualizarBotonCrear();
+            });
+
+            // Validar número de preguntas en tiempo real
+            $('#numPreguntasInput').on('input', function() {
+                var numPreguntas = parseInt($(this).val());
+                var selectedOption = $('#materiaSelect').find(':selected');
+                var flashcardsCount = selectedOption.data('flashcards');
+                
+                if (flashcardsCount && numPreguntas > flashcardsCount) {
+                    $('#preguntasHelp').html(
+                        '<i class="fas fa-exclamation-triangle text-warning"></i> ' +
+                        'Máximo ' + flashcardsCount + ' preguntas para esta materia'
+                    ).addClass('text-warning');
+                } else {
+                    $('#preguntasHelp').html(
+                        'Las preguntas se generarán automáticamente desde las flashcards'
+                    ).removeClass('text-warning');
+                }
+                
+                actualizarBotonCrear();
+            });
+
+            // Función para habilitar/deshabilitar botón de crear
+            function actualizarBotonCrear() {
+                var materiaId = $('#materiaSelect').val();
+                var numPreguntas = parseInt($('#numPreguntasInput').val());
+                var selectedOption = $('#materiaSelect').find(':selected');
+                var flashcardsCount = selectedOption.data('flashcards') || 0;
+                
+                var puedeCrear = materiaId && numPreguntas > 0 && numPreguntas <= flashcardsCount;
+                
+                $('#crearBtn').prop('disabled', !puedeCrear);
+                
+                if (!puedeCrear && materiaId && flashcardsCount === 0) {
+                    $('#crearBtn').prop('disabled', true);
+                    $('#flashcardsInfo').html(
+                        '<i class="fas fa-exclamation-circle text-danger"></i> ' +
+                        'Esta materia no tiene flashcards. <a href="/Flashcard/Create?materiaId=' + materiaId + '">Crear flashcards</a>'
+                    );
+                }
+            }
+
+            // Validación inicial
+            actualizarBotonCrear();
+            $('#materiaSelect').trigger('change');
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .alert-info {
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .card-header {
+            border-bottom: 3px solid rgba(255,255,255,0.2);
+        }
+        
+        #crearBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+}
