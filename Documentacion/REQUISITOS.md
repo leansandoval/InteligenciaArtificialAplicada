@@ -318,7 +318,21 @@
 
 ---
 
-### 9. MÓDULO DE COLABORACIÓN
+### 9. MÓDULO DE INTEGRACIÓN CON IA
+
+#### RF-023: Integración con OpenAI para Generación de Contenido
+
+- **Descripción:** El sistema debe integrar la API de OpenAI para la generación automática de flashcards y quizzes.
+
+- **User Story:** Como usuario, quiero generar contenido automáticamente usando IA para ahorrar tiempo en la creación de materiales de estudio.
+
+- **Criterios de Aceptación:**
+  - Configuración segura de API keys
+  - Manejo de rate limits y fallbacks
+  - Procesamiento asíncrono de solicitudes
+  - Validación y filtrado de contenido generado
+
+### 10. MÓDULO DE COLABORACIÓN
 
 #### RF-021: Compartir Contenido
 
@@ -557,6 +571,26 @@
 ---
 
 ### 7. INTEGRACIÓN CON IA
+
+#### RNF-018: Rendimiento de IA
+
+- **Descripción:** El sistema debe optimizar el rendimiento de las operaciones con IA.
+
+- **Criterio:**
+  - Tiempo de respuesta para generación de contenido < 5 segundos
+  - Cache de respuestas frecuentes
+  - Procesamiento por lotes de solicitudes
+  - Monitoreo de costos y uso de tokens
+
+#### RNF-019: Protección de Datos de IA
+
+- **Descripción:** El sistema debe garantizar la seguridad y privacidad de los datos procesados por IA.
+
+- **Criterio:**
+  - No almacenar datos sensibles en prompts
+  - Filtrado de información personal
+  - Logs de auditoría de uso de IA
+  - Políticas de retención de datos generados
 
 #### RNF-016: API de OpenAI
 
