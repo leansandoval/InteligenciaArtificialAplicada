@@ -122,6 +122,20 @@
         let tiempoPreguntaInicio = new Date();
 
         $(document).ready(function() {
+            // Debug mejorado
+            console.log('QuizData completo:', quizData);
+            console.log('TotalPreguntas:', quizData.totalPreguntas || quizData.TotalPreguntas);
+            console.log('Preguntas array length:', quizData.preguntas?.length || quizData.Preguntas?.length || 0);
+            console.log('NumeroPreguntas:', quizData.numeroPreguntas || quizData.NumeroPreguntas);
+            
+            // Normalizar nombres de propiedades
+            if (!quizData.totalPreguntas && quizData.TotalPreguntas) {
+                quizData.totalPreguntas = quizData.TotalPreguntas;
+            }
+            if (!quizData.preguntas && quizData.Preguntas) {
+                quizData.preguntas = quizData.Preguntas;
+            }
+            
             inicializarQuiz();
             mostrarPregunta(0);
             
@@ -133,9 +147,16 @@
         function inicializarQuiz() {
             // Configurar eventos
             $('#btnSiguiente').click(function() {
-                if (preguntaActual < quizData.totalPreguntas - 1) {
+                // Usar la propiedad correcta para verificar si es la última pregunta
+                const totalPreguntas = quizData.totalPreguntas || quizData.preguntas?.length || 0;
+                
+                console.log('Botón siguiente presionado. PreguntaActual:', preguntaActual, 'TotalPreguntas:', totalPreguntas);
+                
+                if (preguntaActual < totalPreguntas - 1) {
+                    console.log('Navegando a siguiente pregunta...');
                     siguientePregunta();
                 } else {
+                    console.log('Mostrando modal de confirmación...');
                     mostrarModalConfirmacion();
                 }
             });
@@ -158,56 +179,105 @@
         }
 
         function mostrarPregunta(indice) {
-            if (indice < 0 || indice >= quizData.preguntas.length) return;
+            // Validación mejorada
+            const totalPreguntas = quizData.totalPreguntas || quizData.preguntas?.length || 0;
+            
+            console.log('mostrarPregunta llamada con índice:', indice, 'Total preguntas:', totalPreguntas);
+            
+            if (indice < 0 || indice >= totalPreguntas || !quizData.preguntas || !quizData.preguntas[indice]) {
+                console.error('Índice de pregunta inválido:', indice, 'Total:', totalPreguntas);
+                return;
+            }
 
             const pregunta = quizData.preguntas[indice];
             preguntaActual = indice;
             tiempoPreguntaInicio = new Date();
+            
+            console.log('Mostrando pregunta:', pregunta);
 
             // Actualizar UI
             $('#preguntaActual').text(indice + 1);
-            $('#porcentajeProgreso').text(Math.round(((indice + 1) / quizData.totalPreguntas) * 100));
-            $('#progreso').css('width', ((indice + 1) / quizData.totalPreguntas) * 100 + '%');
+            
+            // Usar el total correcto para el porcentaje
+            const porcentaje = Math.round(((indice + 1) / totalPreguntas) * 100);
+            $('#porcentajeProgreso').text(porcentaje);
+            $('#progreso').css('width', porcentaje + '%');
 
             // Construir HTML de la pregunta
             let html = `
                 <div class="mb-4">
                     <h5 class="mb-3">
                         <span class="badge bg-primary me-2">${indice + 1}</span>
-                        ${pregunta.textoPregunta}
+                        ${pregunta.textoPregunta || pregunta.TextoPregunta}
                     </h5>
                     <div class="row">
             `;
 
-            // Agregar opciones
-            pregunta.opciones.forEach((opcion, i) => {
-                const letra = String.fromCharCode(65 + i); // A, B, C, D
-                const isSelected = respuestasUsuario[pregunta.id] === opcion.valor;
-                
-                html += `
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input opcion-radio" type="radio" 
-                                   name="respuesta_${pregunta.id}" 
-                                   value="${opcion.valor}" 
-                                   id="opcion_${pregunta.id}_${opcion.valor}"
-                                   ${isSelected ? 'checked' : ''}>
-                            <label class="form-check-label w-100" for="opcion_${pregunta.id}_${opcion.valor}">
-                                <div class="border rounded p-3 opcion-label ${isSelected ? 'bg-light border-primary' : ''}">
-                                    <strong>${letra})</strong> ${opcion.texto}
-                                </div>
-                            </label>
+            // Usar la propiedad correcta para las opciones
+            const opciones = pregunta.opciones || pregunta.Opciones || [];
+            
+            if (opciones.length > 0) {
+                opciones.forEach((opcion, i) => {
+                    const letra = String.fromCharCode(65 + i); // A, B, C, D
+                    const preguntaId = pregunta.id || pregunta.Id;
+                    const opcionValor = opcion.valor || opcion.Valor;
+                    const opcionTexto = opcion.texto || opcion.Texto;
+                    const isSelected = respuestasUsuario[preguntaId] === opcionValor;
+                    
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input opcion-radio" type="radio" 
+                                       name="respuesta_${preguntaId}" 
+                                       value="${opcionValor}" 
+                                       id="opcion_${preguntaId}_${i}"
+                                       ${isSelected ? 'checked' : ''}>
+                                <label class="form-check-label w-100" for="opcion_${preguntaId}_${i}">
+                                    <div class="border rounded p-3 opcion-label ${isSelected ? 'bg-light border-primary' : ''}">
+                                        <strong>${letra})</strong> ${opcionTexto}
+                                    </div>
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            } else {
+                // Fallback a opciones directas si no hay array de opciones
+                const opcionesDirectas = [
+                    { letra: 'A', texto: pregunta.opcionA || pregunta.OpcionA },
+                    { letra: 'B', texto: pregunta.opcionB || pregunta.OpcionB },
+                    { letra: 'C', texto: pregunta.opcionC || pregunta.OpcionC },
+                    { letra: 'D', texto: pregunta.opcionD || pregunta.OpcionD }
+                ].filter(op => op.texto && op.texto.trim());
+
+                const preguntaId = pregunta.id || pregunta.Id;
+                opcionesDirectas.forEach((opcion, i) => {
+                    const isSelected = respuestasUsuario[preguntaId] === opcion.letra;
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input opcion-radio" type="radio" 
+                                       name="respuesta_${preguntaId}" 
+                                       value="${opcion.letra}" 
+                                       id="opcion_${preguntaId}_${i}"
+                                       ${isSelected ? 'checked' : ''}>
+                                <label class="form-check-label w-100" for="opcion_${preguntaId}_${i}">
+                                    <div class="border rounded p-3 opcion-label ${isSelected ? 'bg-light border-primary' : ''}">
+                                        <strong>${opcion.letra})</strong> ${opcion.texto}
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
 
             html += '</div></div>';
             $('#preguntaContenido').html(html);
 
             // Configurar eventos de las opciones
             $('.opcion-radio').change(function() {
-                const preguntaId = pregunta.id;
+                const preguntaId = pregunta.id || pregunta.Id;
                 const respuestaSeleccionada = $(this).val();
                 
                 // Guardar respuesta
@@ -222,7 +292,7 @@
                 $('.navegacion-ayuda').html('<i class="fas fa-check text-success me-1"></i>Respuesta seleccionada');
 
                 // Si mostrar respuestas inmediato está habilitado
-                if (quizData.mostrarRespuestasInmediato) {
+                if (quizData.mostrarRespuestasInmediato || quizData.MostrarRespuestasInmediato) {
                     setTimeout(() => {
                         mostrarFeedback(preguntaId, respuestaSeleccionada);
                     }, 500);
@@ -230,10 +300,12 @@
             });
 
             // Actualizar controles de navegación
+            const preguntaId = pregunta.id || pregunta.Id;
             $('#btnAnterior').prop('disabled', indice === 0);
-            $('#btnSiguiente').prop('disabled', !respuestasUsuario[pregunta.id]);
+            $('#btnSiguiente').prop('disabled', !respuestasUsuario[preguntaId]);
             
-            if (indice === quizData.totalPreguntas - 1) {
+            // Actualizar texto del botón siguiente
+            if (indice === totalPreguntas - 1) {
                 $('#btnSiguiente').html('<i class="fas fa-flag-checkered me-1"></i>Finalizar');
             } else {
                 $('#btnSiguiente').html('Siguiente <i class="fas fa-arrow-right ms-1"></i>');
@@ -244,29 +316,12 @@
         }
 
         function mostrarFeedback(preguntaId, respuestaSeleccionada) {
-            // Enviar respuesta al servidor
-            const tiempoRespuesta = Math.round((new Date() - tiempoPreguntaInicio) / 1000);
+            // Por ahora, no enviamos respuestas individuales al servidor
+            // Solo guardamos las respuestas localmente para enviarlas al final
+            console.log('Respuesta guardada:', preguntaId, respuestaSeleccionada);
             
-            $.ajax({
-                url: '@Url.Action("SubmitAnswer")',
-                type: 'POST',
-                data: {
-                    QuizId: quizData.quizId,
-                    PreguntaId: preguntaId,
-                    RespuestaSeleccionada: respuestaSeleccionada,
-                    TiempoRespuesta: tiempoRespuesta,
-                    EsUltimaPregnta: preguntaActual === quizData.totalPreguntas - 1,
-                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                },
-                success: function(response) {
-                    if (response.success) {
-                        mostrarFeedbackUI(response);
-                    }
-                },
-                error: function() {
-                    console.error('Error al enviar respuesta');
-                }
-            });
+            // Si se quiere mostrar feedback inmediato, se puede implementar aquí
+            // usando la lógica local del quiz
         }
 
         function mostrarFeedbackUI(response) {
@@ -287,7 +342,8 @@
         }
 
         function siguientePregunta() {
-            if (preguntaActual < quizData.totalPreguntas - 1) {
+            const totalPreguntas = quizData.totalPreguntas || quizData.preguntas?.length || 0;
+            if (preguntaActual < totalPreguntas - 1) {
                 mostrarPregunta(preguntaActual + 1);
             }
         }
@@ -300,9 +356,10 @@
 
         function mostrarModalConfirmacion() {
             const preguntasRespondidas = Object.keys(respuestasUsuario).length;
+            const totalPreguntas = quizData.totalPreguntas || quizData.preguntas?.length || 0;
             const tiempoTranscurrido = Math.round((new Date() - tiempoInicio) / 1000 / 60);
             
-            $('#preguntasRespondidas').text(preguntasRespondidas);
+            $('#preguntasRespondidas').text(preguntasRespondidas + ' de ' + totalPreguntas);
             $('#tiempoTranscurrido').text(tiempoTranscurrido + ' min');
             
             $('#modalConfirmacion').modal('show');

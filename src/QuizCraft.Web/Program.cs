@@ -166,8 +166,12 @@ static async Task FUNC_CrearUsuarioAdministrador(UserManager<ApplicationUser> us
     const string adminEmail = "admin@quizcraft.com";
     const string adminPassword = "Admin123!";
     
-    if (await userManager.FindByEmailAsync(adminEmail) == null)
+    // Buscar si ya existe el usuario administrador
+    var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+    
+    if (existingAdmin == null)
     {
+        // Si no existe, crear nuevo usuario
         var adminUser = new ApplicationUser
         {
             UserName = adminEmail,
@@ -184,6 +188,20 @@ static async Task FUNC_CrearUsuarioAdministrador(UserManager<ApplicationUser> us
         if (result.Succeeded)
         {
             await userManager.AddToRoleAsync(adminUser, "Administrador");
+        }
+    }
+    else
+    {
+        // Si existe pero no tiene contraseña (viene de migración), asignar contraseña
+        if (string.IsNullOrEmpty(existingAdmin.PasswordHash))
+        {
+            await userManager.AddPasswordAsync(existingAdmin, adminPassword);
+        }
+        
+        // Asegurar que tiene el rol de administrador
+        if (!await userManager.IsInRoleAsync(existingAdmin, "Administrador"))
+        {
+            await userManager.AddToRoleAsync(existingAdmin, "Administrador");
         }
     }
 }

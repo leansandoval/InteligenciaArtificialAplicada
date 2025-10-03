@@ -77,7 +77,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                         'admin@quizcraft.com',
                         'ADMIN@QUIZCRAFT.COM',
                         1,
-                        'AQAAAAIAAYagAAAAEMZyGm9yRKvM2BKNDOFZhRlGdW7ykSv8Cq9gHXZG0kT8gT7mj2fL9/zVPX2vYl4ZHQ==',
+                        NULL,
                         NEWID(),
                         NEWID(),
                         0,

@@ -292,18 +292,30 @@ namespace QuizCraft.Web.Controllers
                 return Forbid();
             }
 
+            // Verificar que hay preguntas disponibles
+            var preguntasActivas = quiz.Preguntas.Where(p => p.EstaActivo).OrderBy(p => p.Orden).ToList();
+            
+            if (!preguntasActivas.Any())
+            {
+                TempData["Error"] = "Este quiz no tiene preguntas disponibles.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             var viewModel = new TakeQuizViewModel
             {
                 Id = quiz.Id,
+                QuizId = quiz.Id,
                 Titulo = quiz.Titulo,
                 Descripcion = quiz.Descripcion,
                 NumeroPreguntas = quiz.NumeroPreguntas,
+                TotalPreguntas = preguntasActivas.Count, // Usar preguntas reales, no el campo NumeroPreguntas
                 TiempoPorPregunta = quiz.TiempoPorPregunta,
                 TiempoLimite = quiz.TiempoLimite,
                 MostrarRespuestasInmediato = quiz.MostrarRespuestasInmediato,
                 MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
                 PreguntaActual = 1,
-                Preguntas = quiz.Preguntas.OrderBy(p => p.Orden).Select(p => new PreguntaQuizViewModel
+                FechaInicio = DateTime.UtcNow,
+                Preguntas = preguntasActivas.Select(p => new PreguntaQuizViewModel
                 {
                     Id = p.Id,
                     TextoPregunta = p.TextoPregunta,
@@ -321,9 +333,12 @@ namespace QuizCraft.Web.Controllers
                         new OpcionRespuestaViewModel { Texto = p.OpcionB ?? "", Valor = "B", EsCorrecta = p.RespuestaCorrecta == "B" },
                         new OpcionRespuestaViewModel { Texto = p.OpcionC ?? "", Valor = "C", EsCorrecta = p.RespuestaCorrecta == "C" },
                         new OpcionRespuestaViewModel { Texto = p.OpcionD ?? "", Valor = "D", EsCorrecta = p.RespuestaCorrecta == "D" }
-                    }
+                    }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList()
                 }).ToList()
             };
+
+            // Log para debugging
+            _logger.LogInformation($"Quiz {id}: TotalPreguntas={viewModel.TotalPreguntas}, PreguntasCargadas={viewModel.Preguntas.Count}");
 
             return View(viewModel);
         }
