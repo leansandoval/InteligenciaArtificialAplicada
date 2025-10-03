@@ -5,7 +5,7 @@
 namespace QuizCraft.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class SeedDataAdmin : Migration
+    public partial class SeedApplicationData : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

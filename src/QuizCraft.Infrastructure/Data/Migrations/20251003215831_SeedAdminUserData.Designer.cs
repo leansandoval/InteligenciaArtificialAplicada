@@ -12,8 +12,8 @@ using QuizCraft.Infrastructure.Data;
 namespace QuizCraft.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251003195457_SeedDataAdmin")]
-    partial class SeedDataAdmin
+    [Migration("20251003215831_SeedAdminUserData")]
+    partial class SeedAdminUserData
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

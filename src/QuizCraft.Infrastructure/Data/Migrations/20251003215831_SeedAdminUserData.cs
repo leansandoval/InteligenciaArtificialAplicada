@@ -5,7 +5,7 @@
 namespace QuizCraft.Infrastructure.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class CreateAdminUser : Migration
+    public partial class SeedAdminUserData : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -77,7 +77,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                         'admin@quizcraft.com',
                         'ADMIN@QUIZCRAFT.COM',
                         1,
-                        'AQAAAAIAAYagAAAAEMZyGm9yRKvM2BKNDOFZhRlGdW7ykSv8Cq9gHXZG0kT8gT7mj2fL9/zVPX2vYl4ZHQ==', -- password: Admin123!
+                        'AQAAAAIAAYagAAAAEMZyGm9yRKvM2BKNDOFZhRlGdW7ykSv8Cq9gHXZG0kT8gT7mj2fL9/zVPX2vYl4ZHQ==',
                         NEWID(),
                         NEWID(),
                         0,
@@ -108,7 +108,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
             migrationBuilder.Sql("DELETE FROM AspNetUsers WHERE NormalizedEmail = 'ADMIN@QUIZCRAFT.COM'");
 
             // Eliminar roles
-            migrationBuilder.Sql("DELETE FROM AspNetRoles WHERE NormalizedName IN ('ADMINISTRADOR', 'PROFESSOR', 'ESTUDIANTE')");
+            migrationBuilder.Sql("DELETE FROM AspNetRoles WHERE NormalizedName IN ('ADMINISTRADOR', 'PROFESOR', 'ESTUDIANTE')");
         }
     }
 }
