@@ -184,11 +184,11 @@ public class AccountController : Controller
             {
                 Nombre = user.Nombre ?? string.Empty,
                 Apellido = user.Apellido ?? string.Empty,
-                Email = user.Email,
+                Email = user.Email ?? string.Empty,
                 NotificacionesEmail = user.NotificacionesEmail,
                 NotificacionesWeb = user.NotificacionesWeb,
-                PreferenciaIdioma = user.PreferenciaIdioma,
-                TemaPreferido = user.TemaPreferido
+                PreferenciaIdioma = user.PreferenciaIdioma ?? string.Empty,
+                TemaPreferido = user.TemaPreferido ?? string.Empty
             };
 
             return View(model);

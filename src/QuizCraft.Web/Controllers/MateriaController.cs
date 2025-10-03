@@ -45,10 +45,10 @@ namespace QuizCraft.Web.Controllers
                     materiasViewModel.Add(new MateriaViewModel
                     {
                         Id = m.Id,
-                        Nombre = m.Nombre,
-                        Descripcion = m.Descripcion,
-                        Color = m.Color,
-                        Icono = m.Icono,
+                        Nombre = m.Nombre ?? string.Empty,
+                        Descripcion = m.Descripcion ?? string.Empty,
+                        Color = m.Color ?? string.Empty,
+                        Icono = m.Icono ?? string.Empty,
                         FechaCreacion = m.FechaCreacion,
                         EstaActivo = m.EstaActivo,
                         TotalFlashcards = estadisticasGenerales.ContainsKey(m.Id) ? estadisticasGenerales[m.Id] : 0,
@@ -86,10 +86,10 @@ namespace QuizCraft.Web.Controllers
                 var materiaViewModel = new MateriaViewModel
                 {
                     Id = materia.Id,
-                    Nombre = materia.Nombre,
+                    Nombre = materia.Nombre ?? string.Empty,
                     Descripcion = materia.Descripcion ?? string.Empty,
-                    Color = materia.Color,
-                    Icono = materia.Icono,
+                    Color = materia.Color ?? string.Empty,
+                    Icono = materia.Icono ?? string.Empty,
                     FechaCreacion = materia.FechaCreacion,
                     FechaModificacion = materia.FechaModificacion,
                     EstaActivo = materia.EstaActivo,
@@ -176,10 +176,10 @@ namespace QuizCraft.Web.Controllers
                 var model = new EditMateriaViewModel
                 {
                     Id = materia.Id,
-                    Nombre = materia.Nombre,
-                    Descripcion = materia.Descripcion,
-                    Color = materia.Color,
-                    Icono = materia.Icono,
+                    Nombre = materia.Nombre ?? string.Empty,
+                    Descripcion = materia.Descripcion ?? string.Empty,
+                    Color = materia.Color ?? string.Empty,
+                    Icono = materia.Icono ?? string.Empty,
                     EstaActivo = materia.EstaActivo
                 };
 
@@ -264,10 +264,10 @@ namespace QuizCraft.Web.Controllers
                 var materiaViewModel = new MateriaViewModel
                 {
                     Id = materia.Id,
-                    Nombre = materia.Nombre,
-                    Descripcion = materia.Descripcion,
-                    Color = materia.Color,
-                    Icono = materia.Icono,
+                    Nombre = materia.Nombre ?? string.Empty,
+                    Descripcion = materia.Descripcion ?? string.Empty,
+                    Color = materia.Color ?? string.Empty,
+                    Icono = materia.Icono ?? string.Empty,
                     FechaCreacion = materia.FechaCreacion,
                     EstaActivo = materia.EstaActivo,
                     TotalFlashcards = materia.Flashcards?.Count ?? 0,

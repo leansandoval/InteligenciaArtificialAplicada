@@ -25,6 +25,11 @@ namespace QuizCraft.Web.Controllers
         {
             var usuarioId = _userManager.GetUserId(User);
             
+            if (string.IsNullOrEmpty(usuarioId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            
             // Obtener datos de forma secuencial para evitar problemas de concurrencia
             var misQuizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(usuarioId);
             var quizzesPublicos = await _unitOfWork.QuizRepository.GetQuizzesPublicosAsync();
@@ -93,6 +98,12 @@ namespace QuizCraft.Web.Controllers
         public async Task<IActionResult> Create(int? materiaId = null)
         {
             var usuarioId = _userManager.GetUserId(User);
+            
+            if (string.IsNullOrEmpty(usuarioId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+            
             var viewModel = new CreateQuizViewModel();
 
             // Cargar materias del usuario autenticado
@@ -143,6 +154,11 @@ namespace QuizCraft.Web.Controllers
             }
 
             var usuarioId = _userManager.GetUserId(User);
+            
+            if (string.IsNullOrEmpty(usuarioId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
             
             // Obtener flashcards de la materia seleccionada
             var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
