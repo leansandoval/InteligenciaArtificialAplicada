@@ -13,11 +13,13 @@ namespace QuizCraft.Web.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<QuizController> _logger;
 
-        public QuizController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
+        public QuizController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager, ILogger<QuizController> logger)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: Quiz
@@ -34,13 +36,16 @@ namespace QuizCraft.Web.Controllers
             var misQuizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(usuarioId);
             var quizzesPublicos = await _unitOfWork.QuizRepository.GetQuizzesPublicosAsync();
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+            
+            // Debug: Log para verificar los datos
+            _logger.LogInformation($"Usuario: {usuarioId}, Mis Quizzes: {misQuizzes.Count()}, Quizzes Públicos: {quizzesPublicos.Count()}, Materias: {materias.Count()}");
 
             var viewModel = new QuizIndexViewModel
             {
                 MisQuizzes = misQuizzes.Select(q => new QuizItemViewModel
                 {
                     Id = q.Id,
-                    Titulo = q.Titulo,
+                    Titulo = q.Titulo ?? string.Empty,
                     Descripcion = q.Descripcion,
                     NumeroPreguntas = q.NumeroPreguntas,
                     MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
@@ -55,6 +60,26 @@ namespace QuizCraft.Web.Controllers
                         .Where(r => r.UsuarioId == usuarioId)
                         .OrderByDescending(r => r.FechaRealizacion)
                         .FirstOrDefault()?.PorcentajeAcierto
+                }).ToList(),
+                
+                QuizzesCreados = misQuizzes.Select(q => new QuizListItemViewModel
+                {
+                    Id = q.Id,
+                    Titulo = q.Titulo ?? string.Empty,
+                    Descripcion = q.Descripcion,
+                    NumeroPreguntas = q.NumeroPreguntas,
+                    MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
+                    CreadorNombre = q.Creador?.UserName ?? "Usuario",
+                    FechaCreacion = q.FechaCreacion,
+                    EsPublico = q.EsPublico,
+                    TotalResultados = q.Resultados?.Count ?? 0,
+                    Dificultad = (NivelDificultad)q.NivelDificultad,
+                    TiempoLimite = q.TiempoLimite,
+                    YaRealizado = q.Resultados?.Any(r => r.UsuarioId == usuarioId) == true,
+                    UltimoResultado = (int?)(q.Resultados?
+                        .Where(r => r.UsuarioId == usuarioId)
+                        .OrderByDescending(r => r.FechaRealizacion)
+                        .FirstOrDefault()?.PorcentajeAcierto)
                 }).ToList(),
                 
                 QuizzesPublicos = quizzesPublicos
@@ -83,10 +108,11 @@ namespace QuizCraft.Web.Controllers
                 
                 MateriaSeleccionada = materiaId,
                 DificultadSeleccionada = dificultad,
+                TotalQuizzes = misQuizzes.Count(),
                 MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
                 {
                     Id = m.Id,
-                    Nombre = m.Nombre
+                    Nombre = m.Nombre ?? string.Empty
                 }).ToList()
             };
 

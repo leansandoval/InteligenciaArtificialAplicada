@@ -29,6 +29,7 @@ namespace QuizCraft.Infrastructure.Repositories
             return await _dbSet
                 .Include(q => q.Materia)
                 .Include(q => q.Creador)
+                .Include(q => q.Resultados)
                 .Where(q => q.CreadorId == creadorId)
                 .OrderByDescending(q => q.FechaCreacion)
                 .ToListAsync();
@@ -58,6 +59,7 @@ namespace QuizCraft.Infrastructure.Repositories
             IQueryable<Quiz> query = _dbSet
                 .Include(q => q.Materia)
                 .Include(q => q.Creador)
+                .Include(q => q.Resultados)
                 .Where(q => q.EsPublico);
 
             if (materiaId.HasValue)
