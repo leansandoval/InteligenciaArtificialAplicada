@@ -440,6 +440,39 @@ namespace QuizCraft.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: Quiz/SubmitQuiz
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SubmitQuiz(int QuizId, string? RespuestasUsuario, int TiempoTranscurrido)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                
+                if (string.IsNullOrEmpty(usuarioId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+
+                // Por ahora, solo loggeamos la información y redirigimos a Details con un parámetro de completado
+                _logger.LogInformation($"Quiz {QuizId} completado por usuario {usuarioId}. Tiempo: {TiempoTranscurrido}s, Respuestas: {RespuestasUsuario}");
+
+                // Guardar información en TempData para mostrar en la página de detalles
+                TempData["QuizCompletado"] = true;
+                TempData["TiempoTranscurrido"] = TiempoTranscurrido;
+                TempData["Success"] = "¡Quiz completado exitosamente!";
+
+                // Redirigir a la página de detalles del quiz
+                return RedirectToAction(nameof(Details), new { id = QuizId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al procesar envío de quiz {QuizId}", QuizId);
+                TempData["Error"] = "Ocurrió un error al procesar el quiz. Por favor, inténtalo de nuevo.";
+                return RedirectToAction(nameof(Details), new { id = QuizId });
+            }
+        }
+
         // Método auxiliar para generar opciones incorrectas
         private string GenerarOpcionIncorrecta()
         {

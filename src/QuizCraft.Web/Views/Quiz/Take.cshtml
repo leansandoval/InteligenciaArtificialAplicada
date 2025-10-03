@@ -120,6 +120,16 @@
         let tiempoInicio = new Date();
         let cronometroInterval;
         let tiempoPreguntaInicio = new Date();
+        let quizFinalizado = false;
+
+        // Función para manejar el evento beforeunload
+        function handleBeforeUnload(e) {
+            if (!quizFinalizado) {
+                e.preventDefault();
+                e.returnValue = '¿Estás seguro de que quieres salir? Se perderá tu progreso.';
+                return '¿Estás seguro de que quieres salir? Se perderá tu progreso.';
+            }
+        }
 
         $(document).ready(function() {
             // Debug mejorado
@@ -168,14 +178,12 @@
             });
 
             $('#btnFinalizarQuiz').click(function() {
+                console.log('Botón finalizar presionado');
                 finalizarQuiz();
             });
 
-            // Prevenir salir de la página accidentalmente
-            window.addEventListener('beforeunload', function(e) {
-                e.preventDefault();
-                e.returnValue = '';
-            });
+            // Agregar el event listener correctamente
+            window.addEventListener('beforeunload', handleBeforeUnload);
         }
 
         function mostrarPregunta(indice) {
@@ -365,17 +373,87 @@
             $('#modalConfirmacion').modal('show');
         }
 
+        // Variables de control para evitar múltiples envíos
+        let enviandoQuiz = false;
+        let quizEnviado = false;
+
         function finalizarQuiz() {
+            console.log('Iniciando finalizarQuiz()');
+            
+            // Marcar como finalizado ANTES de hacer cualquier otra cosa
+            quizFinalizado = true;
+            
             // Detener cronómetro
             if (cronometroInterval) {
                 clearInterval(cronometroInterval);
+                console.log('Cronómetro detenido');
             }
 
-            // Remover el evento beforeunload
-            window.removeEventListener('beforeunload', function() {});
+            // Remover el event listener correctamente
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            console.log('Event listener removido');
 
-            // Redirigir a resultados
-            window.location.href = '@Url.Action("Results", new { id = Model.QuizId })';
+            // Cerrar modal si está abierto
+            $('#modalConfirmacion').modal('hide');
+
+            // Obtener datos necesarios
+            const tiempoTranscurrido = Math.round((new Date() - tiempoInicio) / 1000);
+            const quizId = quizData.quizId || quizData.QuizId || quizData.id || quizData.Id;
+            
+            console.log('Datos del quiz:', {
+                quizId: quizId,
+                respuestasUsuario: respuestasUsuario,
+                tiempoTranscurrido: tiempoTranscurrido
+            });
+
+            try {
+                // Crear formulario para envío POST más robusto
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '@Url.Action("SubmitQuiz", "Quiz")';
+                form.style.display = 'none';
+
+                // Token anti-falsificación
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = $('input[name="__RequestVerificationToken"]').val();
+                form.appendChild(tokenInput);
+
+                // ID del quiz
+                const quizIdInput = document.createElement('input');
+                quizIdInput.type = 'hidden';
+                quizIdInput.name = 'QuizId';
+                quizIdInput.value = quizId;
+                form.appendChild(quizIdInput);
+
+                // Respuestas del usuario
+                const respuestasInput = document.createElement('input');
+                respuestasInput.type = 'hidden';
+                respuestasInput.name = 'RespuestasUsuario';
+                respuestasInput.value = JSON.stringify(respuestasUsuario);
+                form.appendChild(respuestasInput);
+
+                // Tiempo transcurrido
+                const tiempoInput = document.createElement('input');
+                tiempoInput.type = 'hidden';
+                tiempoInput.name = 'TiempoTranscurrido';
+                tiempoInput.value = tiempoTranscurrido;
+                form.appendChild(tiempoInput);
+
+                // Agregar al DOM y enviar
+                document.body.appendChild(form);
+                
+                console.log('Enviando formulario...');
+                form.submit();
+
+            } catch (error) {
+                console.error('Error al crear formulario:', error);
+                
+                // FALLBACK: Redirección simple si falla el formulario
+                alert('Ocurrió un error al procesar el quiz. Serás redirigido a la página principal.');
+                window.location.href = '@Url.Action("Details", "Quiz")/' + quizId;
+            }
         }
 
         function iniciarCronometro() {
