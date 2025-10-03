@@ -312,7 +312,16 @@ namespace QuizCraft.Web.Controllers
                     OpcionC = p.OpcionC ?? "",
                     OpcionD = p.OpcionD ?? "",
                     Orden = p.Orden,
-                    Puntos = p.Puntos
+                    Puntos = p.Puntos,
+                    RespuestaCorrecta = p.RespuestaCorrecta,
+                    Explicacion = p.Explicacion,
+                    Opciones = new List<OpcionRespuestaViewModel>
+                    {
+                        new OpcionRespuestaViewModel { Texto = p.OpcionA ?? "", Valor = "A", EsCorrecta = p.RespuestaCorrecta == "A" },
+                        new OpcionRespuestaViewModel { Texto = p.OpcionB ?? "", Valor = "B", EsCorrecta = p.RespuestaCorrecta == "B" },
+                        new OpcionRespuestaViewModel { Texto = p.OpcionC ?? "", Valor = "C", EsCorrecta = p.RespuestaCorrecta == "C" },
+                        new OpcionRespuestaViewModel { Texto = p.OpcionD ?? "", Valor = "D", EsCorrecta = p.RespuestaCorrecta == "D" }
+                    }
                 }).ToList()
             };
 
