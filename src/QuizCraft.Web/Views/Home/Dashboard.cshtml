@@ -29,6 +29,9 @@
                             <a asp-controller="Quiz" asp-action="Index" class="btn btn-light btn-lg">
                                 <i class="fas fa-question-circle me-2"></i>Mis Quizzes
                             </a>
+                            <a asp-controller="Generacion" asp-action="Index" class="btn btn-warning btn-lg">
+                                <i class="fas fa-magic me-2"></i>Generar Automáticamente
+                            </a>
                             <a asp-controller="Materia" asp-action="Create" class="btn btn-outline-light btn-lg">
                                 <i class="fas fa-plus me-2"></i>Nueva Materia
                             </a>
@@ -124,6 +127,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
+                                        <a asp-controller="Generacion" asp-action="Index" class="btn btn-outline-info btn-lg border-2">
+                                            <i class="fas fa-magic me-2"></i>
+                                            <div class="fw-bold">Generar Automáticamente</div>
+                                            <small class="text-muted">Flashcards desde documentos</small>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-grid">
                                         <a asp-controller="Quiz" asp-action="Create" class="btn btn-outline-warning btn-lg">
                                             <i class="fas fa-question-circle me-2"></i>
                                             <div class="fw-bold">Crear Quiz</div>
@@ -133,7 +145,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-info btn-lg">
+                                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-secondary btn-lg">
                                             <i class="fas fa-play me-2"></i>
                                             <div class="fw-bold">Sesión de Estudio</div>
                                             <small class="text-muted">Practica con flashcards</small>

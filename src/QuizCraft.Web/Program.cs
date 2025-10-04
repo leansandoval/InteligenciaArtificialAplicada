@@ -59,6 +59,14 @@ builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 
+// FUNC_ConfigurarServicios: Inyección de dependencias para servicios de aplicación
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFileUploadService, QuizCraft.Infrastructure.Services.FileUploadService>();
+
+// FUNC_ConfigurarGeneracionFlashcards: Servicios para generación automática de flashcards
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFlashcardGenerationService, QuizCraft.Infrastructure.Services.DocumentProcessing.FlashcardGenerationService>();
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.ITraditionalDocumentProcessor, QuizCraft.Infrastructure.Services.DocumentProcessing.TraditionalDocumentProcessor>();
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtractor, QuizCraft.Infrastructure.Services.DocumentProcessing.TextFileExtractor>();
+
 // FUNC_ConfigurarAutenticacion: Configuración de cookies de autenticación
 builder.Services.ConfigureApplicationCookie(options =>
 {

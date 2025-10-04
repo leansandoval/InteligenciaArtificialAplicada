@@ -1,0 +1,522 @@
+@{
+    ViewData["Title"] = "Generar Flashcards Automáticamente";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="text-center mb-4">
+                <i class="fas fa-magic text-primary"></i>
+                Generar Flashcards Automáticamente
+            </h2>
+            <p class="text-center text-muted mb-5">
+                Convierte tus documentos en flashcards de estudio de forma automática
+            </p>
+        </div>
+    </div>
+
+    <!-- Selección de Modo -->
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="card h-100 border-primary mode-card" data-mode="traditional">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4><i class="fas fa-file-text"></i> Procesamiento Tradicional</h4>
+                    <span class="badge bg-success fs-6">GRATIS</span>
+                </div>
+                <div class="card-body">
+                    <h5>Características:</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Sin límites de uso</li>
+                        <li><i class="fas fa-check text-success"></i> Procesamiento instantáneo</li>
+                        <li><i class="fas fa-check text-success"></i> Privacidad total</li>
+                        <li><i class="fas fa-cog text-info"></i> División por estructura</li>
+                        <li><i class="fas fa-cog text-info"></i> Patrones configurables</li>
+                    </ul>
+                    <div class="text-center">
+                        <button class="btn btn-primary btn-lg w-100 mode-btn" data-mode="traditional">
+                            <i class="fas fa-play"></i> Usar Procesamiento Tradicional
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100 border-warning mode-card" data-mode="ai">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4><i class="fas fa-robot"></i> Inteligencia Artificial</h4>
+                    <span class="badge bg-info fs-6">PREMIUM</span>
+                </div>
+                <div class="card-body">
+                    <h5>Características:</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-brain text-warning"></i> Comprensión contextual</li>
+                        <li><i class="fas fa-target text-warning"></i> Preguntas inteligentes</li>
+                        <li><i class="fas fa-edit text-warning"></i> Respuestas elaboradas</li>
+                        <li><i class="fas fa-bolt text-warning"></i> Calidad superior</li>
+                        <li><i class="fas fa-coins text-danger"></i> Requiere tokens</li>
+                    </ul>
+                    <div class="text-center">
+                        <button class="btn btn-warning btn-lg w-100 mode-btn" data-mode="ai" disabled>
+                            <i class="fas fa-lock"></i> Próximamente
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            <span id="tokensDisponibles">Función en desarrollo</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Generación (inicialmente oculto) -->
+    <div id="formularioGeneracion" class="row" style="display: none;">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h4><i class="fas fa-upload"></i> Configurar Generación</h4>
+                </div>
+                <div class="card-body">
+                    <form id="formGeneracion" enctype="multipart/form-data">
+                        <div class="row">
+                            <!-- Selección de Archivo -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="documento" class="form-label">
+                                        <i class="fas fa-file"></i> Documento
+                                    </label>
+                                    <input type="file" class="form-control" id="documento" name="documento" 
+                                           accept=".txt,.pdf,.docx,.pptx" required>
+                                    <div class="form-text">
+                                        Tipos soportados: @string.Join(", ", ViewBag.SupportedFileTypes)
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="materiaId" class="form-label">
+                                        <i class="fas fa-book"></i> Materia
+                                    </label>
+                                    <select class="form-select" id="materiaId" name="materiaId" required>
+                                        <option value="">Seleccionar materia...</option>
+                                        @foreach (var materia in ViewBag.Materias)
+                                        {
+                                            <option value="@materia.Id">@materia.Nombre</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Configuración -->
+                            <div class="col-md-6">
+                                <div id="configuracionTraditional" class="configuracion-panel">
+                                    <h6><i class="fas fa-cogs"></i> Configuración Tradicional</h6>
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label">Máximo de flashcards</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               name="maxCards" value="50" min="1" max="200">
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="splitByParagraph" checked>
+                                                <label class="form-check-label">Dividir por párrafos</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="detectQuestions" checked>
+                                                <label class="form-check-label">Detectar preguntas</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="useStructural" checked>
+                                                <label class="form-check-label">Usar estructura</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       name="filterShort" checked>
+                                                <label class="form-check-label">Filtrar cortos</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-2">
+                                        <label class="form-label">Separador personalizado (opcional)</label>
+                                        <input type="text" class="form-control form-control-sm" 
+                                               name="customSeparator" placeholder="Ej: ---">
+                                    </div>
+                                </div>
+
+                                <div id="configuracionAI" class="configuracion-panel" style="display: none;">
+                                    <h6><i class="fas fa-robot"></i> Configuración IA</h6>
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label">Máximo de flashcards</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               name="maxCardsAI" value="20" min="1" max="50">
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label">Dificultad</label>
+                                        <select class="form-select form-select-sm" name="difficulty">
+                                            <option value="Easy">Fácil</option>
+                                            <option value="Medium" selected>Medio</option>
+                                            <option value="Hard">Difícil</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="includeExplanations" checked>
+                                        <label class="form-check-label">Incluir explicaciones</label>
+                                    </div>
+
+                                    <div class="mt-2">
+                                        <label class="form-label">Área de enfoque (opcional)</label>
+                                        <input type="text" class="form-control form-control-sm" 
+                                               name="focusArea" placeholder="Ej: Matemáticas, Historia">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center">
+                                <button type="button" class="btn btn-outline-info me-2" id="btnVistaPrevia">
+                                    <i class="fas fa-eye"></i> Vista Previa
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-magic"></i> Generar Flashcards
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" id="btnCancelar">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de Resultados -->
+    <div id="areaResultados" class="row mt-4" style="display: none;">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="fas fa-check-circle"></i> Flashcards Generadas</h4>
+                </div>
+                <div class="card-body">
+                    <div id="estadisticasGeneracion" class="mb-3"></div>
+                    <div id="listaFlashcards"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Vista Previa -->
+    <div class="modal fade" id="modalVistaPrevia" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-eye"></i> Vista Previa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="contenidoVistaPrevia"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-success" id="btnConfirmarGeneracion">
+                        <i class="fas fa-check"></i> Confirmar y Generar Todas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            let modoSeleccionado = '';
+
+            // Selección de modo
+            $('.mode-btn').click(function() {
+                if ($(this).prop('disabled')) return;
+                
+                modoSeleccionado = $(this).data('mode');
+                
+                // Destacar carta seleccionada
+                $('.mode-card').removeClass('border-primary border-warning').addClass('border-secondary');
+                $(this).closest('.mode-card').removeClass('border-secondary').addClass(
+                    modoSeleccionado === 'traditional' ? 'border-primary' : 'border-warning'
+                );
+
+                // Mostrar formulario y configuración apropiada
+                $('#formularioGeneracion').show();
+                $('.configuracion-panel').hide();
+                $(`#configuracion${modoSeleccionado === 'traditional' ? 'Traditional' : 'AI'}`).show();
+
+                // Scroll al formulario
+                $('html, body').animate({
+                    scrollTop: $('#formularioGeneracion').offset().top - 20
+                }, 500);
+            });
+
+            // Cancelar
+            $('#btnCancelar').click(function() {
+                $('#formularioGeneracion').hide();
+                $('#areaResultados').hide();
+                $('.mode-card').removeClass('border-primary border-warning border-secondary');
+                modoSeleccionado = '';
+            });
+
+            // Vista previa
+            $('#btnVistaPrevia').click(function() {
+                if (!validarFormulario()) return;
+
+                const formData = new FormData($('#formGeneracion')[0]);
+                formData.append('modo', modoSeleccionado);
+
+                mostrarCargando('Generando vista previa...');
+
+                $.ajax({
+                    url: '@Url.Action("VistaPrevia", "Generacion")',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        ocultarCargando();
+                        if (response.success) {
+                            mostrarVistaPrevia(response);
+                        } else {
+                            mostrarError(response.message);
+                        }
+                    },
+                    error: function() {
+                        ocultarCargando();
+                        mostrarError('Error al generar vista previa');
+                    }
+                });
+            });
+
+            // Generar flashcards
+            $('#formGeneracion').submit(function(e) {
+                e.preventDefault();
+                
+                if (!validarFormulario()) return;
+
+                const formData = new FormData(this);
+                formData.append('modo', modoSeleccionado);
+
+                mostrarCargando('Generando flashcards...');
+
+                $.ajax({
+                    url: '@Url.Action("GenerarFlashcards", "Generacion")',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        ocultarCargando();
+                        if (response.success) {
+                            mostrarResultados(response);
+                        } else {
+                            mostrarError(response.message);
+                        }
+                    },
+                    error: function() {
+                        ocultarCargando();
+                        mostrarError('Error al generar flashcards');
+                    }
+                });
+            });
+
+            // Confirmar generación desde vista previa
+            $('#btnConfirmarGeneracion').click(function() {
+                $('#modalVistaPrevia').modal('hide');
+                $('#formGeneracion').submit();
+            });
+
+            function validarFormulario() {
+                const documento = $('#documento')[0].files[0];
+                const materiaId = $('#materiaId').val();
+
+                if (!documento) {
+                    mostrarError('Debe seleccionar un archivo');
+                    return false;
+                }
+
+                if (!materiaId) {
+                    mostrarError('Debe seleccionar una materia');
+                    return false;
+                }
+
+                return true;
+            }
+
+            function mostrarVistaPrevia(response) {
+                let html = `
+                    <div class="alert alert-info">
+                        <strong>Vista previa:</strong> Mostrando hasta 5 flashcards de ${response.totalPossible} posibles.
+                        <br><strong>Modo:</strong> ${response.modeUsed}
+                    </div>
+                `;
+
+                response.flashcards.forEach((card, index) => {
+                    html += `
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-title">Flashcard ${index + 1}</h6>
+                                <p><strong>Pregunta:</strong> ${card.pregunta}</p>
+                                <p><strong>Respuesta:</strong> ${card.respuesta}</p>
+                                <small class="text-muted">
+                                    Confianza: ${card.confidence}% | Fuente: ${card.source}
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                $('#contenidoVistaPrevia').html(html);
+                $('#modalVistaPrevia').modal('show');
+            }
+
+            function mostrarResultados(response) {
+                const estadisticas = `
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="bg-primary text-white p-3 rounded">
+                                <h4>${response.flashcards.length}</h4>
+                                <small>Flashcards Creadas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-info text-white p-3 rounded">
+                                <h4>${response.processingTime.toFixed(2)}s</h4>
+                                <small>Tiempo de Procesamiento</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-success text-white p-3 rounded">
+                                <h4>${response.modeUsed}</h4>
+                                <small>Modo Utilizado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="bg-warning text-white p-3 rounded">
+                                <h4>100%</h4>
+                                <small>Éxito</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                let listaHtml = '<div class="row">';
+                response.flashcards.forEach((card, index) => {
+                    listaHtml += `
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">Flashcard ${index + 1}</h6>
+                                    <p class="card-text"><strong>P:</strong> ${card.pregunta}</p>
+                                    <p class="card-text"><strong>R:</strong> ${card.respuesta}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-chart-line"></i> ${card.confidence}% | 
+                                        <i class="fas fa-map-marker-alt"></i> ${card.source}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                listaHtml += '</div>';
+
+                $('#estadisticasGeneracion').html(estadisticas);
+                $('#listaFlashcards').html(listaHtml);
+                $('#areaResultados').show();
+
+                // Scroll a resultados
+                $('html, body').animate({
+                    scrollTop: $('#areaResultados').offset().top - 20
+                }, 500);
+
+                mostrarExito(response.message);
+            }
+
+            function mostrarCargando(mensaje) {
+                Swal.fire({
+                    title: 'Procesando...',
+                    text: mensaje,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+            }
+
+            function ocultarCargando() {
+                Swal.close();
+            }
+
+            function mostrarExito(mensaje) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: mensaje,
+                    timer: 3000
+                });
+            }
+
+            function mostrarError(mensaje) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: mensaje
+                });
+            }
+        });
+    </script>
+}
+
+<style>
+    .mode-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .mode-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .configuracion-panel {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .form-control-sm, .form-select-sm {
+        font-size: 0.875rem;
+    }
+
+    .card-body ul li {
+        margin-bottom: 0.5rem;
+    }
+</style>

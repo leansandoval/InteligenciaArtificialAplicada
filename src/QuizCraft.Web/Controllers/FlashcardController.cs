@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using QuizCraft.Application.ViewModels;
+using QuizCraft.Application.Interfaces;
 using QuizCraft.Core.Entities;
 using QuizCraft.Core.Enums;
 using QuizCraft.Core.Interfaces;
@@ -17,15 +18,18 @@ public class FlashcardController : Controller
     private readonly IUnitOfWork _unitOfWork;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<FlashcardController> _logger;
+    private readonly IFileUploadService _fileUploadService;
 
     public FlashcardController(
         IUnitOfWork unitOfWork,
         UserManager<ApplicationUser> userManager,
-        ILogger<FlashcardController> logger)
+        ILogger<FlashcardController> logger,
+        IFileUploadService fileUploadService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _logger = logger;
+        _fileUploadService = fileUploadService;
     }
 
     /// <summary>
@@ -295,6 +299,9 @@ public class FlashcardController : Controller
 
             // Obtener materias del usuario
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+            
+            // Obtener archivos adjuntos de la flashcard
+            var archivosAdjuntos = await _fileUploadService.ObtenerArchivosPorFlashcardAsync(id);
 
             var viewModel = new EditFlashcardViewModel
             {
@@ -313,6 +320,17 @@ public class FlashcardController : Controller
                     Nombre = m.Nombre,
                     Color = m.Color ?? "#007bff",
                     Icono = m.Icono ?? "fas fa-book"
+                }).ToList(),
+                ArchivosAdjuntos = archivosAdjuntos.Select(a => new ArchivoAdjuntoViewModel
+                {
+                    Id = a.Id,
+                    NombreOriginal = a.NombreOriginal,
+                    NombreArchivo = a.NombreArchivo,
+                    RutaArchivo = a.RutaArchivo,
+                    TipoMime = a.TipoMime,
+                    TamanoBytes = a.TamanoBytes,
+                    Descripcion = a.Descripcion,
+                    FechaCreacion = a.FechaCreacion
                 }).ToList()
             };
 

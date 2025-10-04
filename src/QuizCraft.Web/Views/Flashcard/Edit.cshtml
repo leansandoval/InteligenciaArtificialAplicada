@@ -226,6 +226,64 @@
                         </div>
                     </div>
 
+                    <!-- Sección de Archivos Adjuntos -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-2 border-info mb-4">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-paperclip text-info me-2"></i>
+                                        Archivos Adjuntos
+                                        <span class="badge bg-info ms-2">Multimedia</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Área de subida de archivos -->
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label for="archivoAdjunto" class="form-label fw-bold">
+                                                    <i class="fas fa-upload me-1"></i>
+                                                    Seleccionar archivo
+                                                </label>
+                                                <input type="file" id="archivoAdjunto" class="form-control" 
+                                                       accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.txt,.rtf,.mp3,.wav,.ogg,.m4a,.mp4,.avi,.mov,.webm">
+                                                <div class="form-text">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Tipos permitidos: imágenes, documentos, audio y video (máx. 10MB)
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="descripcionArchivo" class="form-label">
+                                                    <i class="fas fa-comment me-1"></i>
+                                                    Descripción (opcional)
+                                                </label>
+                                                <input type="text" id="descripcionArchivo" class="form-control" 
+                                                       placeholder="Descripción del archivo...">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 d-flex align-items-start">
+                                            <button type="button" id="btnSubirArchivo" class="btn btn-info w-100">
+                                                <i class="fas fa-plus me-2"></i>
+                                                Agregar Archivo
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lista de archivos adjuntos -->
+                                    <div id="listaArchivos">
+                                        <div class="d-flex justify-content-center py-3">
+                                            <div class="spinner-border text-info" role="status" id="loadingArchivos" style="display: none;">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                        </div>
+                                        <div id="archivosContainer"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Vista previa comparativa -->
                     <div class="card mb-4 border-2" id="previsualizacion" style="display: none;">
                         <div class="card-header">
@@ -444,6 +502,244 @@
             updateCounter(respuestaInput, respuestaCounter, 2000);
             updateCounter(pistaInput, pistaCounter, 500);
             toggleEstadoFlashcard(); // Inicializar el estado del switch
+            
+            // Inicializar gestión de archivos adjuntos
+            initArchivosAdjuntos();
+        });
+
+        // Gestión de archivos adjuntos
+        function initArchivosAdjuntos() {
+            const btnSubir = document.getElementById('btnSubirArchivo');
+            const inputArchivo = document.getElementById('archivoAdjunto');
+            const inputDescripcion = document.getElementById('descripcionArchivo');
+            
+            // Cargar archivos existentes
+            cargarArchivosExistentes();
+            
+            btnSubir.addEventListener('click', function() {
+                const archivo = inputArchivo.files[0];
+                
+                if (!archivo) {
+                    mostrarMensaje('Por favor selecciona un archivo', 'warning');
+                    return;
+                }
+                
+                if (archivo.size > 10 * 1024 * 1024) {
+                    mostrarMensaje('El archivo no puede superar los 10MB', 'danger');
+                    return;
+                }
+                
+                subirArchivo(archivo, inputDescripcion.value);
+            });
+        }
+
+        function cargarArchivosExistentes() {
+            const flashcardId = @Model.Id;
+            
+            document.getElementById('loadingArchivos').style.display = 'block';
+            
+            fetch(`/Archivos/ObtenerArchivos?flashcardId=${flashcardId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('loadingArchivos').style.display = 'none';
+                    
+                    if (data.success) {
+                        mostrarArchivos(data.archivos);
+                    } else {
+                        mostrarMensaje('Error al cargar los archivos', 'danger');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('loadingArchivos').style.display = 'none';
+                    console.error('Error:', error);
+                    mostrarMensaje('Error al cargar los archivos', 'danger');
+                });
+        }
+
+        function subirArchivo(archivo, descripcion) {
+            const flashcardId = @Model.Id;
+            const formData = new FormData();
+            formData.append('file', archivo);
+            formData.append('flashcardId', flashcardId);
+            formData.append('descripcion', descripcion);
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+            
+            const btnSubir = document.getElementById('btnSubirArchivo');
+            const originalText = btnSubir.innerHTML;
+            btnSubir.disabled = true;
+            btnSubir.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Subiendo...';
+            
+            fetch('/Archivos/SubirArchivo', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                btnSubir.disabled = false;
+                btnSubir.innerHTML = originalText;
+                
+                if (data.success) {
+                    mostrarMensaje('Archivo subido exitosamente', 'success');
+                    document.getElementById('archivoAdjunto').value = '';
+                    document.getElementById('descripcionArchivo').value = '';
+                    cargarArchivosExistentes();
+                } else {
+                    mostrarMensaje(data.message || 'Error al subir el archivo', 'danger');
+                }
+            })
+            .catch(error => {
+                btnSubir.disabled = false;
+                btnSubir.innerHTML = originalText;
+                console.error('Error:', error);
+                mostrarMensaje('Error al subir el archivo', 'danger');
+            });
+        }
+
+        function mostrarArchivos(archivos) {
+            const container = document.getElementById('archivosContainer');
+            
+            if (archivos.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-folder-open fa-2x mb-2"></i>
+                        <p class="mb-0">No hay archivos adjuntos</p>
+                        <small>Agrega imágenes, documentos o archivos multimedia para enriquecer tu flashcard</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="row g-3">';
+            
+            archivos.forEach(archivo => {
+                const iconClass = getIconoTipoArchivo(archivo.tipoMime);
+                const iconColor = getColorTipoArchivo(archivo.tipoMime);
+                const tamanoFormateado = formatearTamano(archivo.tamanoBytes);
+                
+                html += `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-2">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-start">
+                                    <div class="flex-shrink-0 me-3">
+                                        <i class="${iconClass} fa-2x ${iconColor}"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <h6 class="card-title text-truncate mb-1" title="${archivo.nombreOriginal}">
+                                            ${archivo.nombreOriginal}
+                                        </h6>
+                                        <small class="text-muted d-block">${tamanoFormateado}</small>
+                                        <small class="text-muted d-block">${archivo.fechaCreacion}</small>
+                                        ${archivo.descripcion ? `<p class="card-text small mt-2 mb-0">${archivo.descripcion}</p>` : ''}
+                                    </div>
+                                </div>
+                                
+                                <!-- Vista previa para imágenes -->
+                                ${archivo.esImagen ? `
+                                    <div class="mt-2">
+                                        <img src="${archivo.rutaArchivo}" 
+                                             class="img-fluid rounded" 
+                                             style="max-height: 120px; width: 100%; object-fit: cover;"
+                                             alt="${archivo.nombreOriginal}">
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="d-flex justify-content-between mt-3">
+                                    <a href="${archivo.rutaArchivo}" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-eye me-1"></i>Ver
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="eliminarArchivo(${archivo.id})">
+                                        <i class="fas fa-trash me-1"></i>Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function eliminarArchivo(archivoId) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este archivo?')) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('archivoId', archivoId);
+            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+            
+            fetch('/Archivos/EliminarArchivo', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarMensaje('Archivo eliminado exitosamente', 'success');
+                    cargarArchivosExistentes();
+                } else {
+                    mostrarMensaje(data.message || 'Error al eliminar el archivo', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('Error al eliminar el archivo', 'danger');
+            });
+        }
+
+        function getIconoTipoArchivo(tipoMime) {
+            if (tipoMime.startsWith('image/')) return 'fas fa-image';
+            if (tipoMime.startsWith('video/')) return 'fas fa-video';
+            if (tipoMime.startsWith('audio/')) return 'fas fa-music';
+            if (tipoMime.includes('pdf')) return 'fas fa-file-pdf';
+            if (tipoMime.includes('word')) return 'fas fa-file-word';
+            return 'fas fa-file';
+        }
+
+        function getColorTipoArchivo(tipoMime) {
+            if (tipoMime.startsWith('image/')) return 'text-success';
+            if (tipoMime.startsWith('video/')) return 'text-primary';
+            if (tipoMime.startsWith('audio/')) return 'text-warning';
+            if (tipoMime.includes('pdf')) return 'text-danger';
+            if (tipoMime.includes('word')) return 'text-info';
+            return 'text-secondary';
+        }
+
+        function formatearTamano(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function mostrarMensaje(mensaje, tipo) {
+            // Crear el alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insertar al inicio del card-body de archivos
+            const cardBody = document.querySelector('#listaArchivos').parentElement;
+            cardBody.insertBefore(alertDiv, cardBody.firstChild);
+            
+            // Remover automáticamente después de 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
         });
     </script>
 }

@@ -80,6 +80,9 @@ public class CreateFlashcardViewModel
     
     // Lista de materias disponibles para el dropdown
     public List<MateriaDropdownViewModel> MateriasDisponibles { get; set; } = new();
+    
+    // Lista de archivos que se subirán con la flashcard (inicialmente vacía)
+    public List<ArchivoAdjuntoViewModel> ArchivosAdjuntos { get; set; } = new();
 }
 
 /// <summary>
@@ -126,6 +129,9 @@ public class EditFlashcardViewModel
     
     [Display(Name = "Veces Repasada")]
     public int VecesRepasada { get; set; }
+    
+    // Archivos adjuntos existentes
+    public List<ArchivoAdjuntoViewModel> ArchivosAdjuntos { get; set; } = new();
 }
 
 /// <summary>
@@ -183,4 +189,56 @@ public class FlashcardFiltrosViewModel
     
     // Listas para los dropdowns
     public List<MateriaDropdownViewModel> MateriasDisponibles { get; set; } = new();
+}
+
+/// <summary>
+/// ViewModel para mostrar información de archivos adjuntos
+/// </summary>
+public class ArchivoAdjuntoViewModel
+{
+    public int Id { get; set; }
+    public string NombreOriginal { get; set; } = string.Empty;
+    public string NombreArchivo { get; set; } = string.Empty;
+    public string RutaArchivo { get; set; } = string.Empty;
+    public string TipoMime { get; set; } = string.Empty;
+    public long TamanoBytes { get; set; }
+    public string? Descripcion { get; set; }
+    public DateTime FechaCreacion { get; set; }
+    
+    // Propiedades calculadas para la vista
+    public string TamanoFormateado => FormatearTamano(TamanoBytes);
+    public string TipoIcono => ObtenerIconoTipo(TipoMime);
+    public bool EsImagen => TipoMime.StartsWith("image/");
+    public bool EsVideo => TipoMime.StartsWith("video/");
+    public bool EsAudio => TipoMime.StartsWith("audio/");
+    public bool EsDocumento => TipoMime.Contains("pdf") || TipoMime.Contains("doc") || TipoMime.Contains("text");
+    
+    private static string FormatearTamano(long bytes)
+    {
+        string[] unidades = { "B", "KB", "MB", "GB" };
+        double tamano = bytes;
+        int unidad = 0;
+        
+        while (tamano >= 1024 && unidad < unidades.Length - 1)
+        {
+            tamano /= 1024;
+            unidad++;
+        }
+        
+        return $"{tamano:F1} {unidades[unidad]}";
+    }
+    
+    private static string ObtenerIconoTipo(string tipoMime)
+    {
+        return tipoMime switch
+        {
+            var mime when mime.StartsWith("image/") => "fas fa-image",
+            var mime when mime.StartsWith("video/") => "fas fa-video",
+            var mime when mime.StartsWith("audio/") => "fas fa-music",
+            var mime when mime.Contains("pdf") => "fas fa-file-pdf",
+            var mime when mime.Contains("doc") => "fas fa-file-word",
+            var mime when mime.Contains("text") => "fas fa-file-alt",
+            _ => "fas fa-file"
+        };
+    }
 }

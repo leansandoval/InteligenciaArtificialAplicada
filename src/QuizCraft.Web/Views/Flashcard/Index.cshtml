@@ -24,6 +24,11 @@
             <i class="fas fa-plus me-1"></i>
             Nueva Flashcard
         </a>
+        <a asp-controller="Generacion" asp-action="Index" class="btn btn-info me-2" 
+           title="Generar flashcards automáticamente desde documentos">
+            <i class="fas fa-magic me-1"></i>
+            Generar Automáticamente
+        </a>
         @if (ViewBag.MateriaSeleccionada != null)
         {
             <a asp-controller="Quiz" asp-action="Create" asp-route-materiaId="@ViewBag.MateriaSeleccionada" class="btn btn-warning me-2" 
@@ -247,10 +252,21 @@ else
             Las flashcards son una excelente herramienta para estudiar de manera eficiente.<br>
             Crea tu primera tarjeta de estudio y comienza a aprender.
         </p>
-        <a asp-action="Create" class="btn btn-primary btn-lg">
-            <i class="fas fa-plus me-2"></i>
-            Crear mi primera Flashcard
-        </a>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a asp-action="Create" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i>
+                Crear mi primera Flashcard
+            </a>
+            <a asp-controller="Generacion" asp-action="Index" class="btn btn-info btn-lg">
+                <i class="fas fa-magic me-2"></i>
+                Generar desde Documentos
+            </a>
+        </div>
+        <div class="mt-4">
+            <small class="text-muted">
+                💡 <strong>Consejo:</strong> Puedes generar flashcards automáticamente subiendo documentos de texto, PDFs o presentaciones
+            </small>
+        </div>
     </div>
 }
 
