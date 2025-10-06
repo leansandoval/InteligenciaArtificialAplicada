@@ -222,6 +222,11 @@ namespace QuizCraft.Web.Controllers
                 
                 // Recargar datos para la vista
                 var usuarioIdForReload = _userManager.GetUserId(User);
+                if (usuarioIdForReload == null)
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+                
                 var materiasForReload = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioIdForReload);
                 
                 var materiasConFlashcardsForReload = new List<MateriaSelectViewModel>();

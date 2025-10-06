@@ -38,6 +38,11 @@ namespace QuizCraft.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
+            
             var materias = await _materiaRepository.GetMateriasByUsuarioIdAsync(user.Id);
 
             ViewBag.Materias = materias;
@@ -70,6 +75,11 @@ namespace QuizCraft.Web.Controllers
                 }
 
                 var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+                
                 var materia = await _materiaRepository.GetByIdAsync(materiaId);
                 
                 if (materia == null || materia.UsuarioId != user.Id)

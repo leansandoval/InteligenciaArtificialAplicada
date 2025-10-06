@@ -60,7 +60,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
                 }
 
                 // Generar flashcards usando procesamiento tradicional
-                var flashcards = await GenerateFlashcardsFromContent(documentContent, settings);
+                var flashcards = GenerateFlashcardsFromContent(documentContent, settings);
 
                 result.Success = true;
                 result.Flashcards = flashcards;
@@ -85,7 +85,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             }
         }
 
-        private async Task<List<GeneratedFlashcard>> GenerateFlashcardsFromContent(
+        private List<GeneratedFlashcard> GenerateFlashcardsFromContent(
             DocumentContent content, 
             TraditionalGenerationSettings settings)
         {
@@ -94,25 +94,25 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             // Estrategia 1: Procesar por secciones estructuradas
             if (settings.UseStructuralElements && content.Sections.Any())
             {
-                flashcards.AddRange(await ProcessStructuredSections(content.Sections, settings));
+                flashcards.AddRange(ProcessStructuredSections(content.Sections, settings));
             }
 
             // Estrategia 2: Detectar patrones de preguntas existentes
             if (settings.DetectQuestionPatterns)
             {
-                flashcards.AddRange(await DetectExistingQuestions(content.RawText, settings));
+                flashcards.AddRange(DetectExistingQuestions(content.RawText, settings));
             }
 
             // Estrategia 3: División por párrafos
             if (settings.SplitByParagraph)
             {
-                flashcards.AddRange(await ProcessByParagraphs(content.RawText, settings));
+                flashcards.AddRange(ProcessByParagraphs(content.RawText, settings));
             }
 
             // Estrategia 4: Separador personalizado
             if (!string.IsNullOrEmpty(settings.CustomSeparator))
             {
-                flashcards.AddRange(await ProcessByCustomSeparator(content.RawText, settings));
+                flashcards.AddRange(ProcessByCustomSeparator(content.RawText, settings));
             }
 
             // Filtrar y limpiar resultados
@@ -127,7 +127,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             return flashcards;
         }
 
-        private async Task<List<GeneratedFlashcard>> ProcessStructuredSections(
+        private List<GeneratedFlashcard> ProcessStructuredSections(
             List<DocumentSection> sections, 
             TraditionalGenerationSettings settings)
         {
@@ -173,7 +173,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             return flashcards;
         }
 
-        private async Task<List<GeneratedFlashcard>> DetectExistingQuestions(
+        private List<GeneratedFlashcard> DetectExistingQuestions(
             string text, 
             TraditionalGenerationSettings settings)
         {
@@ -220,7 +220,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             return flashcards;
         }
 
-        private async Task<List<GeneratedFlashcard>> ProcessByParagraphs(
+        private List<GeneratedFlashcard> ProcessByParagraphs(
             string text, 
             TraditionalGenerationSettings settings)
         {
@@ -252,7 +252,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             return flashcards;
         }
 
-        private async Task<List<GeneratedFlashcard>> ProcessByCustomSeparator(
+        private List<GeneratedFlashcard> ProcessByCustomSeparator(
             string text, 
             TraditionalGenerationSettings settings)
         {
