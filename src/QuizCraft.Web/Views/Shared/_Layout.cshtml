@@ -10,6 +10,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
     @await RenderSectionAsync("Styles", required: false)
+    
+    <!-- Script inmediato para aplicar tema antes de renderizar -->
+    <script>
+        (function() {
+            const storedTheme = localStorage.getItem('theme');
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const theme = storedTheme || systemTheme;
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
 </head>
 <body>
     <header>
@@ -38,7 +48,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Materia" asp-action="Index">
-                                    <i class="fas fa-books"></i> Materias
+                                    <i class="fas fa-book-open"></i> Materias
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
@@ -103,17 +113,21 @@
                             </li>
                         }
                     </ul>
+                    <!-- Theme Toggle Button -->
+                    <button class="theme-toggle" id="themeToggle" title="Cambiar tema">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container main-wrapper">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="bg-dark text-light mt-5 py-4">
+    <footer class="bg-dark text-light py-4">
         <div class="container">
             <div class="row">
                 <div class="col-md-6">

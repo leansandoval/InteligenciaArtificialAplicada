@@ -58,9 +58,10 @@
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Dificultad" class="form-label">Nivel de Dificultad</label>
                                 <select asp-for="Dificultad" class="form-select" asp-items="Html.GetEnumSelectList<QuizCraft.Core.Enums.NivelDificultad>()">
-                                    <option value="">Selecciona dificultad</option>
+                                    <option value="">Todas las dificultades</option>
                                 </select>
                                 <span asp-validation-for="Dificultad" class="text-danger"></span>
+                                <div id="dificultadInfo" class="form-text"></div>
                             </div>
 
                             <!-- Configuración del Quiz -->
@@ -183,9 +184,10 @@
             $('#materiaSelect').change(function() {
                 var selectedOption = $(this).find(':selected');
                 var flashcardsCount = selectedOption.data('flashcards');
+                var materiaId = $(this).val();
                 var numPreguntas = $('#numPreguntasInput').val();
                 
-                if (flashcardsCount) {
+                if (flashcardsCount && materiaId) {
                     $('#flashcardsInfo').html(
                         '<i class="fas fa-info-circle text-info"></i> ' +
                         'Esta materia tiene <strong>' + flashcardsCount + '</strong> flashcards disponibles'
@@ -202,9 +204,13 @@
                             'Máximo ' + flashcardsCount + ' preguntas para esta materia'
                         );
                     }
+                    
+                    // Cargar estadísticas de dificultad
+                    cargarEstadisticasDificultad(materiaId);
                 } else {
                     $('#flashcardsInfo').html('');
                     $('#preguntasHelp').html('Las preguntas se generarán automáticamente desde las flashcards');
+                    $('#dificultadInfo').html('');
                 }
                 
                 actualizarBotonCrear();
@@ -250,6 +256,52 @@
                 }
             }
 
+            // Función para cargar estadísticas de dificultad
+            function cargarEstadisticasDificultad(materiaId) {
+                if (!materiaId) {
+                    $('#dificultadInfo').html('');
+                    return;
+                }
+                
+                $('#dificultadInfo').html('<i class="fas fa-spinner fa-spin"></i> Cargando estadísticas...');
+                
+                $.get('@Url.Action("GetEstadisticasDificultad", "Quiz")', { materiaId: materiaId })
+                    .done(function(data) {
+                        if (data.success && data.estadisticas.length > 0) {
+                            var html = '<div class="mt-2"><small class="text-muted">Flashcards por dificultad:</small><br>';
+                            
+                            data.estadisticas.forEach(function(est) {
+                                if (est.cantidad > 0) {
+                                    var badgeClass = getBadgeClassForDificultad(est.dificultadValue);
+                                    html += '<span class="badge ' + badgeClass + ' me-1" title="' + est.descripcion + '">' +
+                                           '<i class="fas fa-layer-group"></i> ' + est.dificultad + ': ' + est.cantidad +
+                                           '</span>';
+                                }
+                            });
+                            
+                            html += '</div>';
+                            $('#dificultadInfo').html(html);
+                        } else {
+                            $('#dificultadInfo').html('<small class="text-muted">No hay estadísticas disponibles</small>');
+                        }
+                    })
+                    .fail(function() {
+                        $('#dificultadInfo').html('<small class="text-danger">Error al cargar estadísticas</small>');
+                    });
+            }
+            
+            // Función para obtener la clase CSS del badge según la dificultad
+            function getBadgeClassForDificultad(dificultadValue) {
+                switch(dificultadValue) {
+                    case 1: return 'bg-success'; // Muy Fácil
+                    case 2: return 'bg-info';    // Fácil
+                    case 3: return 'bg-warning'; // Intermedio
+                    case 4: return 'bg-danger';  // Difícil
+                    case 5: return 'bg-dark';    // Muy Difícil
+                    default: return 'bg-secondary';
+                }
+            }
+
             // Validación inicial
             actualizarBotonCrear();
             $('#materiaSelect').trigger('change');
@@ -275,6 +327,20 @@
         #crearBtn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+            margin-bottom: 2px;
+        }
+        
+        #dificultadInfo .badge:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .form-text {
+            margin-top: 0.25rem;
         }
     </style>
 }

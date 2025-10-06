@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using QuizCraft.Core.Entities;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Application.ViewModels;
@@ -186,19 +187,58 @@ namespace QuizCraft.Web.Controllers
                 return RedirectToAction("Login", "Account");
             }
             
-            // Obtener flashcards de la materia seleccionada
-            var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
+            // Obtener flashcards filtradas por dificultad si se especifica
+            IEnumerable<Flashcard> flashcards;
+            
+            if (model.Dificultad != 0) // Si se seleccionó una dificultad específica
+            {
+                flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByDificultadAsync(model.MateriaId, model.Dificultad);
+                
+                // Si no hay suficientes flashcards de la dificultad seleccionada, completar con flashcards de todas las dificultades
+                if (flashcards.Count() < model.NumeroPreguntas)
+                {
+                    var todasLasFlashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
+                    
+                    // Priorizar las de la dificultad seleccionada y completar con otras
+                    var flashcardsOrdenadas = todasLasFlashcards
+                        .OrderBy(f => f.Dificultad == model.Dificultad ? 0 : 1) // Prioridad a la dificultad seleccionada
+                        .ThenBy(f => Math.Abs((int)f.Dificultad - (int)model.Dificultad)) // Luego por proximidad de dificultad
+                        .ThenBy(x => Guid.NewGuid()); // Aleatorio dentro de cada grupo
+                        
+                    flashcards = flashcardsOrdenadas.Take(Math.Max(model.NumeroPreguntas, todasLasFlashcards.Count()));
+                    
+                    _logger.LogInformation($"Se encontraron solo {flashcards.Count()} flashcards de dificultad {model.Dificultad}. Completando con flashcards de otras dificultades.");
+                }
+            }
+            else
+            {
+                // Si no se especifica dificultad, obtener todas las flashcards de la materia
+                flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
+            }
             
             if (!flashcards.Any())
             {
-                ModelState.AddModelError("", "No hay flashcards disponibles en la materia seleccionada.");
-                var materias = await _unitOfWork.MateriaRepository.GetAllAsync();
-                model.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
+                ModelState.AddModelError("", $"No hay flashcards disponibles en la materia seleccionada{(model.Dificultad != 0 ? $" para el nivel de dificultad {model.Dificultad}" : "")}.");
+                
+                // Recargar datos para la vista
+                var usuarioIdForReload = _userManager.GetUserId(User);
+                var materiasForReload = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioIdForReload);
+                
+                var materiasConFlashcardsForReload = new List<MateriaSelectViewModel>();
+                
+                foreach (var materia in materiasForReload)
                 {
-                    Id = m.Id,
-                    Nombre = m.Nombre,
-                    TotalFlashcards = m.Flashcards?.Count ?? 0
-                }).ToList();
+                    var flashcardsCount = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materia.Id);
+                    
+                    materiasConFlashcardsForReload.Add(new MateriaSelectViewModel
+                    {
+                        Id = materia.Id,
+                        Nombre = materia.Nombre,
+                        TotalFlashcards = flashcardsCount.Count()
+                    });
+                }
+                
+                model.MateriasDisponibles = materiasConFlashcardsForReload;
                 return View(model);
             }
 
@@ -219,11 +259,8 @@ namespace QuizCraft.Web.Controllers
                 FechaCreacion = DateTime.UtcNow
             };
 
-            // Seleccionar flashcards aleatoriamente
-            var flashcardsSeleccionadas = flashcards
-                .OrderBy(x => Guid.NewGuid())
-                .Take(model.NumeroPreguntas)
-                .ToList();
+            // Seleccionar flashcards usando algoritmo inteligente
+            var flashcardsSeleccionadas = SeleccionarFlashcardsInteligente(flashcards, model.NumeroPreguntas, model.Dificultad);
 
             // Crear preguntas basadas en las flashcards
             var preguntas = new List<PreguntaQuiz>();
@@ -443,7 +480,7 @@ namespace QuizCraft.Web.Controllers
         // POST: Quiz/SubmitQuiz
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult SubmitQuiz(int QuizId, string? RespuestasUsuario, int TiempoTranscurrido)
+        public async Task<IActionResult> SubmitQuiz(int QuizId, string? RespuestasUsuario, int TiempoTranscurrido)
         {
             try
             {
@@ -454,22 +491,352 @@ namespace QuizCraft.Web.Controllers
                     return RedirectToAction("Login", "Account");
                 }
 
-                // Por ahora, solo loggeamos la información y redirigimos a Details con un parámetro de completado
-                _logger.LogInformation($"Quiz {QuizId} completado por usuario {usuarioId}. Tiempo: {TiempoTranscurrido}s, Respuestas: {RespuestasUsuario}");
+                // Obtener el quiz con preguntas
+                var quiz = await _unitOfWork.QuizRepository.GetQuizConPreguntasAsync(QuizId);
+                if (quiz == null)
+                {
+                    TempData["Error"] = "Quiz no encontrado.";
+                    return RedirectToAction(nameof(Index));
+                }
 
-                // Guardar información en TempData para mostrar en la página de detalles
-                TempData["QuizCompletado"] = true;
-                TempData["TiempoTranscurrido"] = TiempoTranscurrido;
-                TempData["Success"] = "¡Quiz completado exitosamente!";
+                // Procesar las respuestas del usuario
+                var respuestas = ProcesarRespuestas(RespuestasUsuario);
+                var preguntas = quiz.Preguntas.OrderBy(p => p.Orden).ToList();
+                
+                int respuestasCorrectas = 0;
+                int puntajeTotal = 0;
+                var respuestasDetalle = new List<RespuestaUsuario>();
 
-                // Redirigir a la página de detalles del quiz
-                return RedirectToAction(nameof(Details), new { id = QuizId });
+                // Crear el resultado del quiz
+                var resultado = new ResultadoQuiz
+                {
+                    QuizId = QuizId,
+                    UsuarioId = usuarioId,
+                    FechaInicio = DateTime.UtcNow.AddSeconds(-TiempoTranscurrido),
+                    FechaFinalizacion = DateTime.UtcNow,
+                    FechaRealizacion = DateTime.UtcNow,
+                    TiempoTranscurrido = TiempoTranscurrido,
+                    TiempoTotal = TimeSpan.FromSeconds(TiempoTranscurrido),
+                    EstaCompletado = true
+                };
+
+                // Procesar las respuestas usando el formato Dictionary para mapear por ID de pregunta
+                var respuestasDict = new Dictionary<string, string>();
+                try
+                {
+                    if (!string.IsNullOrEmpty(RespuestasUsuario) && RespuestasUsuario.StartsWith("{"))
+                    {
+                        respuestasDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(RespuestasUsuario) ?? new Dictionary<string, string>();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error al parsear respuestas como diccionario");
+                }
+
+                // Procesar cada pregunta y buscar su respuesta correspondiente
+                foreach (var pregunta in preguntas)
+                {
+                    var respuestaUsuario = "";
+                    
+                    // Buscar la respuesta por ID de pregunta
+                    if (respuestasDict.ContainsKey(pregunta.Id.ToString()))
+                    {
+                        respuestaUsuario = respuestasDict[pregunta.Id.ToString()];
+                    }
+                    
+                    bool esCorrecta = !string.IsNullOrEmpty(respuestaUsuario) && 
+                                    respuestaUsuario.Equals(pregunta.RespuestaCorrecta, StringComparison.OrdinalIgnoreCase);
+                    
+                    if (esCorrecta)
+                    {
+                        respuestasCorrectas++;
+                        puntajeTotal += pregunta.Puntos;
+                    }
+
+                    var respuestaDetalle = new RespuestaUsuario
+                    {
+                        PreguntaQuizId = pregunta.Id,
+                        PreguntaId = pregunta.Id, // Mismo valor para que funcione con la FK
+                        RespuestaSeleccionada = respuestaUsuario,
+                        RespuestaDada = respuestaUsuario,
+                        EsCorrecta = esCorrecta,
+                        PuntosObtenidos = esCorrecta ? pregunta.Puntos : 0,
+                        FechaRespuesta = DateTime.UtcNow
+                    };
+                    
+                    respuestasDetalle.Add(respuestaDetalle);
+                }
+
+                // Calcular estadísticas
+                var puntajeMaximo = preguntas.Sum(p => p.Puntos);
+                var porcentajeAcierto = preguntas.Count > 0 ? (double)respuestasCorrectas / preguntas.Count * 100 : 0;
+
+                resultado.PuntajeObtenido = puntajeTotal;
+                resultado.PuntajeMaximo = puntajeMaximo;
+                resultado.Puntuacion = puntajeMaximo > 0 ? (decimal)puntajeTotal / puntajeMaximo : 0;
+                resultado.PorcentajeAcierto = porcentajeAcierto;
+
+                // Guardar el resultado usando el contexto directamente (temporal hasta crear repositorio específico)
+                // TODO: Crear un IResultadoQuizRepository en el futuro
+                var context = (QuizCraft.Infrastructure.Data.ApplicationDbContext)_unitOfWork.GetType()
+                    .GetField("_context", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(_unitOfWork)!;
+                
+                // Primero guardar el resultado para obtener el ID
+                await context.Set<ResultadoQuiz>().AddAsync(resultado);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Ahora asignar el ResultadoQuizId a las respuestas y guardarlas
+                foreach (var respuesta in respuestasDetalle)
+                {
+                    respuesta.ResultadoQuizId = resultado.Id;
+                    await context.Set<RespuestaUsuario>().AddAsync(respuesta);
+                }
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation($"Quiz {QuizId} completado por usuario {usuarioId}. Puntuación: {porcentajeAcierto:F1}%, Tiempo: {TiempoTranscurrido}s");
+
+                // Redirigir a la página de resultados
+                return RedirectToAction(nameof(Results), new { id = resultado.Id });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al procesar envío de quiz {QuizId}", QuizId);
                 TempData["Error"] = "Ocurrió un error al procesar el quiz. Por favor, inténtalo de nuevo.";
                 return RedirectToAction(nameof(Details), new { id = QuizId });
+            }
+        }
+
+        /// <summary>
+        /// Procesa las respuestas del usuario desde el formato JSON/string
+        /// </summary>
+        private List<string> ProcesarRespuestas(string? respuestasUsuario)
+        {
+            if (string.IsNullOrEmpty(respuestasUsuario))
+                return new List<string>();
+
+            try
+            {
+                // Intentar parsear como JSON object (formato esperado: {"1":"C","2":"B",...})
+                if (respuestasUsuario.StartsWith("{") && respuestasUsuario.EndsWith("}"))
+                {
+                    var respuestasDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(respuestasUsuario);
+                    if (respuestasDict != null)
+                    {
+                        // Ordenar por clave numérica y extraer solo los valores
+                        return respuestasDict
+                            .OrderBy(kvp => int.TryParse(kvp.Key, out int key) ? key : int.MaxValue)
+                            .Select(kvp => kvp.Value)
+                            .ToList();
+                    }
+                }
+                
+                // Intentar parsear como JSON array
+                if (respuestasUsuario.StartsWith("[") && respuestasUsuario.EndsWith("]"))
+                {
+                    return System.Text.Json.JsonSerializer.Deserialize<List<string>>(respuestasUsuario) ?? new List<string>();
+                }
+                
+                // Si es una cadena simple separada por comas
+                return respuestasUsuario.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(r => r.Trim())
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error al procesar respuestas del usuario: {RespuestasUsuario}", respuestasUsuario);
+                return new List<string>();
+            }
+        }
+
+        /// <summary>
+        /// Algoritmo inteligente para seleccionar flashcards basado en dificultad y otros criterios
+        /// </summary>
+        private List<Flashcard> SeleccionarFlashcardsInteligente(IEnumerable<Flashcard> flashcards, int cantidadRequerida, NivelDificultad dificultadPreferida)
+        {
+            var flashcardsList = flashcards.ToList();
+            
+            if (flashcardsList.Count <= cantidadRequerida)
+            {
+                return flashcardsList;
+            }
+
+            // Algoritmo de selección inteligente
+            var flashcardsSeleccionadas = new List<Flashcard>();
+            
+            // 1. Priorizar flashcards de la dificultad preferida (70%)
+            var flashcardsDificultadPreferida = flashcardsList
+                .Where(f => f.Dificultad == dificultadPreferida)
+                .OrderBy(x => Guid.NewGuid())
+                .ToList();
+            
+            int cantidadPreferida = Math.Min((int)(cantidadRequerida * 0.7), flashcardsDificultadPreferida.Count);
+            flashcardsSeleccionadas.AddRange(flashcardsDificultadPreferida.Take(cantidadPreferida));
+
+            // 2. Completar con flashcards de dificultades adyacentes (30%)
+            var flashcardsRestantes = flashcardsList
+                .Except(flashcardsSeleccionadas)
+                .OrderBy(f => Math.Abs((int)f.Dificultad - (int)dificultadPreferida)) // Ordenar por proximidad de dificultad
+                .ThenBy(x => Guid.NewGuid()) // Aleatorio dentro de cada nivel de proximidad
+                .ToList();
+
+            int cantidadFaltante = cantidadRequerida - flashcardsSeleccionadas.Count;
+            flashcardsSeleccionadas.AddRange(flashcardsRestantes.Take(cantidadFaltante));
+
+            // 3. Mezclar el orden final si se configuró para mezclar preguntas
+            return flashcardsSeleccionadas.OrderBy(x => Guid.NewGuid()).ToList();
+        }
+
+        /// <summary>
+        /// Endpoint AJAX para obtener estadísticas de flashcards por dificultad de una materia
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetEstadisticasDificultad(int materiaId)
+        {
+            try
+            {
+                var estadisticas = await _unitOfWork.FlashcardRepository.GetEstadisticasDificultadAsync(materiaId);
+                
+                var resultado = new
+                {
+                    success = true,
+                    estadisticas = estadisticas.Select(e => new
+                    {
+                        dificultad = e.Key.ToString(),
+                        dificultadValue = (int)e.Key,
+                        cantidad = e.Value,
+                        descripcion = GetDescripcionDificultad(e.Key)
+                    }).OrderBy(e => e.dificultadValue)
+                };
+                
+                return Json(resultado);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener estadísticas de dificultad para materia {MateriaId}", materiaId);
+                return Json(new { success = false, message = "Error al obtener estadísticas" });
+            }
+        }
+
+        /// <summary>
+        /// Obtiene la descripción amigable de un nivel de dificultad
+        /// </summary>
+        private string GetDescripcionDificultad(NivelDificultad dificultad)
+        {
+            return dificultad switch
+            {
+                NivelDificultad.MuyFacil => "Muy Fácil - Preguntas básicas",
+                NivelDificultad.Facil => "Fácil - Conocimiento básico",
+                NivelDificultad.Intermedio => "Intermedio - Comprensión y análisis",
+                NivelDificultad.Dificil => "Difícil - Conocimiento avanzado",
+                NivelDificultad.MuyDificil => "Muy Difícil - Conocimiento experto",
+                _ => "Desconocido"
+            };
+        }
+
+        // GET: Quiz/Results/5
+        public async Task<IActionResult> Results(int id)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(usuarioId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+
+                // Obtener el resultado con sus relaciones usando el contexto directamente
+                var context = (QuizCraft.Infrastructure.Data.ApplicationDbContext)_unitOfWork.GetType()
+                    .GetField("_context", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(_unitOfWork)!;
+
+                var resultado = await context.Set<ResultadoQuiz>()
+                    .Include(r => r.Quiz)
+                        .ThenInclude(q => q.Materia)
+                    .Include(r => r.Quiz)
+                        .ThenInclude(q => q.Preguntas)
+                    .Include(r => r.RespuestasUsuario)
+                        .ThenInclude(ru => ru.PreguntaQuiz)
+                    .FirstOrDefaultAsync(r => r.Id == id && r.UsuarioId == usuarioId);
+
+                if (resultado == null)
+                {
+                    TempData["Error"] = "Resultado no encontrado o no tienes permisos para verlo.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Crear el ViewModel para los resultados
+                var viewModel = new QuizResultsViewModel
+                {
+                    QuizId = resultado.QuizId,
+                    Titulo = resultado.Quiz.Titulo,
+                    Descripcion = resultado.Quiz.Descripcion,
+                    MateriaNombre = resultado.Quiz.Materia?.Nombre ?? "Sin materia",
+                    TotalPreguntas = resultado.Quiz.Preguntas.Count,
+                    RespuestasCorrectas = resultado.RespuestasUsuario.Count(r => r.EsCorrecta),
+                    PuntuacionTotal = resultado.PuntajeObtenido,
+                    PorcentajeAcierto = Math.Round(resultado.PorcentajeAcierto, 1),
+                    TiempoTotal = resultado.TiempoTotal,
+                    FechaRealizacion = resultado.FechaRealizacion,
+                    MostrarRespuestasDetalle = true
+                };
+
+                // Determinar mensaje y color basado en el porcentaje
+                if (viewModel.PorcentajeAcierto >= 90)
+                {
+                    viewModel.MensajeResultado = "¡Excelente trabajo!";
+                    viewModel.ColorResultado = "success";
+                }
+                else if (viewModel.PorcentajeAcierto >= 70)
+                {
+                    viewModel.MensajeResultado = "¡Buen trabajo!";
+                    viewModel.ColorResultado = "primary";
+                }
+                else if (viewModel.PorcentajeAcierto >= 50)
+                {
+                    viewModel.MensajeResultado = "Puedes mejorar";
+                    viewModel.ColorResultado = "warning";
+                }
+                else
+                {
+                    viewModel.MensajeResultado = "Necesitas estudiar más";
+                    viewModel.ColorResultado = "danger";
+                }
+
+                // Crear detalle de respuestas
+                var preguntasOrdenadas = resultado.Quiz.Preguntas.OrderBy(p => p.Orden).ToList();
+                foreach (var pregunta in preguntasOrdenadas)
+                {
+                    var respuestaUsuario = resultado.RespuestasUsuario.FirstOrDefault(r => r.PreguntaQuizId == pregunta.Id);
+                    
+                    var detalleRespuesta = new RespuestaDetalleViewModel
+                    {
+                        Orden = pregunta.Orden,
+                        Pregunta = pregunta.TextoPregunta,
+                        RespuestaUsuario = respuestaUsuario?.RespuestaSeleccionada ?? "Sin respuesta",
+                        RespuestaCorrecta = pregunta.RespuestaCorrecta,
+                        EsCorrecta = respuestaUsuario?.EsCorrecta ?? false,
+                        Explicacion = pregunta.Explicacion,
+                        TodasLasOpciones = new List<OpcionRespuestaViewModel>
+                        {
+                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionA ?? "", Valor = "A", EsCorrecta = pregunta.RespuestaCorrecta == "A" },
+                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionB ?? "", Valor = "B", EsCorrecta = pregunta.RespuestaCorrecta == "B" },
+                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionC ?? "", Valor = "C", EsCorrecta = pregunta.RespuestaCorrecta == "C" },
+                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionD ?? "", Valor = "D", EsCorrecta = pregunta.RespuestaCorrecta == "D" }
+                        }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList()
+                    };
+                    
+                    viewModel.DetalleRespuestas.Add(detalleRespuesta);
+                }
+
+                return View(viewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al mostrar resultados del quiz {Id} para usuario {UsuarioId}", id, _userManager.GetUserId(User));
+                TempData["Error"] = "Ocurrió un error al cargar los resultados.";
+                return RedirectToAction(nameof(Index));
             }
         }
 
