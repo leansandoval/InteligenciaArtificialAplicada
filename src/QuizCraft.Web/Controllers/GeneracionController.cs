@@ -117,7 +117,7 @@ namespace QuizCraft.Web.Controllers
                         Respuesta = generatedCard.Respuesta,
                         MateriaId = materiaId,
                         FechaCreacion = DateTime.Now,
-                        Dificultad = DeterminarDificultad(generatedCard.Confidence)
+                        Dificultad = DeterminarDificultad((int)(generatedCard.ConfianzaPuntuacion * 100))
                     };
 
                     await _flashcardRepository.AddAsync(flashcard);
@@ -127,21 +127,21 @@ namespace QuizCraft.Web.Controllers
                         id = flashcard.Id,
                         pregunta = flashcard.Pregunta,
                         respuesta = flashcard.Respuesta,
-                        confidence = generatedCard.Confidence,
-                        source = generatedCard.Source
+                        confidence = generatedCard.ConfianzaPuntuacion,
+                        source = generatedCard.FuenteOriginal
                     });
                 }
 
                 _logger.LogInformation("Generadas {Count} flashcards para usuario {UserId} en materia {MateriaId}", 
-                    result.TotalGenerated, user.Id, materiaId);
+                    result.Flashcards.Count, user.Id, materiaId);
 
                 return Json(new
                 {
                     success = true,
-                    message = $"Se generaron {result.TotalGenerated} flashcards exitosamente",
+                    message = $"Se generaron {result.Flashcards.Count} flashcards exitosamente",
                     flashcards = flashcardsCreadas,
-                    processingTime = result.ProcessingTime.TotalSeconds,
-                    modeUsed = result.ModeUsed.ToString()
+                    processingTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    modeUsed = result.ProcessingMethod
                 });
             }
             catch (Exception ex)
@@ -194,12 +194,18 @@ namespace QuizCraft.Web.Controllers
             string modo,
             [FromForm] GenerationConfigModel config)
         {
+            _logger.LogInformation("🔍 VISTA PREVIA: Iniciando con modo={Modo}", modo);
+            
             try
             {
                 if (documento == null || documento.Length == 0)
                 {
+                    _logger.LogWarning("❌ VISTA PREVIA: Documento no proporcionado");
                     return Json(new { success = false, message = "Debe seleccionar un archivo" });
                 }
+
+                _logger.LogInformation("📄 VISTA PREVIA: Archivo recibido - Nombre={FileName}, Tamaño={Size}", 
+                    documento.FileName, documento.Length);
 
                 var generationMode = modo.ToLower() switch
                 {
@@ -208,16 +214,26 @@ namespace QuizCraft.Web.Controllers
                     _ => GenerationMode.Traditional
                 };
 
+                _logger.LogInformation("⚙️ VISTA PREVIA: Modo de generación={Mode}", generationMode);
+
                 var settings = CreateGenerationSettings(generationMode, config);
+                _logger.LogInformation("🛠️ VISTA PREVIA: Configuración creada");
+                
                 // Limitar a máximo 5 para vista previa
                 settings.MaxCardsPerDocument = Math.Min(5, settings.MaxCardsPerDocument);
 
                 using var stream = documento.OpenReadStream();
+                _logger.LogInformation("🚀 VISTA PREVIA: Llamando al servicio de generación...");
+                
                 var result = await _generationService.GenerateFromDocumentAsync(
                     stream, documento.FileName, generationMode, settings);
 
+                _logger.LogInformation("📊 VISTA PREVIA: Resultado recibido - Success={Success}, ErrorMessage={Error}", 
+                    result.Success, result.ErrorMessage);
+
                 if (!result.Success)
                 {
+                    _logger.LogError("❌ VISTA PREVIA: Error en generación: {Error}", result.ErrorMessage);
                     return Json(new { success = false, message = result.ErrorMessage });
                 }
 
@@ -225,22 +241,24 @@ namespace QuizCraft.Web.Controllers
                 {
                     pregunta = f.Pregunta,
                     respuesta = f.Respuesta,
-                    confidence = f.Confidence,
-                    source = f.Source
+                    confidence = f.ConfianzaPuntuacion,
+                    source = f.FuenteOriginal
                 }).ToList();
+
+                _logger.LogInformation("✅ VISTA PREVIA: Éxito - {Count} flashcards generadas", preview.Count);
 
                 return Json(new
                 {
                     success = true,
                     flashcards = preview,
-                    totalPossible = result.TotalGenerated,
-                    modeUsed = result.ModeUsed.ToString()
+                    totalPossible = result.Flashcards.Count,
+                    modeUsed = result.ProcessingMethod
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error en vista previa");
-                return Json(new { success = false, message = "Error al generar vista previa" });
+                _logger.LogError(ex, "💥 VISTA PREVIA: Excepción no controlada");
+                return Json(new { success = false, message = "Error al generar vista previa: " + ex.Message });
             }
         }
 

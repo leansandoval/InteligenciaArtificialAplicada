@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using QuizCraft.Application.Interfaces;
+using QuizCraft.Application.Models;
 
 namespace QuizCraft.Infrastructure.Services.DocumentProcessing
 {
@@ -26,15 +27,15 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             return _extractors.Any(e => e.CanExtract(fileName));
         }
 
-        public async Task<FlashcardGenerationResult> ProcessAsync(
+        public async Task<QuizCraft.Application.Models.FlashcardGenerationResult> ProcessAsync(
             Stream documentStream, 
             string fileName, 
             TraditionalGenerationSettings settings)
         {
             var stopwatch = Stopwatch.StartNew();
-            var result = new FlashcardGenerationResult
+            var result = new QuizCraft.Application.Models.FlashcardGenerationResult
             {
-                ModeUsed = GenerationMode.Traditional
+                ProcessingMethod = "Traditional"
             };
 
             try
@@ -60,11 +61,22 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
                 }
 
                 // Generar flashcards usando procesamiento tradicional
-                var flashcards = GenerateFlashcardsFromContent(documentContent, settings);
+                var generatedFlashcards = GenerateFlashcardsFromContent(documentContent, settings);
+                
+                // Convertir GeneratedFlashcard a FlashcardData
+                var flashcards = generatedFlashcards.Select(gf => new QuizCraft.Application.Models.FlashcardData
+                {
+                    Pregunta = gf.Pregunta,
+                    Respuesta = gf.Respuesta,
+                    Dificultad = "Medium",
+                    Etiquetas = new List<string>(),
+                    FuenteOriginal = fileName,
+                    ConfianzaPuntuacion = gf.Confidence / 100.0,
+                    Categoria = "General"
+                }).ToList();
 
                 result.Success = true;
                 result.Flashcards = flashcards;
-                result.TotalGenerated = flashcards.Count;
 
                 _logger.LogInformation("Procesamiento completado: {Count} flashcards generadas en {Time}ms", 
                     flashcards.Count, stopwatch.ElapsedMilliseconds);
@@ -81,7 +93,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             finally
             {
                 stopwatch.Stop();
-                result.ProcessingTime = stopwatch.Elapsed;
+                result.ProcessingTime = DateTime.Now;
             }
         }
 

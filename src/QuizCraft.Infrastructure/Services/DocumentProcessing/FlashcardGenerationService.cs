@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using QuizCraft.Application.Interfaces;
+using QuizCraft.Application.Models;
 
 namespace QuizCraft.Infrastructure.Services.DocumentProcessing
 {
@@ -29,7 +30,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             _logger = logger;
         }
 
-        public async Task<FlashcardGenerationResult> GenerateFromDocumentAsync(
+        public async Task<QuizCraft.Application.Models.FlashcardGenerationResult> GenerateFromDocumentAsync(
             Stream documentStream, 
             string fileName, 
             GenerationMode mode, 
@@ -43,22 +44,22 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
                 // Validar archivo
                 if (!IsFileSupported(fileName))
                 {
-                    return new FlashcardGenerationResult
+                    return new QuizCraft.Application.Models.FlashcardGenerationResult
                     {
                         Success = false,
                         ErrorMessage = $"Tipo de archivo no soportado: {Path.GetExtension(fileName)}",
-                        ModeUsed = mode
+                        ProcessingMethod = mode.ToString()
                     };
                 }
 
                 // Validar stream
                 if (documentStream == null || !documentStream.CanRead)
                 {
-                    return new FlashcardGenerationResult
+                    return new QuizCraft.Application.Models.FlashcardGenerationResult
                     {
                         Success = false,
                         ErrorMessage = "El documento no se puede leer",
-                        ModeUsed = mode
+                        ProcessingMethod = mode.ToString()
                     };
                 }
 
@@ -73,11 +74,11 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error durante la generación de flashcards para {FileName}", fileName);
-                return new FlashcardGenerationResult
+                return new QuizCraft.Application.Models.FlashcardGenerationResult
                 {
                     Success = false,
                     ErrorMessage = $"Error interno: {ex.Message}",
-                    ModeUsed = mode
+                    ProcessingMethod = mode.ToString()
                 };
             }
         }
@@ -93,7 +94,7 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
             return _supportedExtensions.ToList();
         }
 
-        private async Task<FlashcardGenerationResult> ProcessWithTraditionalMode(
+        private async Task<QuizCraft.Application.Models.FlashcardGenerationResult> ProcessWithTraditionalMode(
             Stream documentStream, 
             string fileName, 
             GenerationSettings settings)
@@ -113,18 +114,18 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
 
             if (!_traditionalProcessor.CanProcess(fileName))
             {
-                return new FlashcardGenerationResult
+                return new QuizCraft.Application.Models.FlashcardGenerationResult
                 {
                     Success = false,
                     ErrorMessage = $"El procesador tradicional no puede manejar archivos {Path.GetExtension(fileName)}",
-                    ModeUsed = GenerationMode.Traditional
+                    ProcessingMethod = "Traditional"
                 };
             }
 
             return await _traditionalProcessor.ProcessAsync(documentStream, fileName, traditionalSettings);
         }
 
-        private async Task<FlashcardGenerationResult> ProcessWithAIMode(
+        private async Task<QuizCraft.Application.Models.FlashcardGenerationResult> ProcessWithAIMode(
             Stream documentStream, 
             string fileName, 
             GenerationSettings settings)
@@ -143,22 +144,30 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
                 return await ProcessWithTraditionalMode(documentStream, fileName, settings);
             }
 
-            if (settings is not AIGenerationSettings aiSettings)
+            if (settings is not QuizCraft.Application.Interfaces.AIGenerationSettings aiSettings)
             {
                 // Crear configuración por defecto si no es del tipo correcto
-                aiSettings = new AIGenerationSettings
+                aiSettings = new QuizCraft.Application.Interfaces.AIGenerationSettings
                 {
                     MaxCardsPerDocument = settings.MaxCardsPerDocument,
-                    MinTextLength = settings.MinTextLength,
-                    MaxTextLength = settings.MaxTextLength,
                     Language = settings.Language,
-                    IncludeSourceReference = settings.IncludeSourceReference
+                    Difficulty = "Medium",
+                    IncludeExplanations = true
                 };
             }
 
             try
             {
-                return await _aiProcessor.ProcessAsync(documentStream, fileName, aiSettings);
+                // Convertir de Interfaces.AIGenerationSettings a Models.AIGenerationSettings
+                var modelsAiSettings = new QuizCraft.Application.Models.AIGenerationSettings
+                {
+                    MaxCardsPerDocument = aiSettings.MaxCardsPerDocument,
+                    Language = aiSettings.Language,
+                    Difficulty = aiSettings.Difficulty,
+                    IncludeExplanations = aiSettings.IncludeExplanations
+                };
+                
+                return await _aiProcessor.ProcessAsync(documentStream, fileName, modelsAiSettings);
             }
             catch (Exception ex)
             {

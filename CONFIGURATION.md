@@ -41,9 +41,27 @@ Si planeas usar las funciones de IA, agrega tu API Key:
 "OpenAI": {
   "ApiKey": "sk-tu-api-key-aqui",
   "Model": "gpt-4o",
-  "MaxTokens": 1500
+  "MaxTokens": 1500,
+  "Organization": "",
+  "Temperature": 0.7,
+  "MaxRequestsPerDay": 1000,
+  "MaxTokensPerUser": 5000
 }
 ```
+
+**📝 Configuración de OpenAI:**
+- **ApiKey**: Tu clave API de OpenAI (obtén una en [platform.openai.com](https://platform.openai.com/api-keys))
+- **Model**: Modelo a usar (gpt-4o, gpt-3.5-turbo, etc.)
+- **MaxTokens**: Máximo de tokens por solicitud
+- **Temperature**: Creatividad del modelo (0.0 = conservador, 1.0 = creativo)
+- **MaxRequestsPerDay**: Límite diario de solicitudes por usuario
+- **MaxTokensPerUser**: Límite de tokens por usuario
+
+**💰 Nota sobre costos:**
+- La generación con IA tiene costos asociados según el uso
+- GPT-4o: ~$0.03 por 1K tokens
+- GPT-3.5-turbo: ~$0.002 por 1K tokens
+- Consulta [openai.com/pricing](https://openai.com/pricing) para precios actualizados
 
 ### 4. Aplicar Migraciones
 

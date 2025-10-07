@@ -70,6 +70,12 @@ builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtract
 // FUNC_ConfigurarAlgoritmoRepaso: Servicios para algoritmo de repetición espaciada
 builder.Services.AddScoped<IAlgoritmoRepasoService, QuizCraft.Infrastructure.Services.AlgoritmoRepasoService>();
 
+// FUNC_ConfigurarOpenAI: Configuración de servicios de OpenAI para generación con IA
+builder.Services.Configure<QuizCraft.Application.Models.OpenAISettings>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IOpenAIConfigurationService, QuizCraft.Infrastructure.Services.OpenAIConfigurationService>();
+builder.Services.AddHttpClient<QuizCraft.Application.Interfaces.IOpenAIService, QuizCraft.Infrastructure.Services.OpenAIService>();
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIDocumentProcessor, QuizCraft.Infrastructure.Services.AIDocumentProcessor>();
+
 // FUNC_ConfigurarAutenticacion: Configuración de cookies de autenticación
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -175,7 +181,8 @@ static async Task FUNC_InicializarRoles(RoleManager<IdentityRole> roleManager)
 static async Task FUNC_CrearUsuarioAdministrador(UserManager<ApplicationUser> userManager)
 {
     const string adminEmail = "admin@quizcraft.com";
-    const string adminPassword = "Admin123!";
+    // IMPORTANTE: Cambiar esta contraseña en producción
+    const string adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin123!";
     
     // Buscar si ya existe el usuario administrador
     var existingAdmin = await userManager.FindByEmailAsync(adminEmail);

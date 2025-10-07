@@ -1,4 +1,5 @@
 using QuizCraft.Application.Interfaces;
+using QuizCraft.Application.Models;
 
 namespace QuizCraft.Application.Interfaces
 {
@@ -15,7 +16,7 @@ namespace QuizCraft.Application.Interfaces
         /// <param name="mode">Modo de generación (Tradicional o IA)</param>
         /// <param name="settings">Configuración de generación</param>
         /// <returns>Resultado con las flashcards generadas</returns>
-        Task<FlashcardGenerationResult> GenerateFromDocumentAsync(
+        Task<QuizCraft.Application.Models.FlashcardGenerationResult> GenerateFromDocumentAsync(
             Stream documentStream, 
             string fileName, 
             GenerationMode mode,
@@ -43,7 +44,7 @@ namespace QuizCraft.Application.Interfaces
         /// <summary>
         /// Procesa un documento usando técnicas tradicionales
         /// </summary>
-        Task<FlashcardGenerationResult> ProcessAsync(
+        Task<QuizCraft.Application.Models.FlashcardGenerationResult> ProcessAsync(
             Stream documentStream, 
             string fileName, 
             TraditionalGenerationSettings settings);
@@ -52,30 +53,6 @@ namespace QuizCraft.Application.Interfaces
         /// Determina si puede procesar el tipo de archivo
         /// </summary>
         bool CanProcess(string fileName);
-    }
-
-    /// <summary>
-    /// Procesador específico para documentos con IA
-    /// </summary>
-    public interface IAIDocumentProcessor
-    {
-        /// <summary>
-        /// Procesa un documento usando IA
-        /// </summary>
-        Task<FlashcardGenerationResult> ProcessAsync(
-            Stream documentStream, 
-            string fileName, 
-            AIGenerationSettings settings);
-
-        /// <summary>
-        /// Verifica si hay tokens/créditos disponibles
-        /// </summary>
-        Task<bool> HasCreditsAvailableAsync();
-
-        /// <summary>
-        /// Obtiene la cantidad de tokens disponibles
-        /// </summary>
-        Task<int> GetAvailableTokensAsync();
     }
 
     /// <summary>
@@ -130,5 +107,30 @@ namespace QuizCraft.Application.Interfaces
         Image,
         Code,
         Quote
+    }
+
+    /// <summary>
+    /// Servicio principal para interactuar con OpenAI
+    /// </summary>
+    public interface IOpenAIService
+    {
+        Task<QuizCraft.Application.Models.OpenAIResponse> GenerateFlashcardsFromTextAsync(string content, QuizCraft.Application.Models.AIGenerationSettings settings);
+        Task<bool> ValidateApiKeyAsync();
+        Task<QuizCraft.Application.Models.TokenUsageInfo> GetTokenUsageInfoAsync();
+        Task<bool> IsServiceAvailableAsync();
+        Task<int> EstimateTokenCostAsync(string content);
+        Task<QuizCraft.Application.Models.TokenUsageInfo> EstimateTokenUsageAsync(string content);
+        Task<QuizCraft.Application.Models.OpenAIResponse> GenerateTextAsync(string prompt, QuizCraft.Application.Models.OpenAISettings? customSettings = null);
+    }
+
+    /// <summary>
+    /// Servicio de configuración para OpenAI
+    /// </summary>
+    public interface IOpenAIConfigurationService
+    {
+        Task<QuizCraft.Application.Models.OpenAISettings> GetSettingsAsync();
+        Task<bool> IsConfiguredAsync();
+        Task<string> GetApiKeyAsync();
+        Task<bool> ValidateConfigurationAsync();
     }
 }
