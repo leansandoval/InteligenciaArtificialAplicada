@@ -67,6 +67,9 @@ builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFlashcardGeneration
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.ITraditionalDocumentProcessor, QuizCraft.Infrastructure.Services.DocumentProcessing.TraditionalDocumentProcessor>();
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtractor, QuizCraft.Infrastructure.Services.DocumentProcessing.TextFileExtractor>();
 
+// FUNC_ConfigurarAlgoritmoRepaso: Servicios para algoritmo de repetición espaciada
+builder.Services.AddScoped<IAlgoritmoRepasoService, QuizCraft.Infrastructure.Services.AlgoritmoRepasoService>();
+
 // FUNC_ConfigurarAutenticacion: Configuración de cookies de autenticación
 builder.Services.ConfigureApplicationCookie(options =>
 {

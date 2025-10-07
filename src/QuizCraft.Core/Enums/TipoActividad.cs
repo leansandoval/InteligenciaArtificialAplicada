@@ -23,5 +23,10 @@ public enum TipoActividad
     /// <summary>
     /// Actividad de práctica
     /// </summary>
-    Practica = 4
+    Practica = 4,
+
+    /// <summary>
+    /// Actividad de repetición espaciada
+    /// </summary>
+    RepeticionEspaciada = 5
 }

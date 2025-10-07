@@ -153,6 +153,82 @@ public class RepasoFlashcardViewModel
     public bool EsPrimera => IndiceActual <= 0;
     public bool EsUltima => IndiceActual >= TotalFlashcards - 1;
     public int PorcentajeProgreso => TotalFlashcards > 0 ? (int)Math.Ceiling((double)(IndiceActual + 1) / TotalFlashcards * 100) : 0;
+    
+    // Estadísticas de la sesión
+    public DateTime InicioSesion { get; set; } = DateTime.UtcNow;
+    public int FlashcardsCorrectas { get; set; } = 0;
+    public int FlashcardsIncorrectas { get; set; } = 0;
+    public int FlashcardsRevisadas { get; set; } = 0;
+    
+    // Propiedades calculadas de estadísticas
+    public int TotalRevisadas => FlashcardsCorrectas + FlashcardsIncorrectas;
+    public double PorcentajeAcierto => TotalRevisadas > 0 ? (double)FlashcardsCorrectas / TotalRevisadas * 100 : 0;
+    public TimeSpan TiempoTranscurrido => DateTime.UtcNow - InicioSesion;
+}
+
+/// <summary>
+/// ViewModel para configurar una sesión de repaso
+/// </summary>
+public class ConfigurarRepasoViewModel
+{
+    [Display(Name = "Materia")]
+    public int? MateriaId { get; set; }
+    
+    [Display(Name = "Número máximo de flashcards")]
+    [Range(1, 100, ErrorMessage = "El número debe estar entre 1 y 100")]
+    public int MaximoFlashcards { get; set; } = 20;
+    
+    [Display(Name = "Incluir solo flashcards vencidas")]
+    public bool SoloVencidas { get; set; } = true;
+    
+    [Display(Name = "Mezclar orden")]
+    public bool MezclarOrden { get; set; } = true;
+    
+    [Display(Name = "Incluir pistas")]
+    public bool IncluirPistas { get; set; } = true;
+    
+    [Display(Name = "Dificultad")]
+    public NivelDificultad? DificultadFiltro { get; set; }
+    
+    // Datos para la vista
+    public List<MateriaDropdownViewModel> MateriasDisponibles { get; set; } = new();
+    public Dictionary<int, int> FlashcardsPorMateria { get; set; } = new();
+    public int TotalFlashcardsDisponibles { get; set; }
+}
+
+/// <summary>
+/// ViewModel para el resultado de una evaluación de flashcard durante repaso
+/// </summary>
+public class EvaluacionRepasoViewModel
+{
+    public int FlashcardId { get; set; }
+    public bool EsCorrecta { get; set; }
+    public int CalidadRespuesta { get; set; } // 0-5 para algoritmo SuperMemo
+    public TimeSpan TiempoRespuesta { get; set; }
+    public DateTime ProximaRevision { get; set; }
+    public string? Comentario { get; set; }
+}
+
+/// <summary>
+/// ViewModel para mostrar estadísticas de repaso
+/// </summary>
+public class EstadisticasRepasoViewModel
+{
+    public int TotalFlashcards { get; set; }
+    public int FlashcardsRevisadas { get; set; }
+    public int FlashcardsCorrectas { get; set; }
+    public int FlashcardsIncorrectas { get; set; }
+    public double PorcentajeAcierto { get; set; }
+    public TimeSpan TiempoTotal { get; set; }
+    public DateTime FechaInicio { get; set; }
+    public DateTime? FechaFin { get; set; }
+    public string MateriaNombre { get; set; } = string.Empty;
+    public string MateriaColor { get; set; } = string.Empty;
+    
+    // Estadísticas adicionales
+    public double TiempoPromedioRespuesta { get; set; }
+    public int FlashcardsParaManana { get; set; }
+    public int FlashcardsParaSiguienteSemana { get; set; }
 }
 
 /// <summary>

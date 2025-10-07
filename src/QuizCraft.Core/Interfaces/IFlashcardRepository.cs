@@ -27,4 +27,10 @@ public interface IFlashcardRepository : IGenericRepository<Flashcard>
     Task ActualizarDificultadesEnLoteAsync(int materiaId, NivelDificultad nuevaDificultad);
     Task<IEnumerable<Flashcard>> GetFlashcardsByUsuarioIdAsync(string usuarioId);
     Task<Flashcard?> GetByIdWithMateriaAsync(int id);
+    
+    // Métodos específicos para sistema de repaso
+    Task<IEnumerable<Flashcard>> GetFlashcardsParaRepasoAsync(string usuarioId, int? materiaId = null);
+    Task<IEnumerable<Flashcard>> GetFlashcardsParaRepasoByMateriaAsync(int materiaId);
+    Task<int> GetCantidadFlashcardsParaRepasoAsync(string usuarioId, int? materiaId = null);
+    Task ActualizarEstadisticasRepasoAsync(int flashcardId, bool esCorrecta, TimeSpan tiempoRespuesta);
 }

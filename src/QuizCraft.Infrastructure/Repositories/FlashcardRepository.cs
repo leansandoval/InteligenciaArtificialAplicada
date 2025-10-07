@@ -190,5 +190,80 @@ namespace QuizCraft.Infrastructure.Repositories
                 .Include(f => f.Materia)
                 .FirstOrDefaultAsync(f => f.Id == id);
         }
+
+        /// <summary>
+        /// Obtiene flashcards que necesitan repaso para un usuario específico
+        /// </summary>
+        public async Task<IEnumerable<Flashcard>> GetFlashcardsParaRepasoAsync(string usuarioId, int? materiaId = null)
+        {
+            var hoy = DateTime.Today;
+            
+            IQueryable<Flashcard> query = _dbSet
+                .Include(f => f.Materia)
+                .Where(f => f.Materia.UsuarioId == usuarioId);
+
+            if (materiaId.HasValue)
+                query = query.Where(f => f.MateriaId == materiaId.Value);
+
+            return await query
+                .Where(f => f.ProximaRevision == null || f.ProximaRevision <= hoy)
+                .OrderBy(f => f.ProximaRevision ?? DateTime.MinValue)
+                .ThenBy(f => f.UltimaRevision ?? DateTime.MinValue)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Obtiene flashcards que necesitan repaso para una materia específica
+        /// </summary>
+        public async Task<IEnumerable<Flashcard>> GetFlashcardsParaRepasoByMateriaAsync(int materiaId)
+        {
+            var hoy = DateTime.Today;
+            
+            return await _dbSet
+                .Include(f => f.Materia)
+                .Where(f => f.MateriaId == materiaId && 
+                           (f.ProximaRevision == null || f.ProximaRevision <= hoy))
+                .OrderBy(f => f.ProximaRevision ?? DateTime.MinValue)
+                .ThenBy(f => f.UltimaRevision ?? DateTime.MinValue)
+                .ToListAsync();
+        }
+
+        /// <summary>
+        /// Obtiene la cantidad de flashcards que necesitan repaso
+        /// </summary>
+        public async Task<int> GetCantidadFlashcardsParaRepasoAsync(string usuarioId, int? materiaId = null)
+        {
+            var hoy = DateTime.Today;
+            
+            IQueryable<Flashcard> query = _dbSet
+                .Include(f => f.Materia)
+                .Where(f => f.Materia.UsuarioId == usuarioId);
+
+            if (materiaId.HasValue)
+                query = query.Where(f => f.MateriaId == materiaId.Value);
+
+            return await query
+                .CountAsync(f => f.ProximaRevision == null || f.ProximaRevision <= hoy);
+        }
+
+        /// <summary>
+        /// Actualiza las estadísticas de repaso de una flashcard
+        /// </summary>
+        public async Task ActualizarEstadisticasRepasoAsync(int flashcardId, bool esCorrecta, TimeSpan tiempoRespuesta)
+        {
+            var flashcard = await _dbSet.FindAsync(flashcardId);
+            if (flashcard == null) return;
+
+            flashcard.VecesVista++;
+            if (esCorrecta)
+                flashcard.VecesCorrecta++;
+            else
+                flashcard.VecesIncorrecta++;
+
+            flashcard.UltimaRevision = DateTime.UtcNow;
+            flashcard.FechaModificacion = DateTime.UtcNow;
+
+            _dbSet.Update(flashcard);
+        }
     }
 }

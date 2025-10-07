@@ -1,0 +1,446 @@
+@model RepasoFlashcardViewModel
+@using QuizCraft.Application.ViewModels
+@using QuizCraft.Core.Enums
+@{
+    ViewData["Title"] = "Repaso de Flashcards";
+}
+
+<div class="container-fluid py-4" id="repasoContainer">
+    <!-- Barra de progreso -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">
+                            <i class="@Model.MateriaIcono me-2" style="color: @Model.MateriaColor"></i>
+                            @Model.MateriaNombre
+                        </h6>
+                        <small class="text-muted">
+                            Flashcard @(Model.IndiceActual + 1) de @Model.TotalFlashcards
+                        </small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: @Model.PorcentajeProgreso%" 
+                             aria-valuenow="@Model.PorcentajeProgreso" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flashcard principal -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card flashcard-container shadow-lg" id="flashcardCard">
+                <div class="card-body p-5 text-center position-relative" style="min-height: 400px;">
+                    
+                    <!-- Indicador de dificultad -->
+                    <div class="position-absolute top-0 end-0 m-3">
+                        <span class="badge @GetDifficultyBadgeClass(Model.FlashcardActual?.Dificultad ?? NivelDificultad.Facil)">
+                            @Model.FlashcardActual?.DificultadTexto
+                        </span>
+                    </div>
+
+                    <!-- Lado frontal (Pregunta) -->
+                    <div id="flashcardFront" class="flashcard-side @(!Model.MostrarRespuesta ? "active" : "")">
+                        <div class="d-flex flex-column justify-content-center h-100">
+                            <i class="fas fa-question-circle text-primary mb-4" style="font-size: 3rem;"></i>
+                            <h3 class="mb-4 text-dark">@Model.FlashcardActual?.Pregunta</h3>
+                            
+                            @if (!string.IsNullOrEmpty(Model.FlashcardActual?.Pista))
+                            {
+                                <div class="alert alert-info" id="pistaContainer" style="display: none;">
+                                    <i class="fas fa-lightbulb me-2"></i>
+                                    <strong>Pista:</strong> @Model.FlashcardActual.Pista
+                                </div>
+                                <button type="button" class="btn btn-outline-info btn-sm mb-3" id="btnMostrarPista">
+                                    <i class="fas fa-lightbulb me-2"></i>Mostrar Pista
+                                </button>
+                            }
+                            
+                            <button type="button" class="btn btn-primary btn-lg" id="btnMostrarRespuesta">
+                                <i class="fas fa-eye me-2"></i>Mostrar Respuesta
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lado posterior (Respuesta) -->
+                    <div id="flashcardBack" class="flashcard-side @(Model.MostrarRespuesta ? "active" : "")">
+                        <div class="d-flex flex-column justify-content-center h-100">
+                            <i class="fas fa-check-circle text-success mb-4" style="font-size: 3rem;"></i>
+                            <h4 class="mb-3 text-muted">Pregunta:</h4>
+                            <p class="mb-4">@Model.FlashcardActual?.Pregunta</p>
+                            <h4 class="mb-3 text-success">Respuesta:</h4>
+                            <h3 class="mb-4 text-dark">@Model.FlashcardActual?.Respuesta</h3>
+                            
+                            <!-- Evaluación de la respuesta -->
+                            <div class="evaluation-section">
+                                <h5 class="mb-3">¿Qué tal lo hiciste?</h5>
+                                <div class="d-flex justify-content-center gap-2 mb-4">
+                                    <button type="button" class="btn btn-danger evaluation-btn" data-correcta="false" data-calidad="1">
+                                        <i class="fas fa-times me-2"></i>Incorrecto
+                                    </button>
+                                    <button type="button" class="btn btn-warning evaluation-btn" data-correcta="true" data-calidad="3">
+                                        <i class="fas fa-meh me-2"></i>Difícil
+                                    </button>
+                                    <button type="button" class="btn btn-success evaluation-btn" data-correcta="true" data-calidad="4">
+                                        <i class="fas fa-smile me-2"></i>Bien
+                                    </button>
+                                    <button type="button" class="btn btn-primary evaluation-btn" data-correcta="true" data-calidad="5">
+                                        <i class="fas fa-star me-2"></i>Fácil
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas de la sesión -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body py-3">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <i class="fas fa-clock text-primary mb-2"></i>
+                            <div><strong id="tiempoTranscurrido">00:00</strong></div>
+                            <small class="text-muted">Tiempo</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-check-circle text-success mb-2"></i>
+                            <div><strong id="correctas">@Model.FlashcardsCorrectas</strong></div>
+                            <small class="text-muted">Correctas</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-times-circle text-danger mb-2"></i>
+                            <div><strong id="incorrectas">@Model.FlashcardsIncorrectas</strong></div>
+                            <small class="text-muted">Incorrectas</small>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-percentage text-info mb-2"></i>
+                            <div><strong id="porcentajeAcierto">@Model.PorcentajeAcierto.ToString("F0")%</strong></div>
+                            <small class="text-muted">Acierto</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controles de navegación -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" id="btnSalir">
+                    <i class="fas fa-times me-2"></i>Salir del Repaso
+                </button>
+                
+                <div class="navigation-controls" style="display: none;" id="navigationControls">
+                    <button type="button" class="btn btn-outline-primary me-2" id="btnAnterior" @(Model.EsPrimera ? "disabled" : "")>
+                        <i class="fas fa-chevron-left me-2"></i>Anterior
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnSiguiente">
+                        @if (Model.EsUltima)
+                        {
+                            <i class="fas fa-flag-checkered me-2"></i><span>Finalizar</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-chevron-right me-2"></i><span>Siguiente</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para salir -->
+<div class="modal fade" id="modalSalir" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Salida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres salir del repaso? Se perderá el progreso de la sesión actual.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a asp-action="Index" class="btn btn-danger">Sí, Salir</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Variables globales del repaso
+        let repasoData = @Html.Raw(Json.Serialize(Model));
+        let tiempoInicio = new Date(repasoData.inicioSesion);
+        let tiempoRespuestaInicio = new Date();
+        let intervaloTiempo;
+
+        // Inicializar página
+        $(document).ready(function() {
+            inicializarRepaso();
+            iniciarTemporizador();
+        });
+
+        function inicializarRepaso() {
+            // Evento mostrar pista
+            $('#btnMostrarPista').click(function() {
+                $('#pistaContainer').slideDown();
+                $(this).hide();
+            });
+
+            // Evento mostrar respuesta
+            $('#btnMostrarRespuesta').click(function() {
+                mostrarRespuesta();
+            });
+
+            // Eventos de evaluación
+            $('.evaluation-btn').click(function() {
+                const esCorrecta = $(this).data('correcta');
+                const calidad = $(this).data('calidad');
+                evaluarFlashcard(esCorrecta, calidad);
+            });
+
+            // Evento salir
+            $('#btnSalir').click(function() {
+                $('#modalSalir').modal('show');
+            });
+
+            // Evento siguiente
+            $('#btnSiguiente').click(function() {
+                siguienteFlashcard();
+            });
+        }
+
+        function mostrarRespuesta() {
+            $('#flashcardFront').removeClass('active');
+            $('#flashcardBack').addClass('active');
+            tiempoRespuestaInicio = new Date();
+        }
+
+        function evaluarFlashcard(esCorrecta, calidad) {
+            const tiempoRespuesta = new Date() - tiempoRespuestaInicio;
+            
+            const evaluacion = {
+                flashcardId: repasoData.flashcardActual.id,
+                esCorrecta: esCorrecta,
+                calidadRespuesta: calidad,
+                tiempoRespuesta: timeSpanFromMilliseconds(tiempoRespuesta)
+            };
+
+            $.ajax({
+                url: '@Url.Action("EvaluarFlashcard")',
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val(),
+                    ...evaluacion
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Actualizar estadísticas
+                        if (esCorrecta) {
+                            repasoData.flashcardsCorrectas++;
+                        } else {
+                            repasoData.flashcardsIncorrectas++;
+                        }
+                        
+                        actualizarEstadisticas();
+                        
+                        // Mostrar controles de navegación
+                        $('#navigationControls').show();
+                        
+                        // Deshabilitar botones de evaluación
+                        $('.evaluation-btn').prop('disabled', true);
+                        
+                        // Resaltar el botón seleccionado
+                        $('.evaluation-btn').removeClass('btn-outline-success btn-outline-danger');
+                        $(event.target).addClass(esCorrecta ? 'btn-outline-success' : 'btn-outline-danger');
+                    }
+                },
+                error: function() {
+                    alert('Error al evaluar la flashcard. Inténtalo de nuevo.');
+                }
+            });
+        }
+
+        function siguienteFlashcard() {
+            if (repasoData.indiceActual >= repasoData.totalFlashcards - 1) {
+                finalizarRepaso();
+                return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("SiguienteFlashcard")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(repasoData),
+                success: function(response) {
+                    if (response.success) {
+                        if (response.terminada) {
+                            mostrarResultadosFinales(response.estadisticas);
+                        } else {
+                            cargarSiguienteFlashcard(response);
+                        }
+                    }
+                },
+                error: function() {
+                    alert('Error al cargar la siguiente flashcard.');
+                }
+            });
+        }
+
+        function cargarSiguienteFlashcard(response) {
+            // Actualizar datos
+            repasoData.flashcardActual = response.flashcard;
+            repasoData.indiceActual = response.indice;
+            
+            // Actualizar interfaz
+            actualizarProgreso(response.porcentajeProgreso);
+            cargarFlashcard(response.flashcard);
+            
+            // Resetear estado
+            $('#flashcardBack').removeClass('active');
+            $('#flashcardFront').addClass('active');
+            $('#navigationControls').hide();
+            $('.evaluation-btn').prop('disabled', false).removeClass('btn-outline-success btn-outline-danger');
+            $('#pistaContainer').hide();
+            $('#btnMostrarPista').show();
+            
+            tiempoRespuestaInicio = new Date();
+        }
+
+        function cargarFlashcard(flashcard) {
+            // Actualizar contenido
+            $('#flashcardFront h3').text(flashcard.pregunta);
+            $('#flashcardBack p').text(flashcard.pregunta);
+            $('#flashcardBack h3').text(flashcard.respuesta);
+            
+            // Actualizar pista
+            if (flashcard.pista) {
+                $('#pistaContainer strong').next().text(flashcard.pista);
+                $('#btnMostrarPista').show();
+            } else {
+                $('#btnMostrarPista').hide();
+            }
+            
+            // Actualizar badge de dificultad
+            const badgeClasses = {
+                'Facil': 'bg-success',
+                'Intermedio': 'bg-warning',
+                'Dificil': 'bg-danger'
+            };
+            $('.badge').removeClass('bg-success bg-warning bg-danger')
+                      .addClass(badgeClasses[flashcard.dificultadTexto] || 'bg-secondary')
+                      .text(flashcard.dificultadTexto);
+        }
+
+        function actualizarProgreso(porcentaje) {
+            $('.progress-bar').css('width', porcentaje + '%').attr('aria-valuenow', porcentaje);
+            $('small.text-muted').text(`Flashcard ${repasoData.indiceActual + 1} de ${repasoData.totalFlashcards}`);
+        }
+
+        function actualizarEstadisticas() {
+            $('#correctas').text(repasoData.flashcardsCorrectas);
+            $('#incorrectas').text(repasoData.flashcardsIncorrectas);
+            
+            const total = repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas;
+            const porcentaje = total > 0 ? (repasoData.flashcardsCorrectas / total * 100).toFixed(0) : 0;
+            $('#porcentajeAcierto').text(porcentaje + '%');
+        }
+
+        function iniciarTemporizador() {
+            intervaloTiempo = setInterval(function() {
+                const ahora = new Date();
+                const transcurrido = new Date(ahora - tiempoInicio);
+                const minutos = transcurrido.getUTCMinutes().toString().padStart(2, '0');
+                const segundos = transcurrido.getUTCSeconds().toString().padStart(2, '0');
+                $('#tiempoTranscurrido').text(`${minutos}:${segundos}`);
+            }, 1000);
+        }
+
+        function timeSpanFromMilliseconds(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function finalizarRepaso() {
+            clearInterval(intervaloTiempo);
+            window.location.href = '@Url.Action("Index")';
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .flashcard-container {
+            transition: transform 0.3s ease;
+        }
+        
+        .flashcard-container:hover {
+            transform: translateY(-5px);
+        }
+        
+        .flashcard-side {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .flashcard-side.active {
+            display: block;
+            opacity: 1;
+        }
+        
+        .evaluation-btn {
+            transition: all 0.2s ease;
+            min-width: 100px;
+        }
+        
+        .evaluation-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .progress {
+            transition: width 0.5s ease;
+        }
+        
+        @@media (max-width: 768px) {
+            .evaluation-btn {
+                min-width: auto;
+                margin-bottom: 0.5rem;
+            }
+            
+            .d-flex.gap-2 {
+                flex-direction: column;
+            }
+        }
+    </style>
+}
+
+@functions {
+    string GetDifficultyBadgeClass(NivelDificultad dificultad)
+    {
+        return dificultad switch
+        {
+            NivelDificultad.Facil => "bg-success",
+            NivelDificultad.Intermedio => "bg-warning",
+            NivelDificultad.Dificil => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

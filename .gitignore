@@ -360,3 +360,49 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# ========================================
+# QUIZCRAFT - Configuraciones Sensibles
+# ========================================
+
+# Archivos de configuración con datos sensibles
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Local.json
+appsettings.*.json
+!appsettings.Example.json
+
+# Claves API y secretos
+*.secrets.json
+secrets.json
+.env
+.env.local
+.env.development
+.env.production
+
+# Archivos de base de datos locales
+*.mdf
+*.ldf
+*.sdf
+*.db
+*.sqlite
+*.sqlite3
+App_Data/
+
+# Archivos de logs locales específicos
+logs/
+*.log
+*.log.*
+
+# Configuraciones de usuario específicas
+*.user.json
+userconfig.json
+
+# Certificados y claves privadas
+*.pfx
+*.p12
+*.key
+*.pem
+*.crt

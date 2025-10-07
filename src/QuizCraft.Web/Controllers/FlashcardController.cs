@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using QuizCraft.Application.ViewModels;
 using QuizCraft.Application.Interfaces;
 using QuizCraft.Core.Entities;
 using QuizCraft.Core.Enums;
 using QuizCraft.Core.Interfaces;
+using QuizCraft.Infrastructure.Data;
 
 namespace QuizCraft.Web.Controllers;
 
@@ -19,17 +21,23 @@ public class FlashcardController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ILogger<FlashcardController> _logger;
     private readonly IFileUploadService _fileUploadService;
+    private readonly IAlgoritmoRepasoService _algoritmoRepasoService;
+    private readonly ApplicationDbContext _context;
 
     public FlashcardController(
         IUnitOfWork unitOfWork,
         UserManager<ApplicationUser> userManager,
         ILogger<FlashcardController> logger,
-        IFileUploadService fileUploadService)
+        IFileUploadService fileUploadService,
+        IAlgoritmoRepasoService algoritmoRepasoService,
+        ApplicationDbContext context)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
         _logger = logger;
         _fileUploadService = fileUploadService;
+        _algoritmoRepasoService = algoritmoRepasoService;
+        _context = context;
     }
 
     /// <summary>
@@ -508,4 +516,372 @@ public class FlashcardController : Controller
             return RedirectToAction(nameof(Index));
         }
     }
+
+    #region Métodos de Repaso
+
+    /// <summary>
+    /// Muestra la página de configuración para iniciar una sesión de repaso
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> ConfigurarRepaso()
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        try
+        {
+            // Obtener materias del usuario
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+            
+            // Obtener cantidad de flashcards disponibles para repaso por materia
+            var flashcardsPorMateria = new Dictionary<int, int>();
+            var totalFlashcards = 0;
+
+            foreach (var materia in materias)
+            {
+                var cantidad = await _unitOfWork.FlashcardRepository.GetCantidadFlashcardsParaRepasoAsync(usuario.Id, materia.Id);
+                flashcardsPorMateria[materia.Id] = cantidad;
+                totalFlashcards += cantidad;
+            }
+
+            var viewModel = new ConfigurarRepasoViewModel
+            {
+                MateriasDisponibles = materias.Select(m => new MateriaDropdownViewModel
+                {
+                    Id = m.Id,
+                    Nombre = m.Nombre,
+                    Color = m.Color ?? "#007bff",
+                    Icono = m.Icono ?? "fas fa-book",
+                    CantidadFlashcards = flashcardsPorMateria.GetValueOrDefault(m.Id, 0)
+                }).ToList(),
+                FlashcardsPorMateria = flashcardsPorMateria,
+                TotalFlashcardsDisponibles = totalFlashcards,
+                MaximoFlashcards = Math.Min(20, totalFlashcards)
+            };
+
+            return View(viewModel);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al configurar repaso para usuario {UserId}", usuario.Id);
+            TempData["Error"] = "Error al cargar la configuración de repaso. Inténtalo de nuevo.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    /// <summary>
+    /// Inicia una sesión de repaso con la configuración especificada
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> IniciarRepaso(ConfigurarRepasoViewModel configuracion)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            // Recargar datos necesarios para la vista
+            return await ConfigurarRepaso();
+        }
+
+        try
+        {
+            // Obtener flashcards para repaso
+            var flashcardsParaRepaso = await _unitOfWork.FlashcardRepository.GetFlashcardsParaRepasoAsync(
+                usuario.Id, configuracion.MateriaId);
+
+            // Aplicar filtros adicionales
+            if (configuracion.DificultadFiltro.HasValue)
+            {
+                flashcardsParaRepaso = flashcardsParaRepaso.Where(f => f.Dificultad == configuracion.DificultadFiltro.Value);
+            }
+
+            // Usar algoritmo de repaso para priorizar
+            var flashcardsOptimizadas = _algoritmoRepasoService.ObtenerFlashcardsParaRepaso(
+                flashcardsParaRepaso, configuracion.MaximoFlashcards);
+
+            var flashcardsLista = flashcardsOptimizadas.ToList();
+
+            if (!flashcardsLista.Any())
+            {
+                TempData["Info"] = "No hay flashcards disponibles para repaso en este momento.";
+                return RedirectToAction(nameof(ConfigurarRepaso));
+            }
+
+            // Mezclar si está habilitado
+            if (configuracion.MezclarOrden)
+            {
+                flashcardsLista = flashcardsLista.OrderBy(x => Guid.NewGuid()).ToList();
+            }
+
+            // Crear sesión de repaso
+            var materia = configuracion.MateriaId.HasValue 
+                ? await _unitOfWork.MateriaRepository.GetByIdAsync(configuracion.MateriaId.Value)
+                : null;
+
+            var flashcardActual = flashcardsLista.First();
+            var repasoViewModel = new RepasoFlashcardViewModel
+            {
+                FlashcardActual = new FlashcardViewModel
+                {
+                    Id = flashcardActual.Id,
+                    Pregunta = flashcardActual.Pregunta,
+                    Respuesta = flashcardActual.Respuesta,
+                    Pista = configuracion.IncluirPistas ? flashcardActual.Pista : null,
+                    DificultadTexto = flashcardActual.Dificultad.ToString(),
+                    MateriaNombre = flashcardActual.Materia.Nombre,
+                    MateriaColor = flashcardActual.Materia.Color ?? "#007bff",
+                    MateriaIcono = flashcardActual.Materia.Icono ?? "fas fa-book",
+                    MateriaId = flashcardActual.MateriaId,
+                    Dificultad = flashcardActual.Dificultad
+                },
+                IndiceActual = 0,
+                TotalFlashcards = flashcardsLista.Count,
+                MateriaId = configuracion.MateriaId ?? 0,
+                MateriaNombre = materia?.Nombre ?? "Todas las materias",
+                MateriaColor = materia?.Color ?? "#007bff",
+                MateriaIcono = materia?.Icono ?? "fas fa-book",
+                FlashcardIds = flashcardsLista.Select(f => f.Id).ToList(),
+                InicioSesion = DateTime.UtcNow
+            };
+
+            // Guardar configuración en TempData para mantener estado
+            TempData["RepasoConfig"] = System.Text.Json.JsonSerializer.Serialize(configuracion);
+
+            return View("Repaso", repasoViewModel);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al iniciar repaso para usuario {UserId}", usuario.Id);
+            TempData["Error"] = "Error al iniciar el repaso. Inténtalo de nuevo.";
+            return RedirectToAction(nameof(ConfigurarRepaso));
+        }
+    }
+
+    /// <summary>
+    /// Procesa la evaluación de una flashcard durante el repaso
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EvaluarFlashcard(EvaluacionRepasoViewModel evaluacion)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return Json(new { success = false, message = "Usuario no encontrado" });
+        }
+
+        try
+        {
+            // Obtener la flashcard
+            var flashcard = await _unitOfWork.FlashcardRepository.GetByIdWithMateriaAsync(evaluacion.FlashcardId);
+            if (flashcard == null || flashcard.Materia.UsuarioId != usuario.Id)
+            {
+                return Json(new { success = false, message = "Flashcard no encontrada" });
+            }
+
+            // Actualizar estadísticas usando el algoritmo de repetición espaciada
+            var nuevaProximaRevision = _algoritmoRepasoService.CalcularProximaRevision(flashcard, evaluacion.EsCorrecta);
+            var nuevoFactor = _algoritmoRepasoService.ActualizarFactorFacilidad(flashcard.FactorFacilidad, evaluacion.CalidadRespuesta);
+            var nuevoIntervalo = _algoritmoRepasoService.CalcularNuevoIntervalo(flashcard.IntervaloRepeticion, nuevoFactor, evaluacion.EsCorrecta);
+
+            // Actualizar la flashcard
+            flashcard.ProximaRevision = nuevaProximaRevision;
+            flashcard.FactorFacilidad = nuevoFactor;
+            flashcard.IntervaloRepeticion = nuevoIntervalo;
+
+            // Actualizar estadísticas de repaso
+            await _unitOfWork.FlashcardRepository.ActualizarEstadisticasRepasoAsync(
+                evaluacion.FlashcardId, evaluacion.EsCorrecta, evaluacion.TiempoRespuesta);
+
+            // Crear estadística de estudio
+            await CrearEstadisticaEstudio(usuario.Id, flashcard.MateriaId, evaluacion.EsCorrecta);
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return Json(new { 
+                success = true, 
+                proximaRevision = nuevaProximaRevision.ToString("dd/MM/yyyy"),
+                nuevoIntervalo = nuevoIntervalo
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al evaluar flashcard {FlashcardId} para usuario {UserId}", 
+                evaluacion.FlashcardId, usuario.Id);
+            return Json(new { success = false, message = "Error interno del servidor" });
+        }
+    }
+
+    /// <summary>
+    /// Obtiene la siguiente flashcard en la sesión de repaso
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> SiguienteFlashcard([FromBody] RepasoFlashcardViewModel repasoActual)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return Json(new { success = false, message = "Usuario no encontrado" });
+        }
+
+        try
+        {
+            var siguienteIndice = repasoActual.IndiceActual + 1;
+            
+            if (siguienteIndice >= repasoActual.FlashcardIds.Count)
+            {
+                // Sesión terminada
+                return Json(new { 
+                    success = true, 
+                    terminada = true,
+                    estadisticas = new {
+                        totalRevisadas = repasoActual.TotalRevisadas,
+                        porcentajeAcierto = repasoActual.PorcentajeAcierto,
+                        tiempoTotal = repasoActual.TiempoTranscurrido.ToString(@"mm\:ss")
+                    }
+                });
+            }
+
+            // Obtener siguiente flashcard
+            var flashcardId = repasoActual.FlashcardIds[siguienteIndice];
+            var flashcard = await _unitOfWork.FlashcardRepository.GetByIdWithMateriaAsync(flashcardId);
+            
+            if (flashcard == null)
+            {
+                return Json(new { success = false, message = "Flashcard no encontrada" });
+            }
+
+            // Recuperar configuración de TempData
+            var incluirPistas = true; // Por defecto incluir pistas
+            if (TempData.ContainsKey("RepasoConfig"))
+            {
+                var configJson = TempData["RepasoConfig"]?.ToString();
+                if (!string.IsNullOrEmpty(configJson))
+                {
+                    var config = System.Text.Json.JsonSerializer.Deserialize<ConfigurarRepasoViewModel>(configJson);
+                    incluirPistas = config?.IncluirPistas ?? true;
+                    TempData.Keep("RepasoConfig"); // Mantener para próxima llamada
+                }
+            }
+
+            var flashcardViewModel = new FlashcardViewModel
+            {
+                Id = flashcard.Id,
+                Pregunta = flashcard.Pregunta,
+                Respuesta = flashcard.Respuesta,
+                Pista = incluirPistas ? flashcard.Pista : null,
+                DificultadTexto = flashcard.Dificultad.ToString(),
+                MateriaNombre = flashcard.Materia.Nombre,
+                MateriaColor = flashcard.Materia.Color ?? "#007bff",
+                MateriaIcono = flashcard.Materia.Icono ?? "fas fa-book",
+                MateriaId = flashcard.MateriaId,
+                Dificultad = flashcard.Dificultad
+            };
+
+            return Json(new { 
+                success = true, 
+                terminada = false,
+                flashcard = flashcardViewModel,
+                indice = siguienteIndice,
+                porcentajeProgreso = (int)Math.Ceiling((double)(siguienteIndice + 1) / repasoActual.FlashcardIds.Count * 100)
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al obtener siguiente flashcard para usuario {UserId}", usuario.Id);
+            return Json(new { success = false, message = "Error interno del servidor" });
+        }
+    }
+
+    /// <summary>
+    /// Finaliza la sesión de repaso y muestra estadísticas
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> FinalizarRepaso(EstadisticasRepasoViewModel estadisticas)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        try
+        {
+            // Crear estadística general de la sesión
+            var estadisticaEstudio = new EstadisticaEstudio
+            {
+                UsuarioId = usuario.Id,
+                MateriaId = estadisticas.MateriaNombre != "Todas las materias" ? (int?)null : null,
+                Fecha = DateTime.Today,
+                TipoActividad = TipoActividad.RepeticionEspaciada,
+                FlashcardsRevisadas = estadisticas.FlashcardsRevisadas,
+                FlashcardsCorrectas = estadisticas.FlashcardsCorrectas,
+                FlashcardsIncorrectas = estadisticas.FlashcardsIncorrectas,
+                TiempoEstudio = estadisticas.TiempoTotal,
+                TiempoEstudioMinutos = (int)estadisticas.TiempoTotal.TotalMinutes,
+                PromedioAcierto = estadisticas.PorcentajeAcierto
+            };
+
+            await _context.EstadisticasEstudio.AddAsync(estadisticaEstudio);
+            await _unitOfWork.SaveChangesAsync();
+
+            TempData["Success"] = $"¡Sesión de repaso completada! Revisaste {estadisticas.FlashcardsRevisadas} flashcards con {estadisticas.PorcentajeAcierto:F1}% de acierto.";
+            
+            return View("EstadisticasRepaso", estadisticas);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al finalizar repaso para usuario {UserId}", usuario.Id);
+            TempData["Error"] = "Error al guardar las estadísticas del repaso.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    #endregion
+
+    #region Métodos Privados de Apoyo
+
+    /// <summary>
+    /// Crea una estadística de estudio individual
+    /// </summary>
+    private async Task CrearEstadisticaEstudio(string usuarioId, int materiaId, bool esCorrecta)
+    {
+        var estadisticaHoy = await _context.EstadisticasEstudio
+            .FirstOrDefaultAsync(e => e.UsuarioId == usuarioId && 
+                                       e.MateriaId == materiaId && 
+                                       e.Fecha == DateTime.Today &&
+                                       e.TipoActividad == TipoActividad.RepeticionEspaciada);
+
+        if (estadisticaHoy == null)
+        {
+            estadisticaHoy = new EstadisticaEstudio
+            {
+                UsuarioId = usuarioId,
+                MateriaId = materiaId,
+                Fecha = DateTime.Today,
+                TipoActividad = TipoActividad.RepeticionEspaciada
+            };
+            await _context.EstadisticasEstudio.AddAsync(estadisticaHoy);
+        }
+
+        estadisticaHoy.FlashcardsRevisadas++;
+        if (esCorrecta)
+            estadisticaHoy.FlashcardsCorrectas++;
+        else
+            estadisticaHoy.FlashcardsIncorrectas++;
+
+        estadisticaHoy.PromedioAcierto = estadisticaHoy.FlashcardsRevisadas > 0 
+            ? (double)estadisticaHoy.FlashcardsCorrectas / estadisticaHoy.FlashcardsRevisadas * 100 
+            : 0;
+    }
+
+    #endregion
 }
