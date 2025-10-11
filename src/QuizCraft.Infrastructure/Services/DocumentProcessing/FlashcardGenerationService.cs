@@ -158,16 +158,8 @@ namespace QuizCraft.Infrastructure.Services.DocumentProcessing
 
             try
             {
-                // Convertir de Interfaces.AIGenerationSettings a Models.AIGenerationSettings
-                var modelsAiSettings = new QuizCraft.Application.Models.AIGenerationSettings
-                {
-                    MaxCardsPerDocument = aiSettings.MaxCardsPerDocument,
-                    Language = aiSettings.Language,
-                    Difficulty = aiSettings.Difficulty,
-                    IncludeExplanations = aiSettings.IncludeExplanations
-                };
-                
-                return await _aiProcessor.ProcessAsync(documentStream, fileName, modelsAiSettings);
+                // Usar directamente las configuraciones de IA
+                return await _aiProcessor.ProcessAsync(documentStream, fileName, aiSettings);
             }
             catch (Exception ex)
             {

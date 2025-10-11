@@ -47,7 +47,7 @@ namespace QuizCraft.Infrastructure.Services
             return extension is ".pdf" or ".txt" or ".doc" or ".docx";
         }
 
-        private async Task<DocumentContent> ExtractFromPdfAsync(Stream stream, string fileName)
+        private Task<DocumentContent> ExtractFromPdfAsync(Stream stream, string fileName)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace QuizCraft.Infrastructure.Services
                     });
                 }
 
-                return new DocumentContent
+                return Task.FromResult(new DocumentContent
                 {
                     RawText = text.ToString(),
                     Sections = sections,
@@ -82,7 +82,7 @@ namespace QuizCraft.Infrastructure.Services
                         ["PageCount"] = document.NumberOfPages,
                         ["ExtractedAt"] = DateTime.UtcNow
                     }
-                };
+                });
             }
             catch (Exception ex)
             {

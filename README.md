@@ -6,7 +6,7 @@
 
 - **🎴 Gestión de Materias y Flashcards** con algoritmos de repetición espaciada
 - **📝 Quizzes Personalizados** con diferentes niveles de dificultad
-- **🤖 Generación Automática de Contenido** mediante integración con OpenAI GPT-4
+- **🤖 Generación Automática de Contenido** mediante integración con Google Gemini
 - **📊 Análisis de Progreso** con estadísticas detalladas y visualizaciones
 - **🖼️ Soporte Multimedia** para imágenes, audio y documentos
 - **👥 Colaboración** para compartir contenido entre usuarios
@@ -16,7 +16,7 @@
 - **Backend:** ASP.NET Core 8 MVC, Entity Framework Core, ASP.NET Identity
 - **Frontend:** Razor Views, Bootstrap 5, JavaScript, Font Awesome
 - **Base de Datos:** SQL Server con migraciones Code-First
-- **IA:** Integración con OpenAI API para generación automática
+- **IA:** Integración con Google Gemini API para generación automática
 - **Arquitectura:** Clean Architecture con patrón Repository y Unit of Work
 
 ## 📋 Prerrequisitos
@@ -171,19 +171,25 @@ Crea un archivo `appsettings.Development.json` para configuraciones locales:
   "ConnectionStrings": {
     "DefaultConnection": "Tu cadena de conexión local"
   },
-  "OpenAI": {
-    "ApiKey": "Tu API Key de OpenAI (opcional)"
+  "Gemini": {
+    "ApiKey": "Tu API Key de Google Gemini (gratuita)"
   }
 }
 ```
 
-### Configuración de OpenAI (Opcional)
+### Configuración de Google Gemini (Opcional)
 
 Para habilitar la generación automática de contenido:
 
-1. Obtén una API Key de [OpenAI](https://platform.openai.com/)
+1. Obtén una API Key GRATUITA de [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Agrégala a tu `appsettings.Development.json`
 3. El sistema detectará automáticamente la disponibilidad
+
+**💡 Ventajas de Gemini:**
+- ✅ **Completamente gratuito** (no requiere tarjeta de crédito)
+- ✅ **Límites generosos** para uso académico y desarrollo
+- ✅ **Modelo avanzado** gemini-2.0-flash-exp
+- ✅ **Solo necesitas** una cuenta de Google
 
 ## 🚨 Solución de Problemas Comunes
 
@@ -251,7 +257,7 @@ Para reportar bugs o solicitar features:
 - ✅ Arquitectura limpia y escalable
 
 ### Próximas Versiones
-- 🔄 **v1.1.0** - Integración con OpenAI para generación automática
+- 🔄 **v1.1.0** - Integración con Google Gemini para generación automática
 - 📅 **v1.2.0** - Sistema de quizzes avanzado
 - 📊 **v1.3.0** - Analytics y estadísticas detalladas
 
@@ -268,7 +274,7 @@ Para reportar bugs o solicitar features:
 
 - **`IMateriaRepository`** - Repositorio de materias
 - **`IUnitOfWork`** - Patrón Unit of Work
-- **`IOpenAIService`** - Integración con IA (próximamente)
+- **`IGeminiService`** - Integración con Google Gemini AI
 
 Para más detalles, consulta la [documentación de arquitectura](Documentacion/ARQUITECTURA.md).
 

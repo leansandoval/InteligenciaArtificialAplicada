@@ -17,7 +17,7 @@ namespace QuizCraft.Application.Interfaces
         Task<QuizCraft.Application.Models.FlashcardGenerationResult> ProcessAsync(
             Stream documentStream, 
             string fileName, 
-            QuizCraft.Application.Models.AIGenerationSettings settings);
+            AIGenerationSettings settings);
 
         /// <summary>
         /// Verifica si el servicio de IA está disponible

@@ -16,19 +16,22 @@ namespace QuizCraft.Web.Controllers
         private readonly IFlashcardRepository _flashcardRepository;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<GeneracionController> _logger;
+        private readonly IAIDocumentProcessor _aiProcessor;
 
         public GeneracionController(
             IFlashcardGenerationService generationService,
             IMateriaRepository materiaRepository,
             IFlashcardRepository flashcardRepository,
             UserManager<ApplicationUser> userManager,
-            ILogger<GeneracionController> logger)
+            ILogger<GeneracionController> logger,
+            IAIDocumentProcessor aiProcessor)
         {
             _generationService = generationService;
             _materiaRepository = materiaRepository;
             _flashcardRepository = flashcardRepository;
             _userManager = userManager;
             _logger = logger;
+            _aiProcessor = aiProcessor;
         }
 
         /// <summary>
@@ -61,6 +64,7 @@ namespace QuizCraft.Web.Controllers
             string modo,
             [FromForm] GenerationConfigModel config)
         {
+            var startTime = DateTime.UtcNow;
             try
             {
                 // Validaciones
@@ -135,19 +139,26 @@ namespace QuizCraft.Web.Controllers
                 _logger.LogInformation("Generadas {Count} flashcards para usuario {UserId} en materia {MateriaId}", 
                     result.Flashcards.Count, user.Id, materiaId);
 
+                var processingTimeSeconds = (DateTime.UtcNow - startTime).TotalSeconds;
+
                 return Json(new
                 {
                     success = true,
                     message = $"Se generaron {result.Flashcards.Count} flashcards exitosamente",
                     flashcards = flashcardsCreadas,
-                    processingTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    processingTime = Math.Round(processingTimeSeconds, 2),
                     modeUsed = result.ProcessingMethod
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al generar flashcards");
-                return Json(new { success = false, message = "Error interno del servidor" });
+                var processingTimeSeconds = (DateTime.UtcNow - startTime).TotalSeconds;
+                return Json(new { 
+                    success = false, 
+                    message = "Error interno del servidor",
+                    processingTime = Math.Round(processingTimeSeconds, 2)
+                });
             }
         }
 
@@ -287,7 +298,7 @@ namespace QuizCraft.Web.Controllers
                     MinConfidence = config.MinConfidence ?? 70,
                     FocusArea = config.FocusArea
                 },
-                _ => throw new ArgumentException("Modo no válido")
+                                _ => throw new ArgumentException("Modo no válido")
             };
         }
 
@@ -299,6 +310,40 @@ namespace QuizCraft.Web.Controllers
                 >= 70 => NivelDificultad.Intermedio,
                 _ => NivelDificultad.Dificil
             };
+        }
+
+        /// <summary>
+        /// Verificar disponibilidad del servicio de IA
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> VerificarDisponibilidadIA()
+        {
+            try
+            {
+                var disponible = await _aiProcessor.IsAvailableAsync();
+                var tieneCreditos = await _aiProcessor.HasCreditsAvailableAsync();
+
+                return Json(new
+                {
+                    disponible,
+                    tieneCreditos,
+                    mensaje = disponible && tieneCreditos
+                        ? "IA disponible"
+                        : !disponible
+                            ? "Servicio de IA no configurado"
+                            : "Sin créditos disponibles"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verificando disponibilidad de IA");
+                return Json(new
+                {
+                    disponible = false,
+                    tieneCreditos = false,
+                    mensaje = "Error verificando disponibilidad"
+                });
+            }
         }
     }
 

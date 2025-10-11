@@ -8,16 +8,16 @@ namespace QuizCraft.Infrastructure.Services
 {
     public class AIDocumentProcessor : IAIDocumentProcessor
     {
-        private readonly IOpenAIService _openAIService;
+        private readonly IAIService _aiService;
         private readonly IDocumentTextExtractor _textExtractor;
         private readonly ILogger<AIDocumentProcessor> _logger;
 
         public AIDocumentProcessor(
-            IOpenAIService openAIService,
+            IAIService aiService,
             IDocumentTextExtractor textExtractor,
             ILogger<AIDocumentProcessor> logger)
         {
-            _openAIService = openAIService;
+            _aiService = aiService;
             _textExtractor = textExtractor;
             _logger = logger;
         }
@@ -25,18 +25,18 @@ namespace QuizCraft.Infrastructure.Services
         public async Task<QuizCraft.Application.Models.FlashcardGenerationResult> ProcessAsync(
             Stream documentStream, 
             string fileName, 
-            QuizCraft.Application.Models.AIGenerationSettings settings)
+            AIGenerationSettings settings)
         {
             try
             {
                 // Verificar disponibilidad del servicio de IA
-                if (!await _openAIService.IsServiceAvailableAsync())
+                if (!await _aiService.IsServiceAvailableAsync())
                 {
                     _logger.LogWarning("AI service not available");
                     return new QuizCraft.Application.Models.FlashcardGenerationResult
                     {
                         Success = false,
-                        ErrorMessage = "El servicio de IA no está disponible. Verifique la configuración de OpenAI.",
+                        ErrorMessage = "El servicio de IA no está disponible. Verifique la configuración de Gemini.",
                         ProcessingMethod = "AI (Error)",
                         ProcessingTime = DateTime.UtcNow
                     };
@@ -65,11 +65,11 @@ namespace QuizCraft.Infrastructure.Services
                 }
 
                 // Estimar costo y verificar límites
-                var estimatedTokens = await _openAIService.EstimateTokenCostAsync(extractedText);
+                var estimatedTokens = await _aiService.EstimateTokenCostAsync(extractedText);
                 _logger.LogInformation("Estimated tokens for AI processing: {Tokens}", estimatedTokens);
 
-                // Procesar con OpenAI
-                var response = await _openAIService.GenerateFlashcardsFromTextAsync(extractedText, settings);
+                // Procesar con Gemini
+                var response = await _aiService.GenerateFlashcardsFromTextAsync(extractedText, settings);
                 
                 if (!response.Success)
                 {
@@ -83,14 +83,14 @@ namespace QuizCraft.Infrastructure.Services
                     };
                 }
 
-                // Parsear respuesta JSON de OpenAI
-                var flashcards = ParseOpenAIResponse(response.Content, fileName);
+                // Parsear respuesta JSON de IA
+                var flashcards = ParseAIResponse(response.Content, fileName);
                 
                 return new QuizCraft.Application.Models.FlashcardGenerationResult
                 {
                     Success = true,
                     Flashcards = flashcards,
-                    ProcessingMethod = "AI (OpenAI)",
+                    ProcessingMethod = "AI (Gemini)",
                     TokensUsed = response.TokenUsage.TotalTokens,
                     EstimatedCost = response.TokenUsage.EstimatedCost,
                     ProcessingTime = DateTime.UtcNow
@@ -112,17 +112,17 @@ namespace QuizCraft.Infrastructure.Services
         public async Task<bool> HasCreditsAvailableAsync()
         {
             // Implementación básica - en producción verificaría límites de tokens/créditos
-            return await _openAIService.IsServiceAvailableAsync();
+            return await _aiService.IsServiceAvailableAsync();
         }
 
         public async Task<int> GetAvailableTokensAsync()
         {
             // Implementación básica - en producción consultaría límites reales
-            var tokenInfo = await _openAIService.GetTokenUsageInfoAsync();
+            var tokenInfo = await _aiService.GetTokenUsageInfoAsync();
             return 5000; // Placeholder - implementar lógica real de límites
         }
 
-        private List<FlashcardData> ParseOpenAIResponse(string jsonResponse, string sourceFileName)
+        private List<FlashcardData> ParseAIResponse(string jsonResponse, string sourceFileName)
         {
             try
             {
@@ -140,15 +140,15 @@ namespace QuizCraft.Infrastructure.Services
                         continue;
 
                     var explicacion = flashcardElement.TryGetProperty("explicacion", out var expElement) 
-                        ? expElement.GetString() 
+                        ? expElement.GetString() ?? string.Empty
                         : string.Empty;
                     
                     var dificultadStr = flashcardElement.TryGetProperty("dificultad", out var difElement)
-                        ? difElement.GetString()
+                        ? difElement.GetString() ?? "Medium"
                         : "Medium";
                     
                     var categoria = flashcardElement.TryGetProperty("categoria", out var catElement)
-                        ? catElement.GetString()
+                        ? catElement.GetString() ?? "General"
                         : "General";
 
                     // Combinar respuesta y explicación si existe
@@ -173,19 +173,19 @@ namespace QuizCraft.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error parsing OpenAI response: {Response}", jsonResponse);
+                _logger.LogError(ex, "Error parsing AI response: {Response}", jsonResponse);
                 return new List<FlashcardData>();
             }
         }
 
         public async Task<bool> IsAvailableAsync()
         {
-            return await _openAIService.IsServiceAvailableAsync();
+            return await _aiService.IsServiceAvailableAsync();
         }
 
         public async Task<TokenUsageInfo> EstimateTokenCostAsync(string content)
         {
-            return await _openAIService.EstimateTokenUsageAsync(content);
+            return await _aiService.EstimateTokenUsageAsync(content);
         }
     }
 }

@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace QuizCraft.Application.Models
 {
-    public class OpenAISettings
+    public class AISettings
     {
         public string ApiKey { get; set; } = string.Empty;
         public string Model { get; set; } = "gpt-4o";
@@ -13,23 +13,10 @@ namespace QuizCraft.Application.Models
         public int MaxTokensPerUser { get; set; } = 5000;
     }
 
-    public class AIGenerationSettings
-    {
-        public int MaxCardsPerDocument { get; set; } = 20;
-        public string Difficulty { get; set; } = "Medium"; // Easy, Medium, Hard
-        public string Language { get; set; } = "Spanish";
-        public bool IncludeExplanations { get; set; } = true;
-        public string FocusArea { get; set; } = "General"; // Math, History, Science, etc.
-        public bool GenerateQuestions { get; set; } = true;
-        public bool GenerateDefinitions { get; set; } = true;
-        public int MinQuestionLength { get; set; } = 10;
-        public int MaxQuestionLength { get; set; } = 200;
-    }
-
     public class FlashcardGenerationPrompt
     {
         public string Content { get; set; } = string.Empty;
-        public AIGenerationSettings Settings { get; set; } = new();
+        public QuizCraft.Application.Interfaces.AIGenerationSettings Settings { get; set; } = new();
         public string CustomInstructions { get; set; } = string.Empty;
     }
 
@@ -42,7 +29,7 @@ namespace QuizCraft.Application.Models
         public DateTime RequestTime { get; set; }
     }
 
-    public class OpenAIResponse
+    public class AIResponse
     {
         public bool Success { get; set; }
         public string Content { get; set; } = string.Empty;

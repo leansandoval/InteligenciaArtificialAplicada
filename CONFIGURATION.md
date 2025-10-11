@@ -33,35 +33,43 @@ Edita tu archivo `appsettings.json` y actualiza la cadena de conexión según tu
 "DefaultConnection": "Server=localhost;Database=QuizCraftDb;User Id=tu_usuario;Password=tu_contraseña;TrustServerCertificate=true"
 ```
 
-### 3. Configurar OpenAI (Opcional)
+### 3. Configurar Google Gemini (Opcional)
 
-Si planeas usar las funciones de IA, agrega tu API Key:
+Si planeas usar las funciones de IA, agrega tu API Key GRATUITA:
 
 ```json
-"OpenAI": {
-  "ApiKey": "sk-tu-api-key-aqui",
-  "Model": "gpt-4o",
+"Gemini": {
+  "ApiKey": "tu-api-key-de-gemini-aqui",
+  "Model": "gemini-2.0-flash-exp",
   "MaxTokens": 1500,
-  "Organization": "",
   "Temperature": 0.7,
+  "TopP": 0.95,
+  "TopK": 40,
   "MaxRequestsPerDay": 1000,
-  "MaxTokensPerUser": 5000
+  "MaxTokensPerUser": 50000,
+  "TimeoutSeconds": 120,
+  "MaxRetries": 3,
+  "IsEnabled": true,
+  "BaseUrl": "https://generativelanguage.googleapis.com"
 }
 ```
 
-**📝 Configuración de OpenAI:**
-- **ApiKey**: Tu clave API de OpenAI (obtén una en [platform.openai.com](https://platform.openai.com/api-keys))
-- **Model**: Modelo a usar (gpt-4o, gpt-3.5-turbo, etc.)
+**📝 Configuración de Google Gemini:**
+- **ApiKey**: Tu clave API GRATUITA de Google Gemini (obtén una en [AI Studio](https://aistudio.google.com/app/apikey))
+- **Model**: Modelo a usar (gemini-2.0-flash-exp, gemini-pro, etc.)
 - **MaxTokens**: Máximo de tokens por solicitud
-- **Temperature**: Creatividad del modelo (0.0 = conservador, 1.0 = creativo)
+- **Temperature**: Creatividad del modelo (0.0 = conservador, 2.0 = creativo)
+- **TopP**: Núcleo sampling para diversidad de respuesta
+- **TopK**: Selección de tokens para respuesta
 - **MaxRequestsPerDay**: Límite diario de solicitudes por usuario
 - **MaxTokensPerUser**: Límite de tokens por usuario
 
-**💰 Nota sobre costos:**
-- La generación con IA tiene costos asociados según el uso
-- GPT-4o: ~$0.03 por 1K tokens
-- GPT-3.5-turbo: ~$0.002 por 1K tokens
-- Consulta [openai.com/pricing](https://openai.com/pricing) para precios actualizados
+**🆓 Ventajas de Gemini:**
+- ✅ **Completamente GRATUITO** - No requiere tarjeta de crédito
+- ✅ **Límites generosos** - Ideal para desarrollo y uso académico
+- ✅ **Fácil configuración** - Solo necesitas cuenta de Google
+- ✅ **Modelo avanzado** - Calidad comparable a GPT-4
+- ✅ **Sin costos ocultos** - Perfecto para estudiantes y proyectos
 
 ### 4. Aplicar Migraciones
 
@@ -90,13 +98,13 @@ Para mayor seguridad en producción, puedes usar variables de entorno:
 ### Windows (PowerShell)
 ```powershell
 $env:QUIZCRAFT_CONNECTION_STRING="Server=.\\SQLEXPRESS;Database=QuizCraftDb;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true"
-$env:OPENAI_API_KEY="tu-api-key-aqui"
+$env:GEMINI_API_KEY="tu-api-key-aqui"
 ```
 
 ### Linux/Mac (Bash)
 ```bash
 export QUIZCRAFT_CONNECTION_STRING="Server=localhost;Database=QuizCraftDb;User Id=usuario;Password=contraseña;TrustServerCertificate=true"
-export OPENAI_API_KEY="tu-api-key-aqui"
+export GEMINI_API_KEY="tu-api-key-aqui"
 ```
 
 ## 🔒 Seguridad

@@ -249,7 +249,15 @@
 </div>
 
 @section Scripts {
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script>
+        // Verificar que jQuery esté disponible
+        if (typeof $ === 'undefined') {
+            console.error('jQuery no está cargado');
+        }
+        
         $(document).ready(function() {
             let modoSeleccionado = '';
 
@@ -348,6 +356,7 @@
             // Generar flashcards
             $('#formGeneracion').on('submit', function(e) {
                 e.preventDefault();
+                console.log('Form submitted, modo:', modoSeleccionado);
                 
                 if (!validarFormulario()) return;
 
@@ -474,7 +483,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="bg-info text-white p-3 rounded">
-                                <h4>${response.processingTime.toFixed(2)}s</h4>
+                                <h4>${(response.processingTime || 0).toFixed(2)}s</h4>
                                 <small>Tiempo de Procesamiento</small>
                             </div>
                         </div>
@@ -526,6 +535,11 @@
             }
 
             function mostrarCargando(mensaje) {
+                console.log('Mostrando cargando:', mensaje);
+                if (typeof Swal === 'undefined') {
+                    console.error('SweetAlert2 no está disponible');
+                    return;
+                }
                 Swal.fire({
                     title: 'Procesando...',
                     text: mensaje,
@@ -551,6 +565,12 @@
             }
 
             function mostrarError(mensaje) {
+                console.log('Mostrando error:', mensaje);
+                if (typeof Swal === 'undefined') {
+                    console.error('SweetAlert2 no está disponible para mostrar error');
+                    alert('Error: ' + mensaje);
+                    return;
+                }
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -559,8 +579,23 @@
             }
 
             function verificarDisponibilidadIA() {
-                $('#estadoIA').html('<i class="fas fa-check text-success"></i> IA disponible');
-                $('#btnModoIA').prop('disabled', false);
+                $.ajax({
+                    url: '@Url.Action("VerificarDisponibilidadIA", "Generacion")',
+                    type: 'GET',
+                    success: function(data) {
+                        if (data.disponible && data.tieneCreditos) {
+                            $('#estadoIA').html('<i class="fas fa-check text-success"></i> ' + data.mensaje);
+                            $('#btnModoIA').prop('disabled', false);
+                        } else {
+                            $('#estadoIA').html('<i class="fas fa-exclamation-triangle text-warning"></i> ' + data.mensaje);
+                            $('#btnModoIA').prop('disabled', true);
+                        }
+                    },
+                    error: function() {
+                        $('#estadoIA').html('<i class="fas fa-times text-danger"></i> Error verificando IA');
+                        $('#btnModoIA').prop('disabled', true);
+                    }
+                });
             }
         });
     </script>

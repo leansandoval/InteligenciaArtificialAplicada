@@ -16,8 +16,8 @@ Este documento describe las medidas de seguridad implementadas en QuizCraft y la
 
 2. **Variables de entorno recomendadas:**
    ```bash
-   # OpenAI Configuration
-   OPENAI_API_KEY=tu-api-key-real-aqui
+   # Gemini Configuration
+   GEMINI_API_KEY=tu-api-key-real-aqui
    
    # Admin Password (Production)
    ADMIN_PASSWORD=tu-contraseña-segura-aqui
@@ -28,7 +28,7 @@ Este documento describe las medidas de seguridad implementadas en QuizCraft y la
 
 ## ⚠️ **Configuración Antes del Despliegue:**
 
-### 1. **API Keys de OpenAI:**
+### 1. **API Keys de Gemini:**
 - **Desarrollo**: Configura tu API key en `appsettings.Development.json`
 - **Producción**: Usa variables de entorno o Azure Key Vault
 - **Nunca** subas API keys reales al repositorio
@@ -81,10 +81,13 @@ src/QuizCraft.Web/
 2. **Configura tus valores:**
    ```json
    {
-     "OpenAI": {
+     "Gemini": {
        "ApiKey": "tu-api-key-aqui",
-       "Model": "gpt-4o",
-       "MaxTokens": 1500
+       "Model": "gemini-2.0-flash-exp",
+       "MaxTokens": 1500,
+       "Temperature": 0.7,
+       "IsEnabled": true,
+       "BaseUrl": "https://generativelanguage.googleapis.com"
      }
    }
    ```
@@ -94,7 +97,7 @@ src/QuizCraft.Web/
 ### Variables de Entorno Requeridas:
 ```bash
 # API Configuration
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GEMINI_API_KEY=tu-api-key-de-gemini-aqui
 ADMIN_PASSWORD=TuContraseñaSegura123!
 
 # Database
@@ -104,7 +107,7 @@ QUIZCRAFT_CONNECTION_STRING="Server=servidor;Database=QuizCraftDb;User Id=usuari
 ### Azure App Service:
 ```bash
 # Configurar en el portal de Azure o CLI
-az webapp config appsettings set --resource-group myResourceGroup --name myapp --settings OPENAI_API_KEY="sk-xxx" ADMIN_PASSWORD="xxx"
+az webapp config appsettings set --resource-group myResourceGroup --name myapp --settings GEMINI_API_KEY="tu-key" ADMIN_PASSWORD="xxx"
 ```
 
 ## 📝 **Lista de Verificación de Seguridad:**
@@ -127,7 +130,7 @@ Si encuentras vulnerabilidades de seguridad:
 ## 📚 **Recursos Adicionales:**
 
 - [ASP.NET Core Security Best Practices](https://docs.microsoft.com/en-us/aspnet/core/security/)
-- [OpenAI API Security](https://platform.openai.com/docs/guides/safety-best-practices)
+- [Google Gemini API Security](https://ai.google.dev/gemini-api/docs/safety-guidance)
 - [Azure Security Center](https://docs.microsoft.com/en-us/azure/security-center/)
 
 ---

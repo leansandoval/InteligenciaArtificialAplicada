@@ -110,25 +110,25 @@ namespace QuizCraft.Application.Interfaces
     }
 
     /// <summary>
-    /// Servicio principal para interactuar con OpenAI
+    /// Servicio principal para interactuar con servicios de IA (anteriormente OpenAI, ahora Gemini)
     /// </summary>
-    public interface IOpenAIService
+    public interface IAIService
     {
-        Task<QuizCraft.Application.Models.OpenAIResponse> GenerateFlashcardsFromTextAsync(string content, QuizCraft.Application.Models.AIGenerationSettings settings);
+        Task<QuizCraft.Application.Models.AIResponse> GenerateFlashcardsFromTextAsync(string content, AIGenerationSettings settings);
         Task<bool> ValidateApiKeyAsync();
         Task<QuizCraft.Application.Models.TokenUsageInfo> GetTokenUsageInfoAsync();
         Task<bool> IsServiceAvailableAsync();
         Task<int> EstimateTokenCostAsync(string content);
         Task<QuizCraft.Application.Models.TokenUsageInfo> EstimateTokenUsageAsync(string content);
-        Task<QuizCraft.Application.Models.OpenAIResponse> GenerateTextAsync(string prompt, QuizCraft.Application.Models.OpenAISettings? customSettings = null);
+        Task<QuizCraft.Application.Models.AIResponse> GenerateTextAsync(string prompt, QuizCraft.Application.Models.AISettings? customSettings = null);
     }
 
     /// <summary>
-    /// Servicio de configuración para OpenAI
+    /// Servicio de configuración para servicios de IA
     /// </summary>
-    public interface IOpenAIConfigurationService
+    public interface IAIConfigurationService
     {
-        Task<QuizCraft.Application.Models.OpenAISettings> GetSettingsAsync();
+        Task<QuizCraft.Application.Models.AISettings> GetSettingsAsync();
         Task<bool> IsConfiguredAsync();
         Task<string> GetApiKeyAsync();
         Task<bool> ValidateConfigurationAsync();

@@ -3,9 +3,9 @@ using QuizCraft.Core.Entities;
 namespace QuizCraft.Core.Interfaces;
 
 /// <summary>
-/// Interfaz para el servicio de integración con OpenAI
+/// Interfaz para el servicio de integración con servicios de IA (Gemini)
 /// </summary>
-public interface IOpenAIService
+public interface IAIService
 {
     Task<string> GenerarFlashcardsDesdeTextoAsync(string contenido, string materia);
     Task<string> GenerarFlashcardsDesdeDocumentoAsync(byte[] documento, string tipoArchivo, string materia);

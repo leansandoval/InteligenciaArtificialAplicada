@@ -70,10 +70,32 @@ builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtract
 // FUNC_ConfigurarAlgoritmoRepaso: Servicios para algoritmo de repetición espaciada
 builder.Services.AddScoped<IAlgoritmoRepasoService, QuizCraft.Infrastructure.Services.AlgoritmoRepasoService>();
 
-// FUNC_ConfigurarOpenAI: Configuración de servicios de OpenAI para generación con IA
-builder.Services.Configure<QuizCraft.Application.Models.OpenAISettings>(builder.Configuration.GetSection("OpenAI"));
-builder.Services.AddScoped<QuizCraft.Application.Interfaces.IOpenAIConfigurationService, QuizCraft.Infrastructure.Services.OpenAIConfigurationService>();
-builder.Services.AddHttpClient<QuizCraft.Application.Interfaces.IOpenAIService, QuizCraft.Infrastructure.Services.OpenAIService>();
+// FUNC_ConfigurarGemini: Configuración de servicios de Google Gemini para generación con IA
+builder.Services.Configure<QuizCraft.Application.Models.GeminiSettings>(builder.Configuration.GetSection("Gemini"));
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIConfigurationService, QuizCraft.Infrastructure.Services.GeminiConfigurationService>();
+
+// Registrar HttpClient para GeminiService
+builder.Services.AddHttpClient<QuizCraft.Infrastructure.Services.GeminiService>();
+
+// Decidir qué servicio usar basado en la configuración de Gemini
+var geminiSettings = builder.Configuration.GetSection("Gemini").Get<QuizCraft.Application.Models.GeminiSettings>();
+if (geminiSettings == null || 
+    string.IsNullOrEmpty(geminiSettings.ApiKey) || 
+    geminiSettings.ApiKey == "TU_CLAVE_GEMINI_AQUI")
+{
+    // Usar servicio mock cuando no hay configuración válida de Gemini
+    builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIService, QuizCraft.Infrastructure.Services.MockAIService>();
+    builder.Services.AddLogging(loggingBuilder => 
+        loggingBuilder.AddConsole().AddDebug());
+    Console.WriteLine("⚠️  Usando servicio mock de IA - Gemini no configurado");
+}
+else
+{
+    // Usar servicio real de Gemini cuando hay configuración válida
+    builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIService, QuizCraft.Infrastructure.Services.GeminiService>();
+    Console.WriteLine($"✅ Usando Google Gemini - Modelo: {geminiSettings.Model}");
+}
+
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIDocumentProcessor, QuizCraft.Infrastructure.Services.AIDocumentProcessor>();
 
 // FUNC_ConfigurarAutenticacion: Configuración de cookies de autenticación
@@ -182,7 +204,7 @@ static async Task FUNC_CrearUsuarioAdministrador(UserManager<ApplicationUser> us
 {
     const string adminEmail = "admin@quizcraft.com";
     // IMPORTANTE: Cambiar esta contraseña en producción
-    const string adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin123!";
+    var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin123!";
     
     // Buscar si ya existe el usuario administrador
     var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
