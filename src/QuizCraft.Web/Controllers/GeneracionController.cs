@@ -17,6 +17,7 @@ namespace QuizCraft.Web.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<GeneracionController> _logger;
         private readonly IAIDocumentProcessor _aiProcessor;
+        private readonly IUnitOfWork _unitOfWork;
 
         public GeneracionController(
             IFlashcardGenerationService generationService,
@@ -24,7 +25,8 @@ namespace QuizCraft.Web.Controllers
             IFlashcardRepository flashcardRepository,
             UserManager<ApplicationUser> userManager,
             ILogger<GeneracionController> logger,
-            IAIDocumentProcessor aiProcessor)
+            IAIDocumentProcessor aiProcessor,
+            IUnitOfWork unitOfWork)
         {
             _generationService = generationService;
             _materiaRepository = materiaRepository;
@@ -32,6 +34,7 @@ namespace QuizCraft.Web.Controllers
             _userManager = userManager;
             _logger = logger;
             _aiProcessor = aiProcessor;
+            _unitOfWork = unitOfWork;
         }
 
         /// <summary>
@@ -111,43 +114,33 @@ namespace QuizCraft.Web.Controllers
                     return Json(new { success = false, message = result.ErrorMessage });
                 }
 
-                // Crear flashcards en la base de datos
-                var flashcardsCreadas = new List<object>();
-                foreach (var generatedCard in result.Flashcards)
+                // Guardar las flashcards generadas en TempData para revisión
+                var flashcardsParaRevision = result.Flashcards.Select(card => new
                 {
-                    var flashcard = new Flashcard
-                    {
-                        Pregunta = generatedCard.Pregunta,
-                        Respuesta = generatedCard.Respuesta,
-                        MateriaId = materiaId,
-                        FechaCreacion = DateTime.Now,
-                        Dificultad = DeterminarDificultad((int)(generatedCard.ConfianzaPuntuacion * 100))
-                    };
+                    pregunta = card.Pregunta,
+                    respuesta = card.Respuesta,
+                    confidence = card.ConfianzaPuntuacion.ToString("F2"), // Convertir a string
+                    source = card.FuenteOriginal,
+                    dificultad = DeterminarDificultad((int)(card.ConfianzaPuntuacion * 100)).ToString()
+                }).ToList();
 
-                    await _flashcardRepository.AddAsync(flashcard);
-                    
-                    flashcardsCreadas.Add(new
-                    {
-                        id = flashcard.Id,
-                        pregunta = flashcard.Pregunta,
-                        respuesta = flashcard.Respuesta,
-                        confidence = generatedCard.ConfianzaPuntuacion,
-                        source = generatedCard.FuenteOriginal
-                    });
-                }
+                // Serializar para TempData (convertir tipos no soportados a string)
+                TempData["FlashcardsGeneradas"] = System.Text.Json.JsonSerializer.Serialize(flashcardsParaRevision);
+                TempData["MateriaId"] = materiaId.ToString();
+                TempData["FileName"] = documento.FileName;
+                TempData["ProcessingTime"] = Math.Round((DateTime.UtcNow - startTime).TotalSeconds, 2).ToString();
+                TempData["ProcessingMethod"] = result.ProcessingMethod;
 
-                _logger.LogInformation("Generadas {Count} flashcards para usuario {UserId} en materia {MateriaId}", 
+                _logger.LogInformation("Generadas {Count} flashcards para revisión de usuario {UserId} en materia {MateriaId}", 
                     result.Flashcards.Count, user.Id, materiaId);
-
-                var processingTimeSeconds = (DateTime.UtcNow - startTime).TotalSeconds;
 
                 return Json(new
                 {
                     success = true,
                     message = $"Se generaron {result.Flashcards.Count} flashcards exitosamente",
-                    flashcards = flashcardsCreadas,
-                    processingTime = Math.Round(processingTimeSeconds, 2),
-                    modeUsed = result.ProcessingMethod
+                    flashcardCount = result.Flashcards.Count,
+                    processingTime = Math.Round((DateTime.UtcNow - startTime).TotalSeconds, 2),
+                    redirectUrl = Url.Action("ReviewFlashcards", "Generacion")
                 });
             }
             catch (Exception ex)
@@ -345,6 +338,163 @@ namespace QuizCraft.Web.Controllers
                 });
             }
         }
+
+        /// <summary>
+        /// Vista para revisar las flashcards generadas antes de guardarlas
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ReviewFlashcards()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            // Verificar que hay flashcards para revisar
+            if (TempData["FlashcardsGeneradas"] == null)
+            {
+                TempData["ErrorMessage"] = "No hay flashcards para revisar.";
+                return RedirectToAction("Index");
+            }
+
+            // Deserializar las flashcards generadas
+            var flashcardsJson = TempData["FlashcardsGeneradas"]?.ToString();
+            if (string.IsNullOrEmpty(flashcardsJson))
+            {
+                TempData["ErrorMessage"] = "No se pudieron recuperar las flashcards generadas.";
+                return RedirectToAction("Index");
+            }
+
+            var flashcards = System.Text.Json.JsonSerializer.Deserialize<List<dynamic>>(flashcardsJson);
+
+            // Obtener información adicional (convertir desde string)
+            var materiaIdStr = TempData["MateriaId"]?.ToString();
+            if (!int.TryParse(materiaIdStr, out int materiaId))
+            {
+                TempData["ErrorMessage"] = "Error al recuperar la información de la materia.";
+                return RedirectToAction("Index");
+            }
+
+            var materia = await _materiaRepository.GetByIdAsync(materiaId);
+            var fileName = TempData["FileName"]?.ToString();
+            
+            var processingTimeStr = TempData["ProcessingTime"]?.ToString();
+            if (!double.TryParse(processingTimeStr, out double processingTime))
+            {
+                processingTime = 0.0;
+            }
+            
+            var processingMethod = TempData["ProcessingMethod"]?.ToString();
+
+            // Crear el modelo de vista
+            var model = new ReviewFlashcardsViewModel
+            {
+                FlashcardsGeneradas = flashcardsJson,
+                MateriaId = materiaId,
+                MateriaNombre = materia?.Nombre ?? "Desconocida",
+                FileName = fileName,
+                ProcessingTime = processingTime,
+                ProcessingMethod = processingMethod,
+                FlashcardCount = flashcards?.Count ?? 0
+            };
+
+            return View(model);
+        }
+
+        /// <summary>
+        /// Guarda las flashcards seleccionadas en la base de datos
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> SaveFlashcards([FromBody] SaveFlashcardsRequest request)
+        {
+            try
+            {
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                // Validar que la materia pertenece al usuario
+                var materia = await _materiaRepository.GetByIdAsync(request.MateriaId);
+                if (materia == null || materia.UsuarioId != user.Id)
+                {
+                    return Json(new { success = false, message = "Materia no válida" });
+                }
+
+                _logger.LogInformation("Iniciando guardado de {Count} flashcards para usuario {UserId} en materia {MateriaId}",
+                    request.SelectedFlashcards.Count, user.Id, request.MateriaId);
+
+                int flashcardsGuardadas = 0;
+                foreach (var flashcardData in request.SelectedFlashcards)
+                {
+                    var flashcard = new Flashcard
+                    {
+                        Pregunta = flashcardData.Pregunta,
+                        Respuesta = flashcardData.Respuesta,
+                        MateriaId = request.MateriaId,
+                        FechaCreacion = DateTime.Now,
+                        Dificultad = Enum.Parse<NivelDificultad>(flashcardData.Dificultad, true)
+                    };
+
+                    await _flashcardRepository.AddAsync(flashcard);
+                    flashcardsGuardadas++;
+                    _logger.LogDebug("Agregada flashcard {Index}: {Pregunta}", flashcardsGuardadas, flashcard.Pregunta);
+                }
+
+                // IMPORTANTE: Guardar los cambios en la base de datos
+                _logger.LogInformation("Llamando a SaveChangesAsync para persistir {Count} flashcards", flashcardsGuardadas);
+                var recordsAffected = await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("SaveChangesAsync completado. Registros afectados: {RecordsAffected}", recordsAffected);
+
+                _logger.LogInformation("Guardadas {Count} flashcards exitosamente para usuario {UserId} en materia {MateriaId}", 
+                    flashcardsGuardadas, user.Id, request.MateriaId);
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Se guardaron {flashcardsGuardadas} flashcards exitosamente",
+                    savedCount = flashcardsGuardadas,
+                    recordsAffected = recordsAffected
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al guardar flashcards");
+                return Json(new { success = false, message = "Error interno del servidor: " + ex.Message });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Modelo de vista para la revisión de flashcards
+    /// </summary>
+    public class ReviewFlashcardsViewModel
+    {
+        public string FlashcardsGeneradas { get; set; } = string.Empty;
+        public int MateriaId { get; set; }
+        public string MateriaNombre { get; set; } = string.Empty;
+        public string? FileName { get; set; }
+        public double ProcessingTime { get; set; }
+        public string? ProcessingMethod { get; set; }
+        public int FlashcardCount { get; set; }
+    }
+
+    /// <summary>
+    /// Request para guardar flashcards seleccionadas
+    /// </summary>
+    public class SaveFlashcardsRequest
+    {
+        public int MateriaId { get; set; }
+        public List<FlashcardToSave> SelectedFlashcards { get; set; } = new();
+    }
+
+    public class FlashcardToSave
+    {
+        public string Pregunta { get; set; } = string.Empty;
+        public string Respuesta { get; set; } = string.Empty;
+        public string Dificultad { get; set; } = string.Empty;
     }
 
     /// <summary>

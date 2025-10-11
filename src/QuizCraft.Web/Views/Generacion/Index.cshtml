@@ -395,7 +395,20 @@
                     success: function(response) {
                         ocultarCargando();
                         if (response.success) {
-                            mostrarResultados(response);
+                            // Mostrar mensaje de éxito breve y redirigir
+                            $('#result').html(`
+                                <div class="alert alert-success">
+                                    <h5>¡Flashcards generadas exitosamente!</h5>
+                                    <p>Se generaron ${response.flashcardCount} flashcards.</p>
+                                    <p>Tiempo de procesamiento: ${(response.processingTime || 0).toFixed(2)} segundos</p>
+                                    <p>Redirigiendo para revisar las flashcards...</p>
+                                </div>
+                            `);
+                            
+                            // Redirigir después de un breve delay
+                            setTimeout(function() {
+                                window.location.href = response.redirectUrl;
+                            }, 2000);
                         } else {
                             mostrarError(response.message || 'Error desconocido');
                         }

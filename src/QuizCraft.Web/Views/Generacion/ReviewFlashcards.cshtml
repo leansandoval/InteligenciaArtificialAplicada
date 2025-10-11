@@ -1,0 +1,325 @@
+@model QuizCraft.Web.Controllers.ReviewFlashcardsViewModel
+@{
+    ViewData["Title"] = "Revisar Flashcards Generadas";
+    ViewData["PageIcon"] = "fas fa-eye";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-eye mr-1"></i>
+                        Revisar Flashcards Generadas
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Información del archivo procesado -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="far fa-file-alt"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Archivo Procesado</span>
+                                    <span class="info-box-number">@Model.FileName</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Tiempo de Procesamiento</span>
+                                    <span class="info-box-number">@Model.ProcessingTime.ToString("F2")s</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-layer-group"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Flashcards Generadas</span>
+                                    <span class="info-box-number">@Model.FlashcardCount</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de la materia -->
+                    <div class="alert alert-info">
+                        <h5><i class="icon fas fa-info-circle"></i> Información</h5>
+                        Las flashcards se generaron para la materia <strong>@Model.MateriaNombre</strong> usando <strong>@Model.ProcessingMethod</strong>.
+                        <br>Puedes revisar cada flashcard y seleccionar cuáles deseas guardar en tu base de datos.
+                    </div>
+
+                    <!-- Lista de flashcards generadas -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h4>Flashcards Generadas</h4>
+                            <p class="text-muted">Selecciona las flashcards que deseas guardar haciendo clic en los checkboxes:</p>
+                            
+                            <div class="form-group">
+                                <div class="custom-control custom-checkbox">
+                                    <input class="custom-control-input" type="checkbox" id="selectAll" checked>
+                                    <label for="selectAll" class="custom-control-label">
+                                        <strong>Seleccionar todas las flashcards</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="flashcards-container">
+                                <!-- Las flashcards se cargarán aquí mediante JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="float-right">
+                                <a href="@Url.Action("Index", "Generacion")" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Generación
+                                </a>
+                                <button type="button" class="btn btn-success" id="btn-save-selected">
+                                    <i class="fas fa-save"></i> Guardar Seleccionadas
+                                </button>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div class="modal fade" id="confirmSaveModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Guardado</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro que deseas guardar <span id="selected-count">0</span> flashcard(s) en la base de datos?</p>
+                <p class="text-muted">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btn-confirm-save">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function() {
+    // Datos de las flashcards generadas (del servidor)
+    const flashcardsData = @Html.Raw(Model.FlashcardsGeneradas);
+    const materiaId = @Model.MateriaId;
+    
+    // Renderizar las flashcards
+    function renderFlashcards() {
+        const container = $('#flashcards-container');
+        container.empty();
+        
+        flashcardsData.forEach((flashcard, index) => {
+            const cardHtml = `
+                <div class="card flashcard-review-item mb-3">
+                    <div class="card-header">
+                        <div class="custom-control custom-checkbox">
+                            <input class="custom-control-input flashcard-checkbox" type="checkbox" 
+                                   id="flashcard-${index}" data-index="${index}" checked>
+                            <label for="flashcard-${index}" class="custom-control-label">
+                                <strong>Flashcard ${index + 1}</strong>
+                                <span class="badge badge-${getDifficultyBadgeClass(flashcard.dificultad)} ml-2">
+                                    ${flashcard.dificultad}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-question-circle text-primary"></i> Pregunta:</h6>
+                                <p class="flashcard-question">${flashcard.pregunta}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-lightbulb text-warning"></i> Respuesta:</h6>
+                                <p class="flashcard-answer">${flashcard.respuesta}</p>
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-robot"></i> Confianza: ${flashcard.confidence}%
+                            | Fuente: ${flashcard.source}
+                        </small>
+                    </div>
+                </div>
+            `;
+            container.append(cardHtml);
+        });
+    }
+    
+    // Obtener clase CSS para el badge de dificultad
+    function getDifficultyBadgeClass(difficulty) {
+        switch(difficulty.toLowerCase()) {
+            case 'facil': return 'success';
+            case 'intermedio': return 'warning';
+            case 'dificil': return 'danger';
+            default: return 'secondary';
+        }
+    }
+    
+    // Manejar selección de todas las flashcards
+    $('#selectAll').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        $('.flashcard-checkbox').prop('checked', isChecked);
+        updateSelectedCount();
+    });
+    
+    // Manejar cambios en checkboxes individuales
+    $(document).on('change', '.flashcard-checkbox', function() {
+        updateSelectAllState();
+        updateSelectedCount();
+    });
+    
+    // Actualizar estado del checkbox "seleccionar todo"
+    function updateSelectAllState() {
+        const totalCheckboxes = $('.flashcard-checkbox').length;
+        const checkedCheckboxes = $('.flashcard-checkbox:checked').length;
+        
+        if (checkedCheckboxes === totalCheckboxes) {
+            $('#selectAll').prop('indeterminate', false).prop('checked', true);
+        } else if (checkedCheckboxes === 0) {
+            $('#selectAll').prop('indeterminate', false).prop('checked', false);
+        } else {
+            $('#selectAll').prop('indeterminate', true);
+        }
+    }
+    
+    // Actualizar contador de seleccionadas
+    function updateSelectedCount() {
+        const selectedCount = $('.flashcard-checkbox:checked').length;
+        $('#selected-count').text(selectedCount);
+        
+        // Habilitar/deshabilitar botón de guardar
+        $('#btn-save-selected').prop('disabled', selectedCount === 0);
+    }
+    
+    // Manejar click en guardar seleccionadas
+    $('#btn-save-selected').on('click', function() {
+        const selectedCount = $('.flashcard-checkbox:checked').length;
+        if (selectedCount === 0) {
+            alert('Debes seleccionar al menos una flashcard para guardar.');
+            return;
+        }
+        
+        $('#selected-count').text(selectedCount);
+        $('#confirmSaveModal').modal('show');
+    });
+    
+    // Confirmar guardado
+    $('#btn-confirm-save').on('click', function() {
+        const selectedFlashcards = [];
+        
+        $('.flashcard-checkbox:checked').each(function() {
+            const index = $(this).data('index');
+            const flashcard = flashcardsData[index];
+            selectedFlashcards.push({
+                pregunta: flashcard.pregunta,
+                respuesta: flashcard.respuesta,
+                dificultad: flashcard.dificultad
+            });
+        });
+        
+        // Mostrar loading
+        const btnConfirm = $('#btn-confirm-save');
+        btnConfirm.html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+        btnConfirm.prop('disabled', true);
+        
+        // Enviar al servidor
+        $.ajax({
+            url: '@Url.Action("SaveFlashcards", "Generacion")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                materiaId: materiaId,
+                selectedFlashcards: selectedFlashcards
+            }),
+            success: function(response) {
+                if (response.success) {
+                    // Redirección directa sin mostrar alert
+                    $('#confirmSaveModal').modal('hide');
+                    window.location.href = '@Url.Action("Index", "Flashcard")';
+                } else {
+                    alert('Error: ' + (response.message || 'Error al guardar las flashcards'));
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error saving flashcards:', error);
+                alert('Error de conexión al guardar las flashcards');
+            },
+            complete: function() {
+                btnConfirm.html('<i class="fas fa-save"></i> Guardar');
+                btnConfirm.prop('disabled', false);
+            }
+        });
+    });
+    
+    // Inicializar
+    renderFlashcards();
+    updateSelectedCount();
+});
+</script>
+}
+
+@section Styles {
+<style>
+.flashcard-review-item {
+    transition: all 0.3s ease;
+}
+
+.flashcard-review-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.flashcard-question, .flashcard-answer {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 3px solid #007bff;
+    min-height: 60px;
+}
+
+.flashcard-answer {
+    border-left-color: #28a745;
+}
+
+.info-box-number {
+    font-size: 1.2rem;
+}
+
+#btn-save-selected:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+</style>
+}
