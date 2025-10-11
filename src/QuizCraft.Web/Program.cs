@@ -65,7 +65,7 @@ builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFileUploadService, 
 // FUNC_ConfigurarGeneracionFlashcards: Servicios para generación automática de flashcards
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFlashcardGenerationService, QuizCraft.Infrastructure.Services.DocumentProcessing.FlashcardGenerationService>();
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.ITraditionalDocumentProcessor, QuizCraft.Infrastructure.Services.DocumentProcessing.TraditionalDocumentProcessor>();
-builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtractor, QuizCraft.Infrastructure.Services.DocumentProcessing.TextFileExtractor>();
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtractor, QuizCraft.Infrastructure.Services.DocumentTextExtractor>();
 
 // FUNC_ConfigurarAlgoritmoRepaso: Servicios para algoritmo de repetición espaciada
 builder.Services.AddScoped<IAlgoritmoRepasoService, QuizCraft.Infrastructure.Services.AlgoritmoRepasoService>();

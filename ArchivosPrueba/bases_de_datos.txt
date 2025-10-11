@@ -1,0 +1,9 @@
+Las bases de datos son sistemas diseñados para almacenar, organizar y gestionar grandes volúmenes de información de manera eficiente. Su objetivo principal es permitir el acceso rápido, confiable y seguro a los datos, garantizando su integridad y consistencia incluso en entornos con múltiples usuarios concurrentes.
+
+Existen diferentes modelos de bases de datos, siendo el modelo relacional uno de los más populares. En él, la información se organiza en tablas que se relacionan entre sí mediante claves primarias y foráneas. El lenguaje SQL (Structured Query Language) es el estándar para realizar consultas, insertar, modificar o eliminar datos en sistemas de gestión de bases de datos relacionales como MySQL, SQL Server o PostgreSQL.
+
+En los últimos años, ha surgido un nuevo paradigma conocido como NoSQL, que ofrece mayor flexibilidad para el manejo de datos no estructurados o semi-estructurados. Estos sistemas, como MongoDB o Cassandra, son ampliamente utilizados en aplicaciones web modernas y en entornos donde la escalabilidad horizontal es una prioridad.
+
+El diseño de una base de datos requiere un proceso cuidadoso de normalización, donde se eliminan redundancias y se asegura la coherencia entre las distintas entidades. Un modelo bien diseñado facilita el mantenimiento, mejora el rendimiento y minimiza errores de actualización o eliminación.
+
+Finalmente, la seguridad y las copias de respaldo son elementos críticos en la administración de bases de datos. Los administradores deben implementar políticas de acceso, encriptación de datos y planes de recuperación ante desastres para proteger la información frente a fallas o ciberataques.
