@@ -1,0 +1,294 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\Ivan\\Desktop\\APP Resumen\\QuizCraft-Original\\tests\\playwright.config.js",
+    "rootDir": "C:/Users/Ivan/Desktop/APP Resumen/QuizCraft-Original/tests/epics",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 5
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "./reports/html"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "./reports/test-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "./reports/junit-results.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/Users/Ivan/Desktop/APP Resumen/QuizCraft-Original/tests/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 5
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/Ivan/Desktop/APP Resumen/QuizCraft-Original/tests/epics",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.0",
+    "workers": 6,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "EP-01-Gestion-Materias-Flashcards\\flashcard.spec.js",
+      "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "QuizCraft - Creación de Flashcards",
+          "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "TC001: Debería autenticar usuario con credenciales demo",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3530,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-11T23:08:50.899Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ef7cec4897c87e003acc-c6bfa62f00ee6170a3c3",
+              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "TC002: Debería crear una nueva flashcard exitosamente",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 7603,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Flashcard creada exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-11T23:08:50.913Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ef7cec4897c87e003acc-92024a689b705354ae53",
+              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+              "line": 28,
+              "column": 3
+            },
+            {
+              "title": "TC003: Debería mostrar validaciones para campos obligatorios",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 4108,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-11T23:08:50.938Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ef7cec4897c87e003acc-d47394dbb553dab049ef",
+              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+              "line": 81,
+              "column": 3
+            },
+            {
+              "title": "TC004: Debería filtrar flashcards por materia",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 5566,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Encontradas 15 etiquetas de materia \"Programación\"\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-11T23:08:50.940Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ef7cec4897c87e003acc-00563093fc6019df4e61",
+              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+              "line": 98,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "EP-01-Gestion-Materias-Flashcards\\materias\\materias.spec.js",
+      "file": "EP-01-Gestion-Materias-Flashcards/materias/materias.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "US-59: Gestión de Materias de Estudio",
+          "file": "EP-01-Gestion-Materias-Flashcards/materias/materias.spec.js",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Debería mostrar la lista de materias",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 3230,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Página de materias cargada correctamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-11T23:08:50.929Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a7c8a46d14d4f3a4f8d4-663a9f8f2fae36da5e6f",
+              "file": "EP-01-Gestion-Materias-Flashcards/materias/materias.spec.js",
+              "line": 22,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-10-11T23:08:49.374Z",
+    "duration": 9957.661,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
