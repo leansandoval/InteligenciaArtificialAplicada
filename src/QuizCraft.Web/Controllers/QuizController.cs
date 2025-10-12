@@ -34,16 +34,21 @@ namespace QuizCraft.Web.Controllers
             }
             
             // Obtener datos de forma secuencial para evitar problemas de concurrencia
-            var misQuizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(usuarioId);
+            var todosLosQuizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(usuarioId);
             var quizzesPublicos = await _unitOfWork.QuizRepository.GetQuizzesPublicosAsync();
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
             
+            // Aplicar filtros a mis quizzes
+            var misQuizzesFiltrados = todosLosQuizzes
+                .Where(q => !materiaId.HasValue || q.MateriaId == materiaId)
+                .Where(q => !dificultad.HasValue || q.NivelDificultad == (int)dificultad);
+            
             // Debug: Log para verificar los datos
-            _logger.LogInformation($"Usuario: {usuarioId}, Mis Quizzes: {misQuizzes.Count()}, Quizzes Públicos: {quizzesPublicos.Count()}, Materias: {materias.Count()}");
+            _logger.LogInformation($"Usuario: {usuarioId}, Mis Quizzes: {todosLosQuizzes.Count()}, Quizzes Públicos: {quizzesPublicos.Count()}, Materias: {materias.Count()}");
 
             var viewModel = new QuizIndexViewModel
             {
-                MisQuizzes = misQuizzes.Select(q => new QuizItemViewModel
+                MisQuizzes = misQuizzesFiltrados.Select(q => new QuizItemViewModel
                 {
                     Id = q.Id,
                     Titulo = q.Titulo ?? string.Empty,
@@ -63,7 +68,7 @@ namespace QuizCraft.Web.Controllers
                         .FirstOrDefault()?.PorcentajeAcierto
                 }).ToList(),
                 
-                QuizzesCreados = misQuizzes.Select(q => new QuizListItemViewModel
+                QuizzesCreados = misQuizzesFiltrados.Select(q => new QuizListItemViewModel
                 {
                     Id = q.Id,
                     Titulo = q.Titulo ?? string.Empty,
@@ -109,11 +114,12 @@ namespace QuizCraft.Web.Controllers
                 
                 MateriaSeleccionada = materiaId,
                 DificultadSeleccionada = dificultad,
-                TotalQuizzes = misQuizzes.Count(),
+                TotalQuizzes = misQuizzesFiltrados.Count(),
                 MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
                 {
                     Id = m.Id,
-                    Nombre = m.Nombre ?? string.Empty
+                    Nombre = m.Nombre ?? string.Empty,
+                    TotalQuizzes = todosLosQuizzes.Count(q => q.MateriaId == m.Id)
                 }).ToList()
             };
 

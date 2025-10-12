@@ -22,13 +22,13 @@
                 <div class="card-body">
                     <form method="get" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label for="filtroMateria" class="form-label">Filtrar por Materia</label>
-                            <select name="filtroMateria" id="filtroMateria" class="form-select">
+                            <label for="materiaId" class="form-label">Filtrar por Materia</label>
+                            <select name="materiaId" id="materiaId" class="form-select">
                                 <option value="">Todas las materias</option>
                                 @foreach (var materia in Model.MateriasDisponibles)
                                 {
                                     <option value="@materia.Id" selected="@(Model.MateriaSeleccionada == materia.Id)">
-                                        @materia.Nombre (@materia.TotalFlashcards flashcards)
+                                        @materia.Nombre (@materia.TotalQuizzes quizzes)
                                     </option>
                                 }
                             </select>

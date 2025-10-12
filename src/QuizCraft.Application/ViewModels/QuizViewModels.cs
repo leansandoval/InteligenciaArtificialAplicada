@@ -216,6 +216,7 @@ namespace QuizCraft.Application.ViewModels
         public string Nombre { get; set; } = string.Empty;
         public int CantidadFlashcards { get; set; }
         public int TotalFlashcards { get; set; }
+        public int TotalQuizzes { get; set; }
     }
 
     public class ResultadoQuizResumenViewModel
