@@ -5,9 +5,8 @@ namespace QuizCraft.Application.Models
     public class AISettings
     {
         public string ApiKey { get; set; } = string.Empty;
-        public string Model { get; set; } = "gpt-4o";
+        public string Model { get; set; } = "gemini-pro";
         public int MaxTokens { get; set; } = 1500;
-        public string Organization { get; set; } = string.Empty;
         public double Temperature { get; set; } = 0.7;
         public int MaxRequestsPerDay { get; set; } = 1000;
         public int MaxTokensPerUser { get; set; } = 5000;

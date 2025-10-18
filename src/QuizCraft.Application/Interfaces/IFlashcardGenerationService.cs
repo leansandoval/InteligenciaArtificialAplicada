@@ -110,7 +110,7 @@ namespace QuizCraft.Application.Interfaces
     }
 
     /// <summary>
-    /// Servicio principal para interactuar con servicios de IA (anteriormente OpenAI, ahora Gemini)
+    /// Servicio principal para interactuar con servicios de IA (Gemini)
     /// </summary>
     public interface IAIService
     {

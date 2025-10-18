@@ -73,6 +73,6 @@ namespace QuizCraft.Application.Interfaces
         public bool IncludeExplanations { get; set; } = true;
         public string? FocusArea { get; set; } // Math, History, Science, etc.
         public int MinConfidence { get; set; } = 70;
-        public string Model { get; set; } = "gpt-3.5-turbo";
+        public string Model { get; set; } = "gemini-pro";
     }
 }

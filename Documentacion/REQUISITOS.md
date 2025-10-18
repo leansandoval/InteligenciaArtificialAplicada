@@ -320,9 +320,9 @@
 
 ### 9. MÓDULO DE INTEGRACIÓN CON IA
 
-#### RF-023: Integración con OpenAI para Generación de Contenido
+#### RF-023: Integración con Google Gemini para Generación de Contenido
 
-- **Descripción:** El sistema debe integrar la API de OpenAI para la generación automática de flashcards y quizzes.
+- **Descripción:** El sistema debe integrar la API de Google Gemini para la generación automática de flashcards y quizzes.
 
 - **User Story:** Como usuario, quiero generar contenido automáticamente usando IA para ahorrar tiempo en la creación de materiales de estudio.
 
@@ -592,9 +592,9 @@
   - Logs de auditoría de uso de IA
   - Políticas de retención de datos generados
 
-#### RNF-016: API de OpenAI
+#### RNF-016: API de Google Gemini
 
-- **Descripción:** El sistema debe integrar de forma eficiente con GPT-4o.
+- **Descripción:** El sistema debe integrar de forma eficiente con Google Gemini.
 
 - **Criterio:**
 

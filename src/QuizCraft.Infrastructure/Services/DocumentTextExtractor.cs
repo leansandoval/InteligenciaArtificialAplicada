@@ -133,7 +133,7 @@ namespace QuizCraft.Infrastructure.Services
             };
         }
 
-        private async Task<DocumentContent> ExtractFromWordAsync(Stream stream, string fileName)
+        private Task<DocumentContent> ExtractFromWordAsync(Stream stream, string fileName)
         {
             _logger.LogInformation("Starting Word document extraction for: {FileName}", fileName);
             
@@ -156,7 +156,7 @@ namespace QuizCraft.Infrastructure.Services
                 if (body == null)
                 {
                     _logger.LogWarning("No se pudo encontrar el contenido del documento Word");
-                    return new DocumentContent
+                    return Task.FromResult(new DocumentContent
                     {
                         RawText = "",
                         Sections = new List<DocumentSection>(),
@@ -167,7 +167,7 @@ namespace QuizCraft.Infrastructure.Services
                             ["Error"] = "No se pudo acceder al contenido del documento",
                             ["ExtractedAt"] = DateTime.UtcNow
                         }
-                    };
+                    });
                 }
 
                 var extractedText = new StringBuilder();
@@ -220,7 +220,7 @@ namespace QuizCraft.Infrastructure.Services
                 
                 _logger.LogInformation($"Extraído texto de documento Word: {finalText.Length} caracteres, {sections.Count} secciones");
 
-                return new DocumentContent
+                return Task.FromResult(new DocumentContent
                 {
                     RawText = finalText,
                     Sections = sections,
@@ -232,13 +232,13 @@ namespace QuizCraft.Infrastructure.Services
                         ["SectionCount"] = sections.Count,
                         ["ExtractedAt"] = DateTime.UtcNow
                     }
-                };
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al extraer texto del documento Word: {FileName}", fileName);
                 
-                return new DocumentContent
+                return Task.FromResult(new DocumentContent
                 {
                     RawText = "",
                     Sections = new List<DocumentSection>(),
@@ -249,7 +249,7 @@ namespace QuizCraft.Infrastructure.Services
                         ["Error"] = ex.Message,
                         ["ExtractedAt"] = DateTime.UtcNow
                     }
-                };
+                });
             }
         }
 
@@ -301,7 +301,7 @@ namespace QuizCraft.Infrastructure.Services
             return tableText.ToString().Trim();
         }
 
-        private async Task<DocumentContent> ExtractFromPowerPointAsync(Stream stream, string fileName)
+        private Task<DocumentContent> ExtractFromPowerPointAsync(Stream stream, string fileName)
         {
             _logger.LogInformation("Starting PowerPoint document extraction for: {FileName}", fileName);
             
@@ -324,7 +324,7 @@ namespace QuizCraft.Infrastructure.Services
                 if (presentationPart?.Presentation == null)
                 {
                     _logger.LogWarning("No se pudo encontrar el contenido de la presentación PowerPoint");
-                    return new DocumentContent
+                    return Task.FromResult(new DocumentContent
                     {
                         RawText = "",
                         Sections = new List<DocumentSection>(),
@@ -335,7 +335,7 @@ namespace QuizCraft.Infrastructure.Services
                             ["Error"] = "No se pudo acceder al contenido de la presentación",
                             ["ExtractedAt"] = DateTime.UtcNow
                         }
-                    };
+                    });
                 }
 
                 var extractedText = new StringBuilder();
@@ -374,7 +374,7 @@ namespace QuizCraft.Infrastructure.Services
                 
                 _logger.LogInformation($"Extraído texto de presentación PowerPoint: {finalText.Length} caracteres, {sections.Count} diapositivas");
 
-                return new DocumentContent
+                return Task.FromResult(new DocumentContent
                 {
                     RawText = finalText,
                     Sections = sections,
@@ -386,13 +386,13 @@ namespace QuizCraft.Infrastructure.Services
                         ["SlideCount"] = sections.Count,
                         ["ExtractedAt"] = DateTime.UtcNow
                     }
-                };
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al extraer texto de la presentación PowerPoint: {FileName}", fileName);
                 
-                return new DocumentContent
+                return Task.FromResult(new DocumentContent
                 {
                     RawText = "",
                     Sections = new List<DocumentSection>(),
@@ -403,7 +403,7 @@ namespace QuizCraft.Infrastructure.Services
                         ["Error"] = ex.Message,
                         ["ExtractedAt"] = DateTime.UtcNow
                     }
-                };
+                });
             }
         }
 

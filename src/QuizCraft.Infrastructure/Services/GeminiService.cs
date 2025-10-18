@@ -30,7 +30,7 @@ namespace QuizCraft.Infrastructure.Services
                 throw new InvalidOperationException("Gemini API Key must be configured");
             }
 
-            _logger.LogInformation("Gemini Service initialized with model: {Model}", 
+            _logger.LogInformation("Gemini Service initialized with model: {Model}",
                 _settings.Model);
         }
 
@@ -50,13 +50,13 @@ namespace QuizCraft.Infrastructure.Services
 
                 // Parsear la respuesta y convertirla al formato esperado
                 var flashcardResponse = ParseFlashcardResponse(response.Content, settings);
-                
-                var serializedContent = flashcardResponse.Success 
+
+                var serializedContent = flashcardResponse.Success
                     ? JsonSerializer.Serialize(new { flashcards = flashcardResponse.Flashcards }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
                     : flashcardResponse.ErrorMessage;
-                
+
                 _logger.LogDebug("Serialized content being sent to AIDocumentProcessor: {Content}", serializedContent);
-                
+
                 return new AIResponse
                 {
                     Success = flashcardResponse.Success,
@@ -103,22 +103,22 @@ namespace QuizCraft.Infrastructure.Services
                     }
                 };
 
-                var json = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions 
-                { 
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+                var json = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
 
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var url = $"{_settings.BaseUrl}/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
-                
+
                 var response = await _httpClient.PostAsync(url, content);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                    
+
                     return new AIResponse
                     {
                         Success = false,
@@ -130,7 +130,7 @@ namespace QuizCraft.Infrastructure.Services
                 var responseJson = await response.Content.ReadAsStringAsync();
                 var geminiResponse = JsonSerializer.Deserialize<JsonElement>(responseJson);
 
-                if (!geminiResponse.TryGetProperty("candidates", out var candidates) || 
+                if (!geminiResponse.TryGetProperty("candidates", out var candidates) ||
                     candidates.GetArrayLength() == 0)
                 {
                     _logger.LogError("Gemini returned no candidates");
@@ -193,7 +193,7 @@ namespace QuizCraft.Infrastructure.Services
                 _logger.LogInformation("Validating Gemini configuration");
 
                 var response = await GenerateTextAsync("Test");
-                
+
                 _logger.LogInformation("Gemini configuration validated successfully");
                 return response.Success;
             }
@@ -209,7 +209,7 @@ namespace QuizCraft.Infrastructure.Services
         public async Task<TokenUsageInfo> GetTokenUsageInfoAsync()
         {
             await Task.Delay(1); // Para mantener la interfaz async
-            
+
             return new TokenUsageInfo
             {
                 PromptTokens = 0,
@@ -242,7 +242,7 @@ namespace QuizCraft.Infrastructure.Services
         public async Task<TokenUsageInfo> EstimateTokenUsageAsync(string content)
         {
             await Task.Delay(1);
-            
+
             var tokens = EstimateTokens(content);
             return new TokenUsageInfo
             {
@@ -257,33 +257,33 @@ namespace QuizCraft.Infrastructure.Services
         private string BuildFlashcardPrompt(string content, QuizCraft.Application.Interfaces.AIGenerationSettings settings)
         {
             var prompt = $@"
-{(_settings as GeminiFlashcardGenerationSettings)?.SystemPrompt ?? "Eres un experto en educación que crea flashcards de alta calidad."}
+            {(_settings as GeminiFlashcardGenerationSettings)?.SystemPrompt ?? "Eres un experto en educación que crea flashcards de alta calidad."}
 
-CONTENIDO A PROCESAR:
-{content}
+            CONTENIDO A PROCESAR:
+            {content}
 
-INSTRUCCIONES:
-- Genera máximo {settings.MaxCardsPerDocument} flashcards basadas en el contenido
-- Nivel de dificultad: {settings.Difficulty}
-- Idioma: {settings.Language}
-- {(settings.IncludeExplanations ? "Incluye explicaciones breves" : "Solo pregunta y respuesta")}
-- Área de enfoque: {settings.FocusArea ?? "General"}
+            INSTRUCCIONES:
+            - Genera máximo {settings.MaxCardsPerDocument} flashcards basadas en el contenido
+            - Nivel de dificultad: {settings.Difficulty}
+            - Idioma: {settings.Language}
+            - {(settings.IncludeExplanations ? "Incluye explicaciones breves" : "Solo pregunta y respuesta")}
+            - Área de enfoque: {settings.FocusArea ?? "General"}
 
-FORMATO DE RESPUESTA (JSON):
-{{
-  ""flashcards"": [
-    {{
-      ""pregunta"": ""Pregunta clara y específica"",
-      ""respuesta"": ""Respuesta precisa y completa"",
-      ""dificultad"": ""{settings.Difficulty}"",
-      ""explicacion"": ""Explicación adicional (opcional)"",
-      ""etiquetas"": [""tag1"", ""tag2""],
-      ""categoria"": ""Categoría del contenido""
-    }}
-  ]
-}}
+            FORMATO DE RESPUESTA (JSON):
+            {{
+            ""flashcards"": [
+                {{
+                ""pregunta"": ""Pregunta clara y específica"",
+                ""respuesta"": ""Respuesta precisa y completa"",
+                ""dificultad"": ""{settings.Difficulty}"",
+                ""explicacion"": ""Explicación adicional (opcional)"",
+                ""etiquetas"": [""tag1"", ""tag2""],
+                ""categoria"": ""Categoría del contenido""
+                }}
+            ]
+            }}
 
-Responde ÚNICAMENTE con el JSON válido, sin texto adicional.";
+            Responde ÚNICAMENTE con el JSON válido, sin texto adicional.";
 
             return prompt;
         }
@@ -302,7 +302,7 @@ Responde ÚNICAMENTE con el JSON válido, sin texto adicional.";
 
             // Eliminar bloques de código markdown (```json y ```)
             var cleaned = response.Trim();
-            
+
             // Si empieza con ```json, ```JSON, o simplemente ```, quitarlo
             if (cleaned.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
             {
@@ -319,14 +319,14 @@ Responde ÚNICAMENTE con el JSON válido, sin texto adicional.";
                 cleaned = cleaned.Substring(3).TrimStart();
                 _logger.LogDebug("Removed ``` prefix");
             }
-            
+
             // Si termina con ```, quitarlo
             if (cleaned.EndsWith("```"))
             {
                 cleaned = cleaned.Substring(0, cleaned.Length - 3).TrimEnd();
                 _logger.LogDebug("Removed ``` suffix");
             }
-            
+
             _logger.LogDebug("Cleaned response: {CleanedResponse}", cleaned);
             return cleaned.Trim();
         }
@@ -337,7 +337,7 @@ Responde ÚNICAMENTE con el JSON válido, sin texto adicional.";
             {
                 // Limpiar las marcas de código markdown de la respuesta de Gemini
                 var cleanedResponse = CleanMarkdownCodeBlocks(jsonResponse);
-                
+
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
@@ -345,7 +345,7 @@ Responde ÚNICAMENTE con el JSON válido, sin texto adicional.";
                 };
 
                 var responseObj = JsonSerializer.Deserialize<JsonElement>(cleanedResponse, options);
-                
+
                 if (!responseObj.TryGetProperty("flashcards", out var flashcardsArray))
                 {
                     _logger.LogError("Response does not contain flashcards array");

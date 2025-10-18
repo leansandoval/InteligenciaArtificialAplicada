@@ -10,7 +10,7 @@
 
 ### Factores Clave Identificados:
 
-1. **🤖 Integración con IA** - GPT-4o para generación automática
+1. **🤖 Integración con IA** - Google Gemini para generación automática
 2. **📁 Procesamiento Multimedia** - PDFs, imágenes, documentos
 3. **📈 Escalabilidad** - 100+ usuarios concurrentes
 4. **🔄 Tiempo Real** - Feedback inmediato en quizzes
@@ -129,7 +129,7 @@
 ### 2. **AI Module** (Módulo de IA)
 ```csharp
 // Servicios de inteligencia artificial
-- Integración con OpenAI GPT-4o
+- Integración con Google Gemini
 - Generación automática de flashcards
 - Procesamiento de documentos (OCR)
 - Rate limiting y control de costos
@@ -224,7 +224,7 @@ Testing: Selenium WebDriver + xUnit
 
 ### **Integraciones**
 ```yaml
-AI: OpenAI GPT-4o API
+AI: Google Gemini API
 OCR: Azure Cognitive Services / Tesseract
 Email: SendGrid / SMTP
 Monitoring: Application Insights / Serilog
@@ -263,7 +263,7 @@ CDN: Azure CDN / CloudFlare
 ┌───────▼────────┐    ┌────────▼─────────┐    ┌───────▼────────┐
 │   Core Module  │    │   AI Module      │    │Analytics Module│
 │                │    │                  │    │                │
-│ • Identity     │    │ • OpenAI Service │    │ • Statistics   │
+│ • Identity     │    │ • Gemini Service │    │ • Statistics   │
 │ • Usuarios     │    │ • OCR Processing │    │ • Algorithms   │
 │ • Materias     │    │ • Doc Analysis   │    │ • Reports      │
 │ • Flashcards   │    │ • Background Jobs│    │ • Patterns     │
@@ -296,7 +296,7 @@ CDN: Azure CDN / CloudFlare
 ### **Fase 2: IA Integration (1-2 meses)**
 ```
 🔄 Crear AI Module dentro de la aplicación
-🔄 Integración con OpenAI GPT-4o API
+🔄 Integración con Google Gemini API
 🔄 Implementar IHostedService para background jobs
 🔄 Upload de documentos con IFormFile
 🔄 Generación automática de flashcards
@@ -364,7 +364,7 @@ CDN: Azure CDN / CloudFlare
 ### **Para Integración con IA:**
 ```csharp
 // Patrón Circuit Breaker para APIs externas
-services.AddHttpClient<OpenAIService>()
+services.AddHttpClient<GeminiService>()
     .AddPolicyHandler(GetRetryPolicy())
     .AddPolicyHandler(GetCircuitBreakerPolicy());
 ```
@@ -405,7 +405,7 @@ public class StudySession : AggregateRoot
 5. **Configurar Bootstrap 5** y estructura de Razor Views
 6. **Implementar Controllers** con inyección de dependencias
 7. **Crear servicios de aplicación** para lógica de negocio
-8. **Preparar integración con OpenAI** API para el módulo de IA
+8. **Preparar integración con Google Gemini** API para el módulo de IA
 
 ## 🗂️ ESTRUCTURA DEL PROYECTO RECOMENDADA
 
@@ -429,7 +429,7 @@ QuizCraft/
 │   ├── QuizCraft.Infrastructure/      # Capa de infraestructura
 │   │   ├── Data/                      # DbContext y configuración EF
 │   │   ├── Repositories/              # Implementación de repositorios
-│   │   ├── Services/                  # Servicios externos (OpenAI, etc.)
+│   │   ├── Services/                  # Servicios externos (Gemini, etc.)
 │   │   └── Migrations/                # Migraciones EF Core
 │   │
 │   └── QuizCraft.Application/         # Lógica de aplicación
