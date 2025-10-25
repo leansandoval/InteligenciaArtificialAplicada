@@ -1,0 +1,195 @@
+@model QuizCraft.Web.ViewModels.ReviewAndNameQuizViewModel
+@{
+    ViewBag.Title = "Revisar y Nombrar Quiz";
+    Layout = "_Layout";
+}
+
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-magic"></i> Quiz Generado con IA
+                    </h4>
+                    <small>Revisa el quiz generado y personaliza los detalles antes de guardarlo</small>
+                </div>
+                
+                <div class="card-body">
+                    <form asp-action="SaveGeneratedQuiz" method="post">
+                        <input type="hidden" asp-for="GeneratedQuestions" />
+                        <input type="hidden" asp-for="MateriaId" />
+                        
+                        <!-- Información del Quiz -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    <label asp-for="QuizTitle" class="form-label fw-bold">
+                                        <i class="fas fa-heading"></i> Título del Quiz *
+                                    </label>
+                                    <input asp-for="QuizTitle" class="form-control form-control-lg" 
+                                           placeholder="Ej: Historia de Roma - Conceptos Fundamentales" />
+                                    <span asp-validation-for="QuizTitle" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="IsPublic" class="form-label fw-bold">
+                                        <i class="fas fa-globe"></i> Visibilidad
+                                    </label>
+                                    <div class="form-check form-switch">
+                                        <input asp-for="IsPublic" class="form-check-input" type="checkbox" />
+                                        <label asp-for="IsPublic" class="form-check-label">
+                                            Hacer público
+                                        </label>
+                                    </div>
+                                    <small class="form-text text-muted">
+                                        Los quizzes públicos pueden ser vistos por otros usuarios
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label asp-for="QuizDescription" class="form-label fw-bold">
+                                <i class="fas fa-align-left"></i> Descripción (Opcional)
+                            </label>
+                            <textarea asp-for="QuizDescription" class="form-control" rows="3" 
+                                     placeholder="Describe brevemente el contenido y objetivo de este quiz..."></textarea>
+                            <span asp-validation-for="QuizDescription" class="text-danger"></span>
+                        </div>
+
+                        <!-- Estadísticas del Quiz -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-question-circle fa-2x text-primary mb-2"></i>
+                                        <h5 class="card-title">@Model.QuestionCount</h5>
+                                        <p class="card-text">Preguntas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-book fa-2x text-success mb-2"></i>
+                                        <h5 class="card-title">@ViewBag.MateriaNombre</h5>
+                                        <p class="card-text">Materia</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                        <h5 class="card-title">~@(Model.QuestionCount * 2) min</h5>
+                                        <p class="card-text">Duración Est.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light border-0">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-robot fa-2x text-info mb-2"></i>
+                                        <h5 class="card-title">IA</h5>
+                                        <p class="card-text">Generado</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vista previa de algunas preguntas -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-eye"></i> Vista Previa de Preguntas
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                @if (Model.PreviewQuestions != null && Model.PreviewQuestions.Any())
+                                {
+                                    @for (int i = 0; i < Math.Min(3, Model.PreviewQuestions.Count); i++)
+                                    {
+                                        var question = Model.PreviewQuestions[i];
+                                        <div class="question-preview mb-3 @(i < Math.Min(3, Model.PreviewQuestions.Count) - 1 ? "border-bottom pb-3" : "")">
+                                            <h6 class="text-primary">
+                                                <span class="badge bg-primary me-2">@(i + 1)</span>
+                                                @question.QuestionText
+                                            </h6>
+                                            @if (question.AnswerOptions != null && question.AnswerOptions.Any())
+                                            {
+                                                <div class="row">
+                                                    @foreach (var option in question.AnswerOptions.Take(4))
+                                                    {
+                                                        <div class="col-md-6 mb-1">
+                                                            <span class="badge @(option.IsCorrect ? "bg-success" : "bg-light text-dark") me-1">
+                                                                @((char)('A' + question.AnswerOptions.ToList().IndexOf(option)))
+                                                            </span>
+                                                            @option.Text
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    @if (Model.QuestionCount > 3)
+                                    {
+                                        <p class="text-muted text-center mb-0">
+                                            <i class="fas fa-ellipsis-h"></i> 
+                                            Y @(Model.QuestionCount - 3) preguntas más...
+                                        </p>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-muted">No hay preguntas disponibles para mostrar.</p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="@Url.Action("ConfigureAI", new { materiaId = Model.MateriaId })" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Volver a Configurar
+                                </a>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-save"></i> Guardar Quiz
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Auto-generar sugerencia de título si está vacío
+            if (!$('#QuizTitle').val()) {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('es-ES');
+                const timeStr = now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+                $('#QuizTitle').val(`Quiz IA - ${dateStr} ${timeStr}`);
+            }
+            
+            // Validación del formulario
+            $('form').on('submit', function(e) {
+                const title = $('#QuizTitle').val().trim();
+                if (title.length < 3) {
+                    e.preventDefault();
+                    alert('El título del quiz debe tener al menos 3 caracteres.');
+                    $('#QuizTitle').focus();
+                    return false;
+                }
+            });
+        });
+    </script>
+}

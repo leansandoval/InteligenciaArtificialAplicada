@@ -76,6 +76,69 @@ namespace QuizCraft.Infrastructure.Services
             }
         }
 
+        public async Task<AIResponse> GenerateQuizFromTextAsync(string content, QuizGenerationSettings settings)
+        {
+            try
+            {
+                _logger.LogInformation("Generating quiz with Gemini for content length: {Length}", content.Length);
+
+                var prompt = BuildQuizPrompt(content, settings);
+                
+                // Estimar tokens antes de enviar para controlar costos
+                var estimatedTokens = EstimateTokens(prompt + content);
+                if (estimatedTokens > 3000) // Límite de seguridad
+                {
+                    _logger.LogWarning("Content too large. Estimated tokens: {Tokens}", estimatedTokens);
+                    return new AIResponse
+                    {
+                        Success = false,
+                        Content = "El contenido es demasiado largo. Intenta con un texto más corto.",
+                        TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
+                    };
+                }
+                
+                // Configuración personalizada para quiz con más tokens
+                var quizSettings = new AISettings
+                {
+                    MaxTokens = 2500, // Balanceado: suficiente para respuestas completas pero sin exceso
+                    Temperature = 0.7f // Mantener creatividad controlada
+                };
+                
+                var response = await GenerateTextAsync(prompt, quizSettings);
+
+                if (!response.Success)
+                {
+                    return response;
+                }
+
+                // Parsear la respuesta y convertirla al formato esperado
+                var quizResponse = ParseQuizResponse(response.Content, settings);
+
+                var serializedContent = quizResponse.Success
+                    ? JsonSerializer.Serialize(new { questions = quizResponse.Questions }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+                    : quizResponse.ErrorMessage;
+
+                _logger.LogDebug("Serialized quiz content: {Content}", serializedContent);
+
+                return new AIResponse
+                {
+                    Success = quizResponse.Success,
+                    Content = serializedContent,
+                    TokenUsage = response.TokenUsage
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating quiz with Gemini");
+                return new AIResponse
+                {
+                    Success = false,
+                    Content = $"Error al comunicarse con Gemini: {ex.Message}",
+                    TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
+                };
+            }
+        }
+
         public async Task<AIResponse> GenerateTextAsync(string prompt, AISettings? customSettings = null)
         {
             try
@@ -288,6 +351,49 @@ namespace QuizCraft.Infrastructure.Services
             return prompt;
         }
 
+        private string BuildQuizPrompt(string content, QuizGenerationSettings settings)
+        {
+            var questionTypes = string.Join(", ", settings.QuestionTypes);
+            var difficultyText = settings.DifficultyLevel switch
+            {
+                Core.Enums.NivelDificultad.Facil => "Fácil",
+                Core.Enums.NivelDificultad.Dificil => "Difícil",
+                _ => "Intermedio"
+            };
+
+            var explanations = settings.IncludeExplanations ? "con explicaciones" : "sin explicaciones";
+            var subject = !string.IsNullOrEmpty(settings.Subject) ? $"Materia: {settings.Subject}. " : "";
+            var instructions = !string.IsNullOrEmpty(settings.CustomInstructions) ? $"Instrucciones: {settings.CustomInstructions}. " : "";
+
+            var prompt = $"Crea {settings.NumberOfQuestions} preguntas de quiz {explanations} basadas en este contenido:\n\n" +
+                        content + "\n\n" +
+                        $"Configuración: Nivel {difficultyText}, tipos: {questionTypes}, idioma: {settings.Language}. " +
+                        subject + instructions + "\n" +
+                        "Formato JSON requerido:\n" +
+                        "{\n" +
+                        "  \"questions\": [\n" +
+                        "    {\n" +
+                        "      \"questionText\": \"Pregunta\",\n" +
+                        "      \"questionType\": \"MultipleChoice\",\n" +
+                        "      \"difficultyLevel\": \"Facil\",\n" +
+                        "      \"answerOptions\": [\n" +
+                        "        {\"text\": \"Opción A\", \"isCorrect\": true, \"explanation\": \"Razón\"},\n" +
+                        "        {\"text\": \"Opción B\", \"isCorrect\": false, \"explanation\": \"Razón\"}\n" +
+                        "      ],\n" +
+                        "      \"explanation\": \"Explicación\",\n" +
+                        "      \"points\": 1,\n" +
+                        "      \"tags\": [\"tag1\"],\n" +
+                        "      \"sourceReference\": \"Referencia\",\n" +
+                        "      \"confidenceScore\": 0.9\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}\n\n" +
+                        "Reglas: MultipleChoice=4 opciones (1 correcta), TrueFalse=2 opciones, " +
+                        "opciones incorrectas plausibles, conceptos importantes. Solo JSON válido.";
+
+            return prompt;
+        }
+
         /// <summary>
         /// Limpia las marcas de código markdown de la respuesta de Gemini
         /// </summary>
@@ -414,6 +520,125 @@ namespace QuizCraft.Infrastructure.Services
                     ErrorMessage = $"Error al procesar respuesta de Gemini: {ex.Message}"
                 };
             }
+        }
+
+        private QuizGenerationResult ParseQuizResponse(string jsonResponse, QuizGenerationSettings settings)
+        {
+            try
+            {
+                _logger.LogInformation("Parsing Gemini quiz response");
+
+                var cleanedResponse = CleanMarkdownCodeBlocks(jsonResponse);
+                var document = JsonDocument.Parse(cleanedResponse);
+
+                if (!document.RootElement.TryGetProperty("questions", out var questionsArray))
+                {
+                    return new QuizGenerationResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Formato de respuesta inválido: no se encontró array de preguntas"
+                    };
+                }
+
+                var questions = new List<GeneratedQuizQuestion>();
+
+                foreach (var item in questionsArray.EnumerateArray())
+                {
+                    try
+                    {
+                        var question = new GeneratedQuizQuestion
+                        {
+                            QuestionText = item.GetProperty("questionText").GetString() ?? "",
+                            QuestionType = ParseQuestionType(item.TryGetProperty("questionType", out var type) ? type.GetString() : "MultipleChoice"),
+                            DifficultyLevel = ParseDifficulty(item.TryGetProperty("difficultyLevel", out var diff) ? diff.GetString() : "Intermedio"),
+                            CorrectAnswer = item.TryGetProperty("correctAnswer", out var correct) ? correct.GetString() ?? "" : "",
+                            Explanation = item.TryGetProperty("explanation", out var expl) ? expl.GetString() ?? "" : "",
+                            Points = item.TryGetProperty("points", out var pts) ? pts.GetInt32() : 1,
+                            SourceReference = item.TryGetProperty("sourceReference", out var srcRef) ? srcRef.GetString() ?? "" : "",
+                            ConfidenceScore = item.TryGetProperty("confidenceScore", out var conf) ? conf.GetDouble() : 0.9,
+                            IsApproved = false // Requiere revisión manual
+                        };
+
+                        // Parsear opciones de respuesta
+                        if (item.TryGetProperty("answerOptions", out var optionsArray))
+                        {
+                            var order = 1;
+                            foreach (var option in optionsArray.EnumerateArray())
+                            {
+                                var answerOption = new QuizAnswerOption
+                                {
+                                    Text = option.GetProperty("text").GetString() ?? "",
+                                    IsCorrect = option.TryGetProperty("isCorrect", out var isCorrect) && isCorrect.GetBoolean(),
+                                    Explanation = option.TryGetProperty("explanation", out var optExpl) ? optExpl.GetString() ?? "" : "",
+                                    Order = order++
+                                };
+
+                                if (!string.IsNullOrEmpty(answerOption.Text))
+                                {
+                                    question.AnswerOptions.Add(answerOption);
+                                }
+                            }
+                        }
+
+                        // Parsear etiquetas
+                        if (item.TryGetProperty("tags", out var tagsArray))
+                        {
+                            foreach (var tag in tagsArray.EnumerateArray())
+                            {
+                                var tagValue = tag.GetString();
+                                if (!string.IsNullOrEmpty(tagValue))
+                                {
+                                    question.Tags.Add(tagValue);
+                                }
+                            }
+                        }
+
+                        // Validar que la pregunta tiene contenido válido
+                        if (!string.IsNullOrEmpty(question.QuestionText) && 
+                            (question.AnswerOptions.Any() || !string.IsNullOrEmpty(question.CorrectAnswer)))
+                        {
+                            questions.Add(question);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Error parsing individual quiz question");
+                    }
+                }
+
+                return new QuizGenerationResult
+                {
+                    Success = true,
+                    Questions = questions,
+                    ProcessingMethod = "Gemini AI",
+                    TokensUsed = EstimateTokens(jsonResponse),
+                    EstimatedCost = 0.00m,
+                    ProcessingTime = DateTime.UtcNow,
+                    SourceContent = settings.Subject ?? "Contenido procesado"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing Gemini quiz response: {Response}", jsonResponse);
+                return new QuizGenerationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Error al procesar respuesta de quiz de Gemini: {ex.Message}"
+                };
+            }
+        }
+
+        private QuestionType ParseQuestionType(string? questionType)
+        {
+            return questionType?.ToLower() switch
+            {
+                "multiplechoice" => QuestionType.MultipleChoice,
+                "truefalse" => QuestionType.TrueFalse,
+                "fillintheblank" => QuestionType.FillInTheBlank,
+                "shortanswer" => QuestionType.ShortAnswer,
+                "matching" => QuestionType.Matching,
+                _ => QuestionType.MultipleChoice
+            };
         }
 
         private Core.Enums.NivelDificultad ParseDifficulty(string? difficulty)

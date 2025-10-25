@@ -2,9 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using QuizCraft.Core.Entities;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Application.ViewModels;
+using QuizCraft.Application.Interfaces;
+using QuizCraft.Application.Models;
+using QuizCraft.Web.ViewModels;
 using QuizCraft.Core.Enums;
 
 namespace QuizCraft.Web.Controllers
@@ -15,12 +19,18 @@ namespace QuizCraft.Web.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<QuizController> _logger;
+        private readonly IQuizGenerationService _quizGenerationService;
 
-        public QuizController(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager, ILogger<QuizController> logger)
+        public QuizController(
+            IUnitOfWork unitOfWork, 
+            UserManager<ApplicationUser> userManager, 
+            ILogger<QuizController> logger,
+            IQuizGenerationService quizGenerationService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _logger = logger;
+            _quizGenerationService = quizGenerationService;
         }
 
         // GET: Quiz
@@ -418,11 +428,27 @@ namespace QuizCraft.Web.Controllers
                 FechaCreacion = quiz.FechaCreacion,
                 EsPublico = quiz.EsPublico,
                 NumeroPreguntas = quiz.NumeroPreguntas,
+                CantidadPreguntas = quiz.Preguntas?.Count ?? quiz.NumeroPreguntas, // Corregir contador de preguntas
                 TiempoLimite = quiz.TiempoLimite,
+                TiempoPorPregunta = quiz.TiempoPorPregunta,
                 NivelDificultad = (NivelDificultad)quiz.NivelDificultad,
                 PuedeEditar = quiz.CreadorId == usuarioId,
                 PuedeEliminar = quiz.CreadorId == usuarioId,
                 PuedeRealizarQuiz = quiz.EsPublico || quiz.CreadorId == usuarioId,
+                MostrarPreguntas = quiz.CreadorId == usuarioId, // Solo el creador puede ver las preguntas
+                Preguntas = quiz.Preguntas?.Select(p => new PreguntaQuizViewModel
+                {
+                    Id = p.Id,
+                    TextoPregunta = p.TextoPregunta,
+                    OpcionA = p.OpcionA,
+                    OpcionB = p.OpcionB,
+                    OpcionC = p.OpcionC,
+                    OpcionD = p.OpcionD,
+                    RespuestaCorrecta = p.RespuestaCorrecta,
+                    Explicacion = p.Explicacion,
+                    Puntos = p.Puntos,
+                    Orden = p.Orden
+                }).ToList() ?? new List<PreguntaQuizViewModel>(),
                 MensajeNoDisponible = quiz.EsPublico || quiz.CreadorId == usuarioId 
                     ? "" : "Este quiz no está disponible públicamente."
             };
@@ -850,6 +876,648 @@ namespace QuizCraft.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
+
+        #region Generación de Quizzes con IA
+
+        // GET: Quiz/ConfigureAI
+        public async Task<IActionResult> ConfigureAI(int? materiaId)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+
+            var viewModel = new QuizGenerationConfigViewModel
+            {
+                MateriaId = materiaId,
+                MateriaNombre = materiaId.HasValue ? materias.FirstOrDefault(m => m.Id == materiaId)?.Nombre : null,
+                NumberOfQuestions = 10,
+                DifficultyLevel = NivelDificultad.Intermedio,
+                IncludeExplanations = true,
+                VariedComplexity = false,
+                SelectedQuestionTypes = new List<QuestionType> { QuestionType.MultipleChoice, QuestionType.TrueFalse }
+            };
+
+            ViewBag.Materias = materias.Select(m => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+            {
+                Value = m.Id.ToString(),
+                Text = m.Nombre,
+                Selected = m.Id == materiaId
+            }).ToList();
+
+            return View(viewModel);
+        }
+
+        // POST: Quiz/GenerateFromText
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateFromText(QuizGenerationConfigViewModel model)
+        {
+            try
+            {
+                _logger.LogInformation("=== Iniciando GenerateFromText ===");
+                _logger.LogInformation("Model.MateriaId: {MateriaId}", model.MateriaId);
+                _logger.LogInformation("Model.TextContent: {TextContent}", model.TextContent?.Length);
+                _logger.LogInformation("ModelState.IsValid: {IsValid}", ModelState.IsValid);
+
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("ModelState no es válido");
+                    foreach (var error in ModelState)
+                    {
+                        _logger.LogWarning("Error en {Key}: {Errors}", error.Key, string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage)));
+                    }
+                    
+                    var usuarioId = _userManager.GetUserId(User);
+                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+                    ViewBag.Materias = materias.Select(m => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
+                    {
+                        Value = m.Id.ToString(),
+                        Text = m.Nombre,
+                        Selected = m.Id == model.MateriaId
+                    }).ToList();
+                    return View("ConfigureAI", model);
+                }
+
+                // Convertir ViewModel a configuración de generación
+                var settings = model.ToQuizGenerationSettings();
+                _logger.LogInformation("Settings creadas - NumberOfQuestions: {Count}, DifficultyLevel: {Difficulty}", 
+                    settings.NumberOfQuestions, settings.DifficultyLevel);
+
+                // Generar quiz usando IA
+                _logger.LogInformation("Llamando a GenerateFromTextAsync...");
+                var result = await _quizGenerationService.GenerateFromTextAsync(model.TextContent, settings);
+                _logger.LogInformation("Resultado de IA - Success: {Success}, Questions Count: {Count}, Error: {Error}", 
+                    result.Success, result.Questions?.Count ?? 0, result.ErrorMessage);
+
+                if (!result.Success)
+                {
+                    _logger.LogError("Error en generación de IA: {Error}", result.ErrorMessage);
+                    TempData["Error"] = result.ErrorMessage;
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                // Verificar si se generaron preguntas
+                if (result.Questions == null || result.Questions.Count == 0)
+                {
+                    _logger.LogWarning("No se generaron preguntas. Success: {Success}, Error: {Error}", result.Success, result.ErrorMessage);
+                    TempData["Error"] = "No se pudieron generar preguntas. Intenta con un texto más largo o diferente.";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                // Redirigir a la vista de revisión y nombrar quiz
+                _logger.LogInformation("Redirigiendo a ReviewAndName con {Count} preguntas", result.Questions.Count);
+                
+                // Crear el ViewModel para la vista de revisión
+                var reviewModel = new ReviewAndNameQuizViewModel
+                {
+                    MateriaId = model.MateriaId.Value,
+                    QuestionCount = result.Questions.Count,
+                    PreviewQuestions = result.Questions.Take(3).ToList(),
+                    OriginalSettings = settings,
+                    GeneratedQuestions = System.Text.Json.JsonSerializer.Serialize(result.Questions),
+                    QuizTitle = $"Quiz IA - {DateTime.Now:dd/MM/yyyy HH:mm}"
+                };
+
+                // Obtener nombre de la materia para mostrar en la vista
+                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId.Value);
+                ViewBag.MateriaNombre = materia?.Nombre ?? "Materia";
+
+                return View("ReviewAndName", reviewModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating quiz from text for user {UserId}", _userManager.GetUserId(User));
+                TempData["Error"] = "Ocurrió un error al generar el quiz. Intente nuevamente.";
+                return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+            }
+        }
+
+        // POST: Quiz/SaveGeneratedQuiz
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveGeneratedQuiz(ReviewAndNameQuizViewModel model)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                _logger.LogInformation("Guardando quiz nombrado por usuario {UserId}", usuarioId);
+
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("ModelState no es válido para SaveGeneratedQuiz");
+                    var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId);
+                    ViewBag.MateriaNombre = materia?.Nombre ?? "Materia";
+                    return View("ReviewAndName", model);
+                }
+
+                // Deserializar las preguntas
+                List<GeneratedQuizQuestion> questions;
+                try
+                {
+                    questions = System.Text.Json.JsonSerializer.Deserialize<List<GeneratedQuizQuestion>>(model.GeneratedQuestions) ?? new();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error deserializando preguntas generadas");
+                    TempData["Error"] = "Error al procesar las preguntas generadas.";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                if (questions.Count == 0)
+                {
+                    _logger.LogWarning("No hay preguntas para guardar");
+                    TempData["Error"] = "No hay preguntas para guardar.";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                // Crear el resultado para usar el método existente de guardado
+                var result = new QuizGenerationResult
+                {
+                    Success = true,
+                    Questions = questions,
+                    ErrorMessage = string.Empty
+                };
+
+                // Crear settings básicas
+                var settings = new QuizGenerationSettings
+                {
+                    NumberOfQuestions = questions.Count,
+                    DifficultyLevel = NivelDificultad.Intermedio
+                };
+
+                // Guardar usando el método personalizado
+                var quiz = await SaveQuizWithCustomTitle(result, model.MateriaId, settings, model.QuizTitle, model.QuizDescription, model.IsPublic);
+                
+                if (quiz != null)
+                {
+                    _logger.LogInformation("Quiz nombrado guardado exitosamente con ID: {QuizId}, Título: {Titulo}", 
+                        quiz.Id, quiz.Titulo);
+                    TempData["Success"] = $"Quiz '{quiz.Titulo}' creado exitosamente con {quiz.Preguntas.Count} preguntas usando IA.";
+                    return RedirectToAction("Details", new { id = quiz.Id });
+                }
+                else
+                {
+                    _logger.LogError("Error al guardar el quiz nombrado");
+                    TempData["Error"] = "Error al guardar el quiz.";
+                    var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId);
+                    ViewBag.MateriaNombre = materia?.Nombre ?? "Materia";
+                    return View("ReviewAndName", model);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving named generated quiz for user {UserId}", _userManager.GetUserId(User));
+                TempData["Error"] = "Ocurrió un error al guardar el quiz. Intente nuevamente.";
+                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId);
+                ViewBag.MateriaNombre = materia?.Nombre ?? "Materia";
+                return View("ReviewAndName", model);
+            }
+        }
+
+        private QuestionType ParseToViewModelQuestionType(string questionType)
+        {
+            return questionType?.ToLower() switch
+            {
+                "multiplechoice" => QuestionType.MultipleChoice,
+                "truefalse" => QuestionType.TrueFalse,
+                "fillintheblank" => QuestionType.FillInTheBlank,
+                "shortanswer" => QuestionType.ShortAnswer,
+                _ => QuestionType.MultipleChoice
+            };
+        }
+
+        // POST: Quiz/SaveGenerated
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveGenerated(ReviewGeneratedQuizViewModel model)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                var materiaId = TempData["MateriaId"] as int?;
+                
+                if (!materiaId.HasValue)
+                {
+                    TempData["Error"] = "Sesión expirada. Intente generar el quiz nuevamente.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Obtener la materia
+                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(materiaId.Value);
+                if (materia == null || materia.UsuarioId != usuarioId)
+                {
+                    TempData["Error"] = "Materia no encontrada.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Crear el quiz
+                var quiz = new Quiz
+                {
+                    Titulo = model.QuizTitle,
+                    Descripcion = model.QuizDescription ?? $"Quiz generado automáticamente con IA el {DateTime.Now:dd/MM/yyyy}",
+                    MateriaId = materiaId.Value,
+                    FechaCreacion = DateTime.UtcNow,
+                    EsPublico = false,
+                    NivelDificultad = (int)NivelDificultad.Intermedio,
+                    TiempoLimite = model.TimeLimit ?? 30,
+                    Preguntas = new List<PreguntaQuiz>()
+                };
+
+                // Convertir preguntas aprobadas a entidades
+                var approvedQuestions = model.Questions.Where(q => q.IsApproved).ToList();
+                foreach (var question in approvedQuestions)
+                {
+                    var pregunta = new PreguntaQuiz
+                    {
+                        TextoPregunta = question.QuestionText,
+                        TipoPregunta = (int)Core.Enums.TipoActividad.Quiz,
+                        Puntos = question.Points,
+                        Orden = quiz.Preguntas.Count + 1,
+                        Explicacion = question.Explanation,
+                        // Note: OpcionesRespuesta might need different handling depending on your entity structure
+                    };
+
+                    quiz.Preguntas.Add(pregunta);
+                }
+
+                // Guardar en base de datos
+                await _unitOfWork.QuizRepository.AddAsync(quiz);
+                await _unitOfWork.SaveChangesAsync();
+
+                TempData["Success"] = $"Quiz '{quiz.Titulo}' creado exitosamente con {quiz.Preguntas.Count} preguntas.";
+                return RedirectToAction("Details", new { id = quiz.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving generated quiz for user {UserId}", _userManager.GetUserId(User));
+                TempData["Error"] = "Ocurrió un error al guardar el quiz. Intente nuevamente.";
+                return View("ReviewGenerated", model);
+            }
+        }
+
+        private async Task<Quiz?> SaveQuizWithCustomTitle(QuizGenerationResult result, int materiaId, QuizGenerationSettings settings, string title, string? description, bool isPublic)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                _logger.LogInformation("Guardando quiz con título personalizado para usuario {UserId}, materia {MateriaId}, preguntas {Count}", 
+                    usuarioId, materiaId, result.Questions?.Count ?? 0);
+                
+                // Validar que hay preguntas
+                if (result.Questions == null || result.Questions.Count == 0)
+                {
+                    _logger.LogWarning("No se puede guardar quiz: no hay preguntas generadas");
+                    return null;
+                }
+
+                // Obtener la materia
+                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(materiaId);
+                if (materia == null || materia.UsuarioId != usuarioId)
+                {
+                    _logger.LogWarning("No se puede guardar quiz: materia no encontrada o sin permisos. MateriaId: {MateriaId}", materiaId);
+                    return null;
+                }
+
+                // Crear el quiz con título personalizado
+                var quiz = new Quiz
+                {
+                    Titulo = title,
+                    Descripcion = description ?? $"Quiz generado automáticamente con IA el {DateTime.Now:dd/MM/yyyy}",
+                    MateriaId = materiaId,
+                    CreadorId = usuarioId,
+                    FechaCreacion = DateTime.UtcNow,
+                    EsPublico = isPublic,
+                    NumeroPreguntas = result.Questions.Count,
+                    Preguntas = new List<PreguntaQuiz>()
+                };
+
+                // Agregar preguntas generadas
+                _logger.LogInformation("Agregando {Count} preguntas al quiz personalizado", result.Questions.Count);
+                int orden = 1;
+                foreach (var generatedQuestion in result.Questions)
+                {
+                    _logger.LogInformation("Procesando pregunta {Orden}: {Texto}", orden, generatedQuestion.QuestionText);
+                    
+                    var pregunta = new PreguntaQuiz
+                    {
+                        TextoPregunta = generatedQuestion.QuestionText,
+                        TipoPregunta = (int)Core.Enums.TipoActividad.Quiz,
+                        Puntos = generatedQuestion.Points,
+                        Explicacion = generatedQuestion.Explanation,
+                        Orden = orden,
+                        RespuestaCorrecta = "" // Lo asignaremos como letra (A, B, C, D)
+                    };
+
+                    // Mapear opciones de respuesta
+                    if (generatedQuestion.AnswerOptions != null && generatedQuestion.AnswerOptions.Any())
+                    {
+                        var opciones = generatedQuestion.AnswerOptions.Take(4).ToList();
+                        
+                        pregunta.OpcionA = opciones.Count > 0 ? opciones[0].Text : "";
+                        pregunta.OpcionB = opciones.Count > 1 ? opciones[1].Text : "";
+                        pregunta.OpcionC = opciones.Count > 2 ? opciones[2].Text : "";
+                        pregunta.OpcionD = opciones.Count > 3 ? opciones[3].Text : "";
+                        
+                        // Encontrar la respuesta correcta
+                        var correctIndex = -1;
+                        for (int i = 0; i < opciones.Count; i++)
+                        {
+                            if (opciones[i].IsCorrect)
+                            {
+                                correctIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        if (correctIndex == -1)
+                        {
+                            _logger.LogWarning("No se encontró opción marcada como correcta, usando la primera");
+                            correctIndex = 0;
+                        }
+                        
+                        // Asignar la letra correspondiente
+                        char[] letras = {'A', 'B', 'C', 'D'};
+                        pregunta.RespuestaCorrecta = letras[correctIndex].ToString();
+                        
+                        _logger.LogInformation("Respuesta correcta asignada: {RespuestaCorrecta}", pregunta.RespuestaCorrecta);
+                    }
+                    else
+                    {
+                        pregunta.OpcionA = "";
+                        pregunta.OpcionB = "";
+                        pregunta.OpcionC = "";
+                        pregunta.OpcionD = "";
+                        pregunta.RespuestaCorrecta = "A";
+                    }
+
+                    quiz.Preguntas.Add(pregunta);
+                    orden++;
+                }
+
+                // Guardar en base de datos
+                _logger.LogInformation("Agregando quiz personalizado a la base de datos: {QuizTitulo}", quiz.Titulo);
+                await _unitOfWork.QuizRepository.AddAsync(quiz);
+                
+                _logger.LogInformation("Guardando cambios en la base de datos...");
+                await _unitOfWork.SaveChangesAsync();
+                
+                _logger.LogInformation("Quiz personalizado guardado exitosamente con ID: {QuizId}", quiz.Id);
+                return quiz;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving generated quiz with custom title");
+                return null;
+            }
+        }
+
+        private async Task<Quiz?> SaveQuizDirectly(QuizGenerationResult result, int materiaId, QuizGenerationSettings settings)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                _logger.LogInformation("Guardando quiz directamente para usuario {UserId}, materia {MateriaId}, preguntas {Count}", 
+                    usuarioId, materiaId, result.Questions?.Count ?? 0);
+                
+                // Validar que hay preguntas
+                if (result.Questions == null || result.Questions.Count == 0)
+                {
+                    _logger.LogWarning("No se puede guardar quiz: no hay preguntas generadas");
+                    return null;
+                }
+
+                // Obtener la materia
+                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(materiaId);
+                if (materia == null || materia.UsuarioId != usuarioId)
+                {
+                    _logger.LogWarning("No se puede guardar quiz: materia no encontrada o sin permisos. MateriaId: {MateriaId}", materiaId);
+                    return null;
+                }
+
+                // Crear el quiz
+                var quiz = new Quiz
+                {
+                    Titulo = $"Quiz IA - {DateTime.Now:dd/MM/yyyy HH:mm}",
+                    Descripcion = $"Quiz generado automáticamente con IA el {DateTime.Now:dd/MM/yyyy}",
+                    MateriaId = materiaId,
+                    CreadorId = usuarioId,
+                    FechaCreacion = DateTime.UtcNow,
+                    EsPublico = false,
+                    NumeroPreguntas = result.Questions.Count,
+                    Preguntas = new List<PreguntaQuiz>()
+                };
+
+                // Agregar preguntas generadas
+                _logger.LogInformation("Agregando {Count} preguntas al quiz", result.Questions.Count);
+                int orden = 1;
+                foreach (var generatedQuestion in result.Questions)
+                {
+                    _logger.LogInformation("Procesando pregunta {Orden}: {Texto}", orden, generatedQuestion.QuestionText);
+                    _logger.LogInformation("AnswerOptions count: {Count}", generatedQuestion.AnswerOptions?.Count ?? 0);
+                    
+                    var pregunta = new PreguntaQuiz
+                    {
+                        TextoPregunta = generatedQuestion.QuestionText,
+                        TipoPregunta = (int)Core.Enums.TipoActividad.Quiz,
+                        Puntos = generatedQuestion.Points,
+                        Explicacion = generatedQuestion.Explanation,
+                        Orden = orden,
+                        RespuestaCorrecta = "" // Lo asignaremos como letra (A, B, C, D)
+                    };
+
+                    // Mapear opciones de respuesta a las columnas de la base de datos
+                    if (generatedQuestion.AnswerOptions != null && generatedQuestion.AnswerOptions.Any())
+                    {
+                        _logger.LogInformation("Tiene opciones de respuesta, mapeando...");
+                        var opciones = generatedQuestion.AnswerOptions.Take(4).ToList();
+                        _logger.LogInformation("Opciones disponibles: {Count}", opciones.Count);
+                        
+                        pregunta.OpcionA = opciones.Count > 0 ? opciones[0].Text : "";
+                        pregunta.OpcionB = opciones.Count > 1 ? opciones[1].Text : "";
+                        pregunta.OpcionC = opciones.Count > 2 ? opciones[2].Text : "";
+                        pregunta.OpcionD = opciones.Count > 3 ? opciones[3].Text : "";
+                        
+                        _logger.LogInformation("Opciones asignadas - A: {A}, B: {B}, C: {C}, D: {D}", 
+                            pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD);
+                        
+                        // Encontrar qué opción es la correcta y asignar la letra correspondiente
+                        var correctIndex = -1;
+                        for (int i = 0; i < opciones.Count; i++)
+                        {
+                            if (opciones[i].IsCorrect)
+                            {
+                                correctIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        // Si no se encontró por IsCorrect, usar la primera opción por defecto
+                        if (correctIndex == -1)
+                        {
+                            _logger.LogWarning("No se encontró opción marcada como correcta, usando la primera");
+                            correctIndex = 0;
+                        }
+                        
+                        // Asignar la letra correspondiente (A, B, C, D)
+                        char[] letras = {'A', 'B', 'C', 'D'};
+                        pregunta.RespuestaCorrecta = letras[correctIndex].ToString();
+                        
+                        _logger.LogInformation("Respuesta correcta asignada: {RespuestaCorrecta} (opción {Index}: {Texto})", 
+                            pregunta.RespuestaCorrecta, correctIndex + 1, opciones[correctIndex].Text);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No hay opciones de respuesta, asignando valores vacíos");
+                        // Si no hay opciones, asignar valores vacíos para evitar NULL
+                        pregunta.OpcionA = "";
+                        pregunta.OpcionB = "";
+                        pregunta.OpcionC = "";
+                        pregunta.OpcionD = "";
+                    }
+
+                    quiz.Preguntas.Add(pregunta);
+                    _logger.LogDebug("Agregada pregunta {Orden}: {Texto} con opciones: A={OpcionA}, B={OpcionB}, C={OpcionC}, D={OpcionD}", 
+                        orden, generatedQuestion.QuestionText, pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD);
+                    orden++;
+                }
+
+                // Guardar en base de datos
+                _logger.LogInformation("Agregando quiz a la base de datos: {QuizTitulo}", quiz.Titulo);
+                await _unitOfWork.QuizRepository.AddAsync(quiz);
+                
+                _logger.LogInformation("Guardando cambios en la base de datos...");
+                await _unitOfWork.SaveChangesAsync();
+                
+                _logger.LogInformation("Quiz guardado exitosamente con ID: {QuizId}", quiz.Id);
+                return quiz;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving generated quiz directly");
+                return null;
+            }
+        }
+
+        // GET: Quiz/Edit/5
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
+
+                if (quiz == null)
+                {
+                    TempData["Error"] = "Quiz no encontrado.";
+                    return RedirectToAction("Index");
+                }
+
+                // Verificar que el usuario sea el creador del quiz
+                if (quiz.CreadorId != usuarioId)
+                {
+                    TempData["Error"] = "No tienes permisos para editar este quiz.";
+                    return RedirectToAction("Details", new { id = id });
+                }
+
+                var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+
+                var model = new QuizEditViewModel
+                {
+                    Id = quiz.Id,
+                    Titulo = quiz.Titulo,
+                    Descripcion = quiz.Descripcion,
+                    MateriaId = quiz.MateriaId,
+                    TiempoLimite = quiz.TiempoLimite,
+                    NivelDificultad = (NivelDificultad)quiz.NivelDificultad,
+                    EsPublico = quiz.EsPublico,
+                    MostrarRespuestasInmediato = quiz.MostrarRespuestasInmediato,
+                    PermitirReintento = quiz.PermitirReintento
+                };
+
+                ViewBag.Materias = materias.Select(m => new SelectListItem
+                {
+                    Value = m.Id.ToString(),
+                    Text = m.Nombre,
+                    Selected = m.Id == quiz.MateriaId
+                }).ToList();
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading quiz for edit. QuizId: {QuizId}", id);
+                TempData["Error"] = "Error al cargar el quiz para edición.";
+                return RedirectToAction("Index");
+            }
+        }
+
+        // POST: Quiz/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, QuizEditViewModel model)
+        {
+            try
+            {
+                if (id != model.Id)
+                {
+                    TempData["Error"] = "Datos inconsistentes.";
+                    return RedirectToAction("Index");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    var usuarioId = _userManager.GetUserId(User);
+                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+                    ViewBag.Materias = materias.Select(m => new SelectListItem
+                    {
+                        Value = m.Id.ToString(),
+                        Text = m.Nombre,
+                        Selected = m.Id == model.MateriaId
+                    }).ToList();
+                    return View(model);
+                }
+
+                var usuarioActual = _userManager.GetUserId(User);
+                var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
+
+                if (quiz == null)
+                {
+                    TempData["Error"] = "Quiz no encontrado.";
+                    return RedirectToAction("Index");
+                }
+
+                if (quiz.CreadorId != usuarioActual)
+                {
+                    TempData["Error"] = "No tienes permisos para editar este quiz.";
+                    return RedirectToAction("Details", new { id = id });
+                }
+
+                // Actualizar propiedades
+                quiz.Titulo = model.Titulo;
+                quiz.Descripcion = model.Descripcion;
+                quiz.MateriaId = model.MateriaId;
+                quiz.TiempoLimite = model.TiempoLimite;
+                quiz.NivelDificultad = (int)model.NivelDificultad;
+                quiz.EsPublico = model.EsPublico;
+                quiz.MostrarRespuestasInmediato = model.MostrarRespuestasInmediato;
+                quiz.PermitirReintento = model.PermitirReintento;
+                quiz.FechaModificacion = DateTime.UtcNow;
+
+                // El repositorio genérico actualizará automáticamente al hacer SaveChanges
+                await _unitOfWork.SaveChangesAsync();
+
+                TempData["Success"] = $"Quiz '{quiz.Titulo}' actualizado exitosamente.";
+                return RedirectToAction("Details", new { id = quiz.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating quiz. QuizId: {QuizId}", id);
+                TempData["Error"] = "Error al actualizar el quiz.";
+                return RedirectToAction("Details", new { id = id });
+            }
+        }
+
+        #endregion
 
         // Método auxiliar para generar opciones incorrectas
         private string GenerarOpcionIncorrecta()

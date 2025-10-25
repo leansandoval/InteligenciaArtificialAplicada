@@ -1,0 +1,209 @@
+@model QuizCraft.Web.ViewModels.QuizGenerationConfigViewModel
+@{
+    ViewData["Title"] = "Configurar Generación de Quiz con IA";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-magic text-primary"></i> Generación Automática de Quiz</h1>
+                <p class="text-muted">Crea quizzes automáticamente usando inteligencia artificial a partir de tu contenido</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> Configuración del Quiz</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="GenerateFromText" method="post" id="quiz-generation-form">
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <!-- Selección de Materia -->
+                        <div class="form-group mb-3">
+                            <label asp-for="MateriaId" class="form-label">
+                                <i class="fas fa-book"></i> Materia
+                            </label>
+                            <select asp-for="MateriaId" class="form-select" asp-items="ViewBag.Materias" required>
+                                <option value="">Seleccione una materia...</option>
+                            </select>
+                            <span asp-validation-for="MateriaId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Configuración de Generación -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="NumberOfQuestions" class="form-label">
+                                        <i class="fas fa-hashtag"></i> Número de Preguntas
+                                    </label>
+                                    <input asp-for="NumberOfQuestions" class="form-control" type="number" min="5" max="50" required />
+                                    <span asp-validation-for="NumberOfQuestions" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="DifficultyLevel" class="form-label">
+                                        <i class="fas fa-chart-line"></i> Nivel de Dificultad
+                                    </label>
+                                    <select asp-for="DifficultyLevel" class="form-select" required>
+                                        <option value="Facil">Fácil</option>
+                                        <option value="Intermedio" selected>Intermedio</option>
+                                        <option value="Dificil">Difícil</option>
+                                    </select>
+                                    <span asp-validation-for="DifficultyLevel" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opciones Avanzadas -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input asp-for="IncludeExplanations" class="form-check-input" type="checkbox" />
+                                    <label asp-for="IncludeExplanations" class="form-check-label">
+                                        Incluir explicaciones
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input asp-for="VariedComplexity" class="form-check-input" type="checkbox" />
+                                    <label asp-for="VariedComplexity" class="form-check-label">
+                                        Variar complejidad
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Materia/Tema Específico -->
+                        <div class="form-group mb-3">
+                            <label asp-for="Subject" class="form-label">
+                                <i class="fas fa-tag"></i> Tema Específico (Opcional)
+                            </label>
+                            <input asp-for="Subject" class="form-control" placeholder="Ej: Historia de Roma, Cálculo diferencial..." />
+                            <small class="form-text text-muted">Especifica un tema para enfocar las preguntas</small>
+                        </div>
+
+                        <!-- Contenido de Texto -->
+                        <div class="form-group mb-4">
+                            <label asp-for="TextContent" class="form-label">
+                                <i class="fas fa-file-text"></i> Contenido del Texto
+                                <span class="text-danger">*</span>
+                            </label>
+                            <textarea asp-for="TextContent" class="form-control" rows="10" 
+                                     placeholder="Pegue aquí el contenido del texto desde el cual desea generar el quiz..." 
+                                     required></textarea>
+                            <span asp-validation-for="TextContent" class="text-danger"></span>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Se recomienda al menos 200 caracteres para mejores resultados (mínimo 100)
+                            </small>
+                        </div>
+
+                        <!-- Instrucciones Personalizadas -->
+                        <div class="form-group mb-4">
+                            <label asp-for="CustomInstructions" class="form-label">
+                                <i class="fas fa-comment"></i> Instrucciones Adicionales (Opcional)
+                            </label>
+                            <textarea asp-for="CustomInstructions" class="form-control" rows="3" 
+                                     placeholder="Ej: Enfócate en conceptos clave, incluye fechas importantes, evita preguntas triviales..."></textarea>
+                            <small class="form-text text-muted">Proporciona instrucciones específicas para el AI</small>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="form-group text-end">
+                            <a asp-action="Index" class="btn btn-secondary me-2">
+                                <i class="fas fa-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" id="generate-btn">
+                                <i class="fas fa-magic"></i> Generar Quiz con IA
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Lateral de Ayuda -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Consejos para Mejores Resultados</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Texto claro:</strong> Use contenido bien estructurado y sin errores
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Longitud adecuada:</strong> Se recomienda 200+ caracteres (mínimo 100)
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Tema específico:</strong> Ayuda al AI a enfocar las preguntas
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <strong>Instrucciones claras:</strong> Sea específico en lo que desea
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Importante</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><small>
+                        <i class="fas fa-robot"></i> 
+                        Esta función utiliza IA para generar preguntas automáticamente.
+                    </small></p>
+                    <p class="mb-0"><small>
+                        <i class="fas fa-eye"></i> 
+                        Siempre revise las preguntas generadas antes de guardar el quiz.
+                    </small></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Contador de caracteres
+            $('#TextContent').on('input', function() {
+                const length = $(this).val().length;
+                const minLength = 200; // Cambiado de 500 a 200
+                const color = length >= minLength ? 'text-success' : (length >= 100 ? 'text-warning' : 'text-danger');
+                
+                if (!$('#char-counter').length) {
+                    $(this).after(`<small id="char-counter" class="${color}">Caracteres: ${length}</small>`);
+                } else {
+                    $('#char-counter').removeClass('text-success text-warning text-danger').addClass(color).text(`Caracteres: ${length}`);
+                }
+            });
+
+            // Validación antes de enviar
+            $('#quiz-generation-form').on('submit', function(e) {
+                const textLength = $('#TextContent').val().length;
+                if (textLength < 100) {
+                    e.preventDefault();
+                    alert('El contenido del texto debe tener al menos 100 caracteres.');
+                    return false;
+                }
+
+                // Mostrar indicador de carga
+                $('#generate-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generando...');
+            });
+        });
+    </script>
+}

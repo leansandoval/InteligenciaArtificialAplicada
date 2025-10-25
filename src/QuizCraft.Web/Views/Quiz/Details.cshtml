@@ -118,13 +118,17 @@
                                 <div class="accordion-item mb-2">
                                     <h2 class="accordion-header" id="heading@i">
                                         <button class="accordion-button collapsed" type="button" 
-                                                data-bs-toggle="collapse" data-bs-target="#collapse@i">
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#collapse@i"
+                                                aria-expanded="false" 
+                                                aria-controls="collapse@i">
                                             <strong>Pregunta @(i + 1):</strong>
                                             <span class="ms-2">@pregunta.TextoPregunta</span>
                                         </button>
                                     </h2>
                                     <div id="collapse@i" class="accordion-collapse collapse" 
-                                         data-bs-parent="#accordionPreguntas">
+                                         data-bs-parent="#accordionPreguntas"
+                                         aria-labelledby="heading@i">
                                         <div class="accordion-body">
                                             <div class="row">
                                                 @foreach (var opcion in pregunta.Opciones)
@@ -362,31 +366,66 @@
             if ($('.accordion-item').length > 0) {
                 const toggleAllBtn = `
                     <div class="mb-3 text-end">
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleAllQuestions()">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="toggleAllBtn">
                             <i class="fas fa-expand-arrows-alt me-1"></i>
                             <span id="toggleText">Expandir Todo</span>
                         </button>
                     </div>
                 `;
                 $('.accordion').before(toggleAllBtn);
+                
+                // Agregar evento click al botón
+                $('#toggleAllBtn').on('click', toggleAllQuestions);
             }
         });
 
         let allExpanded = false;
         function toggleAllQuestions() {
-            const collapses = document.querySelectorAll('#accordionPreguntas .accordion-collapse');
+            const accordion = document.getElementById('accordionPreguntas');
             const toggleText = document.getElementById('toggleText');
+            const toggleIcon = document.querySelector('#toggleAllBtn i');
             
-            collapses.forEach(collapse => {
+            if (!accordion) {
+                console.warn('No se encontró el accordion');
+                return;
+            }
+            
+            // Obtener todos los elementos collapse
+            const collapseElements = accordion.querySelectorAll('.accordion-collapse');
+            const buttonElements = accordion.querySelectorAll('.accordion-button');
+            
+            if (!collapseElements.length) {
+                console.warn('No se encontraron elementos collapse');
+                return;
+            }
+            
+            // Cambiar el estado de cada elemento
+            collapseElements.forEach((collapse, index) => {
+                const button = buttonElements[index];
+                
                 if (allExpanded) {
-                    bootstrap.Collapse.getOrCreateInstance(collapse).hide();
+                    // Colapsar: agregar clase 'collapsed' al botón y quitar 'show' del collapse
+                    if (button) button.classList.add('collapsed');
+                    if (button) button.setAttribute('aria-expanded', 'false');
+                    collapse.classList.remove('show');
                 } else {
-                    bootstrap.Collapse.getOrCreateInstance(collapse).show();
+                    // Expandir: quitar clase 'collapsed' del botón y agregar 'show' al collapse
+                    if (button) button.classList.remove('collapsed');
+                    if (button) button.setAttribute('aria-expanded', 'true');
+                    collapse.classList.add('show');
                 }
             });
             
             allExpanded = !allExpanded;
-            toggleText.textContent = allExpanded ? 'Colapsar Todo' : 'Expandir Todo';
+            
+            // Actualizar el texto y el icono del botón
+            if (toggleText) {
+                toggleText.textContent = allExpanded ? 'Colapsar Todo' : 'Expandir Todo';
+            }
+            
+            if (toggleIcon) {
+                toggleIcon.className = allExpanded ? 'fas fa-compress-arrows-alt me-1' : 'fas fa-expand-arrows-alt me-1';
+            }
         }
     </script>
 }

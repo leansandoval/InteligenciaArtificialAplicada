@@ -1,0 +1,175 @@
+@model QuizCraft.Application.ViewModels.QuizEditViewModel
+@{
+    ViewData["Title"] = "Editar Quiz";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1><i class="fas fa-edit text-primary"></i> Editar Quiz</h1>
+                <p class="text-muted">Modifica las configuraciones y datos básicos del quiz</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog"></i> Configuración del Quiz</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <input asp-for="Id" type="hidden" />
+                        
+                        <!-- Título -->
+                        <div class="form-group mb-3">
+                            <label asp-for="Titulo" class="form-label">
+                                <i class="fas fa-heading"></i> Título del Quiz
+                            </label>
+                            <input asp-for="Titulo" class="form-control" placeholder="Ingrese el título del quiz" required />
+                            <span asp-validation-for="Titulo" class="text-danger"></span>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="form-group mb-3">
+                            <label asp-for="Descripcion" class="form-label">
+                                <i class="fas fa-align-left"></i> Descripción
+                            </label>
+                            <textarea asp-for="Descripcion" class="form-control" rows="3" placeholder="Descripción opcional del quiz"></textarea>
+                            <span asp-validation-for="Descripcion" class="text-danger"></span>
+                        </div>
+
+                        <!-- Materia -->
+                        <div class="form-group mb-3">
+                            <label asp-for="MateriaId" class="form-label">
+                                <i class="fas fa-book"></i> Materia
+                            </label>
+                            <select asp-for="MateriaId" class="form-select" asp-items="ViewBag.Materias" required>
+                                <option value="">Seleccione una materia...</option>
+                            </select>
+                            <span asp-validation-for="MateriaId" class="text-danger"></span>
+                        </div>
+
+                        <!-- Configuraciones -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="TiempoLimite" class="form-label">
+                                        <i class="fas fa-clock"></i> Tiempo Límite (minutos)
+                                    </label>
+                                    <input asp-for="TiempoLimite" class="form-control" type="number" min="0" max="300" />
+                                    <small class="form-text text-muted">0 = Sin límite de tiempo</small>
+                                    <span asp-validation-for="TiempoLimite" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="NivelDificultad" class="form-label">
+                                        <i class="fas fa-chart-line"></i> Nivel de Dificultad
+                                    </label>
+                                    <select asp-for="NivelDificultad" class="form-select">
+                                        <option value="@QuizCraft.Core.Enums.NivelDificultad.Facil">Fácil</option>
+                                        <option value="@QuizCraft.Core.Enums.NivelDificultad.Intermedio">Intermedio</option>
+                                        <option value="@QuizCraft.Core.Enums.NivelDificultad.Dificil">Difícil</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opciones Avanzadas -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-sliders-h"></i> Opciones Avanzadas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input asp-for="EsPublico" class="form-check-input" type="checkbox" />
+                                            <label asp-for="EsPublico" class="form-check-label">
+                                                <i class="fas fa-globe"></i> Quiz público
+                                            </label>
+                                            <small class="d-block text-muted">Permite que otros usuarios vean este quiz</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input asp-for="MostrarRespuestasInmediato" class="form-check-input" type="checkbox" />
+                                            <label asp-for="MostrarRespuestasInmediato" class="form-check-label">
+                                                <i class="fas fa-eye"></i> Mostrar respuestas inmediatamente
+                                            </label>
+                                            <small class="d-block text-muted">Muestra las respuestas correctas después de cada pregunta</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-2">
+                                            <input asp-for="PermitirReintento" class="form-check-input" type="checkbox" />
+                                            <label asp-for="PermitirReintento" class="form-check-label">
+                                                <i class="fas fa-redo"></i> Permitir reintento
+                                            </label>
+                                            <small class="d-block text-muted">Los usuarios pueden realizar el quiz varias veces</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="form-group d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>
+                                Guardar Cambios
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información Adicional -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Información</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID del Quiz:</strong> @Model.Id</p>
+                    <hr />
+                    <h6><i class="fas fa-lightbulb text-warning"></i> Consejos de Edición</h6>
+                    <ul class="small">
+                        <li>El título debe ser descriptivo y claro</li>
+                        <li>Una buena descripción ayuda a los usuarios a entender el contenido</li>
+                        <li>El tiempo límite de 0 significa sin límite</li>
+                        <li>Los quizzes públicos aparecen en la lista general</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Importante</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-0">
+                        Esta acción solo modifica la configuración del quiz. 
+                        Para editar las preguntas, use la función de edición de preguntas.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

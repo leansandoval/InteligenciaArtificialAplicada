@@ -115,6 +115,7 @@ namespace QuizCraft.Application.Interfaces
     public interface IAIService
     {
         Task<QuizCraft.Application.Models.AIResponse> GenerateFlashcardsFromTextAsync(string content, AIGenerationSettings settings);
+        Task<QuizCraft.Application.Models.AIResponse> GenerateQuizFromTextAsync(string content, QuizCraft.Application.Models.QuizGenerationSettings settings);
         Task<bool> ValidateApiKeyAsync();
         Task<QuizCraft.Application.Models.TokenUsageInfo> GetTokenUsageInfoAsync();
         Task<bool> IsServiceAvailableAsync();

@@ -1,0 +1,95 @@
+@model QuizCraft.Web.ViewModels.ReviewGeneratedQuizViewModel
+@{
+    ViewData["Title"] = "Quiz Generado con Éxito";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header text-center">
+                <h1><i class="fas fa-check-circle text-success"></i> Quiz Generado Exitosamente</h1>
+                <p class="text-muted">Tu quiz ha sido generado usando inteligencia artificial</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white text-center">
+                    <h5 class="mb-0"><i class="fas fa-magic"></i> Generación Completada</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-primary">@(Model.Questions?.Count ?? 0)</h4>
+                                    <small>Preguntas Generadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-info">@(Model.GenerationResult?.TokensUsed ?? 0)</h4>
+                                    <small>Tokens Utilizados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h4 class="text-success">@(Model.GenerationResult?.ProcessingMethod ?? "IA")</h4>
+                                    <small>Método</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.GenerationResult != null && Model.GenerationResult.Success)
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <h4 class="alert-heading"><i class="fas fa-thumbs-up"></i> ¡Excelente!</h4>
+                            <p>El quiz ha sido generado exitosamente con @(Model.Questions?.Count ?? 0) preguntas.</p>
+                            <hr>
+                            <p class="mb-0">
+                                <strong>Próximos pasos:</strong> El quiz se ha guardado automáticamente y ya está disponible en tu lista de quizzes.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Atención</h4>
+                            <p>@(Model.GenerationResult?.ErrorMessage ?? "Hubo un problema durante la generación.")</p>
+                        </div>
+                    }
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a asp-action="Index" class="btn btn-primary btn-lg me-md-2">
+                            <i class="fas fa-list"></i> Ver Mis Quizzes
+                        </a>
+                        <a asp-action="ConfigureAI" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-plus"></i> Generar Otro Quiz
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-header h1 {
+        margin-bottom: 10px;
+    }
+    
+    .card {
+        transition: transform 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>

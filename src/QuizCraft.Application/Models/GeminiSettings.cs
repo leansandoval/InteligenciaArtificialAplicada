@@ -18,7 +18,7 @@ namespace QuizCraft.Application.Models
         /// <summary>
         /// Máximo número de tokens en la respuesta
         /// </summary>
-        public int MaxTokens { get; set; } = 1500;
+        public int MaxTokens { get; set; } = 2000;
 
         /// <summary>
         /// Temperatura para la generación (0.0 - 2.0)

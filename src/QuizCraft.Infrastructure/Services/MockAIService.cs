@@ -37,6 +37,27 @@ namespace QuizCraft.Infrastructure.Services
             };
         }
 
+        public async Task<AIResponse> GenerateQuizFromTextAsync(string content, QuizGenerationSettings settings)
+        {
+            await Task.Delay(100); // Simular latencia
+            
+            _logger.LogWarning("Mock AI Service: Generación de quizzes deshabilitada - Configure Gemini para habilitar IA");
+            
+            return new AIResponse
+            {
+                Success = false,
+                Content = "Servicio de IA no configurado. Configure Gemini en appsettings.json para habilitar la generación automática de quizzes.",
+                TokenUsage = new TokenUsageInfo
+                {
+                    PromptTokens = 0,
+                    CompletionTokens = 0,
+                    TotalTokens = 0,
+                    EstimatedCost = 0,
+                    RequestTime = DateTime.UtcNow
+                }
+            };
+        }
+
         public async Task<AIResponse> GenerateTextAsync(string prompt, AISettings? customSettings = null)
         {
             await Task.Delay(100); // Simular latencia

@@ -228,4 +228,33 @@ namespace QuizCraft.Application.ViewModels
         public int PuntajeObtenido { get; set; }
         public int PuntajeMaximo { get; set; }
     }
+
+    public class QuizEditViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "El título es obligatorio")]
+        [StringLength(200, ErrorMessage = "El título no puede exceder los 200 caracteres")]
+        public string Titulo { get; set; } = string.Empty;
+
+        [StringLength(1000, ErrorMessage = "La descripción no puede exceder los 1000 caracteres")]
+        public string? Descripcion { get; set; }
+
+        [Required(ErrorMessage = "Debe seleccionar una materia")]
+        public int MateriaId { get; set; }
+
+        [Range(0, 300, ErrorMessage = "El tiempo límite debe estar entre 0 y 300 minutos")]
+        public int TiempoLimite { get; set; } = 30;
+
+        public NivelDificultad NivelDificultad { get; set; } = NivelDificultad.Intermedio;
+
+        public bool EsPublico { get; set; }
+
+        public bool MostrarRespuestasInmediato { get; set; } = true;
+
+        public bool PermitirReintento { get; set; } = true;
+
+        // Nota: Esta propiedad se manejará en el controlador para evitar dependencias
+        public object? Materias { get; set; } = new();
+    }
 }
