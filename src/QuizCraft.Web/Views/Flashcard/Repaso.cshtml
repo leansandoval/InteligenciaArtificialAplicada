@@ -378,9 +378,65 @@
             return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         }
 
+        function mostrarResultadosFinales(estadisticas) {
+            // Preparar los datos para enviar a las estadísticas
+            const ahora = new Date();
+            const tiempoTranscurrido = ahora - tiempoInicio;
+            
+            const estadisticasCompletas = {
+                MateriaNombre: repasoData.flashcardActual.materiaNombre || 'Mixta',
+                FlashcardsRevisadas: repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas,
+                FlashcardsCorrectas: repasoData.flashcardsCorrectas,
+                FlashcardsIncorrectas: repasoData.flashcardsIncorrectas,
+                PorcentajeAcierto: estadisticas.porcentajeAcierto || 0,
+                TiempoTotal: timeSpanFromMilliseconds(tiempoTranscurrido),
+                TiempoPromedioRespuesta: (tiempoTranscurrido / (repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas)) / 1000,
+                FlashcardsParaManana: 0,
+                FlashcardsParaSiguienteSemana: 0
+            };
+            
+            // Enviar a las estadísticas utilizando POST
+            const form = $('<form>', {
+                'method': 'POST',
+                'action': '@Url.Action("FinalizarRepaso")'
+            });
+            
+            // Agregar los campos como inputs ocultos
+            Object.keys(estadisticasCompletas).forEach(key => {
+                form.append($('<input>', {
+                    'type': 'hidden',
+                    'name': key,
+                    'value': estadisticasCompletas[key]
+                }));
+            });
+            
+            // Agregar token de verificación
+            form.append($('<input>', {
+                'type': 'hidden',
+                'name': '__RequestVerificationToken',
+                'value': $('input[name="__RequestVerificationToken"]').val()
+            }));
+            
+            $('body').append(form);
+            form.submit();
+        }
+
         function finalizarRepaso() {
             clearInterval(intervaloTiempo);
-            window.location.href = '@Url.Action("Index")';
+            
+            // Calcular estadísticas finales
+            const ahora = new Date();
+            const tiempoTranscurrido = ahora - tiempoInicio;
+            const totalRevisadas = repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas;
+            const porcentajeAcierto = totalRevisadas > 0 ? (repasoData.flashcardsCorrectas / totalRevisadas * 100) : 0;
+            
+            const estadisticas = {
+                totalRevisadas: totalRevisadas,
+                porcentajeAcierto: porcentajeAcierto,
+                tiempoTotal: timeSpanFromMilliseconds(tiempoTranscurrido)
+            };
+            
+            mostrarResultadosFinales(estadisticas);
         }
     </script>
 }

@@ -523,7 +523,7 @@ public class FlashcardController : Controller
     /// Muestra la página de configuración para iniciar una sesión de repaso
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> ConfigurarRepaso()
+    public async Task<IActionResult> ConfigurarRepaso(int? materiaId = null, int? flashcardId = null)
     {
         var usuario = await _userManager.GetUserAsync(User);
         if (usuario == null)
@@ -561,6 +561,31 @@ public class FlashcardController : Controller
                 TotalFlashcardsDisponibles = totalFlashcards,
                 MaximoFlashcards = Math.Min(20, totalFlashcards)
             };
+
+            // Si viene de un repaso programado, pre-configurar con los parámetros recibidos
+            if (materiaId.HasValue)
+            {
+                viewModel.MateriaId = materiaId.Value;
+                if (flashcardId.HasValue)
+                {
+                    // Si viene con una flashcard específica, configurar para una sola flashcard
+                    viewModel.MaximoFlashcards = 1;
+                }
+                else
+                {
+                    // Si viene con una materia, configurar para todas las flashcards de esa materia
+                    var cantidadMateria = flashcardsPorMateria.GetValueOrDefault(materiaId.Value, 0);
+                    viewModel.MaximoFlashcards = Math.Min(cantidadMateria, 20);
+                }
+                
+                // Si hay TempData de repaso, indicar que viene de repaso programado
+                if (TempData.ContainsKey("RepasoId"))
+                {
+                    ViewBag.EsRepasoProgamado = true;
+                    TempData.Keep("RepasoId");
+                    TempData.Keep("RepasoTitulo");
+                }
+            }
 
             return View(viewModel);
         }
@@ -654,6 +679,13 @@ public class FlashcardController : Controller
 
             // Guardar configuración en TempData para mantener estado
             TempData["RepasoConfig"] = System.Text.Json.JsonSerializer.Serialize(configuracion);
+            
+            // Mantener información del repaso programado si existe
+            if (TempData.ContainsKey("RepasoId"))
+            {
+                TempData.Keep("RepasoId");
+                TempData.Keep("RepasoTitulo");
+            }
 
             return View("Repaso", repasoViewModel);
         }
@@ -662,6 +694,137 @@ public class FlashcardController : Controller
             _logger.LogError(ex, "Error al iniciar repaso para usuario {UserId}", usuario.Id);
             TempData["Error"] = "Error al iniciar el repaso. Inténtalo de nuevo.";
             return RedirectToAction(nameof(ConfigurarRepaso));
+        }
+    }
+
+    /// <summary>
+    /// Inicia un repaso directo para repasos programados (sin configuración)
+    /// </summary>
+    public async Task<IActionResult> IniciarRepasoDirecto(int? materiaId = null, int? flashcardId = null, int? repasoId = null)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        try
+        {
+            // Guardar información del repaso programado
+            if (repasoId.HasValue)
+            {
+                TempData["RepasoId"] = repasoId.Value;
+                // Obtener título del repaso si es necesario
+                var repasoInfo = await _context.RepasosProgramados.FindAsync(repasoId.Value);
+                if (repasoInfo != null)
+                {
+                    TempData["RepasoTitulo"] = repasoInfo.Titulo;
+                }
+            }
+
+            IEnumerable<Flashcard> flashcardsParaRepaso;
+
+            if (flashcardId.HasValue)
+            {
+                // Repaso de una flashcard específica
+                var flashcard = await _unitOfWork.FlashcardRepository.GetByIdWithMateriaAsync(flashcardId.Value);
+                if (flashcard == null || flashcard.Materia.UsuarioId != usuario.Id)
+                {
+                    TempData["Error"] = "Flashcard no encontrada.";
+                    return RedirectToAction("Index", "Repaso");
+                }
+                flashcardsParaRepaso = new[] { flashcard };
+            }
+            else if (materiaId.HasValue)
+            {
+                // Para repasos programados, obtener todas las flashcards de la materia del usuario
+                var todasFlashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materiaId.Value);
+                // Filtrar por usuario para seguridad
+                todasFlashcards = todasFlashcards.Where(f => f.Materia.UsuarioId == usuario.Id);
+                
+                if (!todasFlashcards.Any())
+                {
+                    TempData["Info"] = "No hay flashcards en esta materia para repasar.";
+                    return RedirectToAction("Index", "Repaso");
+                }
+                
+                // Usar algoritmo de repaso para priorizar (máximo 20 flashcards) pero incluir todas
+                flashcardsParaRepaso = _algoritmoRepasoService.ObtenerFlashcardsParaRepaso(
+                    todasFlashcards, 20);
+                
+                // Si el algoritmo no devuelve nada (por filtro de fechas), tomar las primeras 20
+                if (!flashcardsParaRepaso.Any())
+                {
+                    flashcardsParaRepaso = todasFlashcards.Take(20);
+                }
+            }
+            else
+            {
+                TempData["Error"] = "No se especificó contenido para el repaso.";
+                return RedirectToAction("Index", "Repaso");
+            }
+
+            var flashcardsLista = flashcardsParaRepaso.ToList();
+
+            if (!flashcardsLista.Any())
+            {
+                TempData["Info"] = "No hay flashcards disponibles para repaso en este momento.";
+                return RedirectToAction("Index", "Repaso");
+            }
+
+            // Crear sesión de repaso
+            var materia = materiaId.HasValue 
+                ? await _unitOfWork.MateriaRepository.GetByIdAsync(materiaId.Value)
+                : flashcardsLista.First().Materia;
+
+            var flashcardActual = flashcardsLista.First();
+
+            var repasoViewModel = new RepasoFlashcardViewModel
+            {
+                FlashcardActual = new FlashcardViewModel
+                {
+                    Id = flashcardActual.Id,
+                    Pregunta = flashcardActual.Pregunta,
+                    Respuesta = flashcardActual.Respuesta,
+                    Pista = flashcardActual.Pista, // Incluir pistas por defecto
+                    DificultadTexto = flashcardActual.Dificultad.ToString(),
+                    MateriaNombre = flashcardActual.Materia.Nombre,
+                    MateriaColor = flashcardActual.Materia.Color ?? "#007bff",
+                    MateriaIcono = flashcardActual.Materia.Icono ?? "fas fa-book",
+                    MateriaId = flashcardActual.MateriaId,
+                    Dificultad = flashcardActual.Dificultad
+                },
+                IndiceActual = 0,
+                TotalFlashcards = flashcardsLista.Count,
+                MateriaId = materia?.Id ?? 0,
+                MateriaNombre = materia?.Nombre ?? "Todas las materias",
+                MateriaColor = materia?.Color ?? "#007bff",
+                MateriaIcono = materia?.Icono ?? "fas fa-book",
+                FlashcardsCorrectas = 0,
+                FlashcardsIncorrectas = 0,
+                FlashcardIds = flashcardsLista.Select(f => f.Id).ToList(),
+                InicioSesion = DateTime.UtcNow
+            };
+
+            // Configuración por defecto para repaso programado
+            var configuracionDefecto = new ConfigurarRepasoViewModel
+            {
+                MateriaId = materiaId,
+                MaximoFlashcards = flashcardsLista.Count,
+                IncluirPistas = true,
+                MezclarOrden = false
+            };
+
+            // Guardar configuración en TempData
+            TempData["RepasoConfig"] = System.Text.Json.JsonSerializer.Serialize(configuracionDefecto);
+
+            return View("Repaso", repasoViewModel);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al iniciar repaso directo para usuario {UserId}", usuario.Id);
+            TempData["Error"] = "Error al iniciar el repaso. Inténtalo de nuevo.";
+            return RedirectToAction("Index", "Repaso");
         }
     }
 
@@ -738,6 +901,13 @@ public class FlashcardController : Controller
             
             if (siguienteIndice >= repasoActual.FlashcardIds.Count)
             {
+                // Mantener información del repaso programado antes de terminar la sesión
+                if (TempData.ContainsKey("RepasoId"))
+                {
+                    TempData.Keep("RepasoId");
+                    TempData.Keep("RepasoTitulo");
+                }
+                
                 // Sesión terminada
                 return Json(new { 
                     success = true, 
@@ -770,6 +940,13 @@ public class FlashcardController : Controller
                     incluirPistas = config?.IncluirPistas ?? true;
                     TempData.Keep("RepasoConfig"); // Mantener para próxima llamada
                 }
+            }
+            
+            // Mantener información del repaso programado si existe
+            if (TempData.ContainsKey("RepasoId"))
+            {
+                TempData.Keep("RepasoId");
+                TempData.Keep("RepasoTitulo");
             }
 
             var flashcardViewModel = new FlashcardViewModel
@@ -834,6 +1011,12 @@ public class FlashcardController : Controller
             await _unitOfWork.SaveChangesAsync();
 
             TempData["Success"] = $"¡Sesión de repaso completada! Revisaste {estadisticas.FlashcardsRevisadas} flashcards con {estadisticas.PorcentajeAcierto:F1}% de acierto.";
+            
+            // Mantener el RepasoId en TempData si viene de un repaso programado
+            if (TempData.ContainsKey("RepasoId"))
+            {
+                TempData.Keep("RepasoId");
+            }
             
             return View("EstadisticasRepaso", estadisticas);
         }

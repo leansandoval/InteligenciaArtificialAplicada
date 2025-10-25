@@ -1,0 +1,252 @@
+@model QuizCraft.Application.ViewModels.CompletarRepasoViewModel
+@{
+    ViewData["Title"] = "Completar Repaso";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4><i class="fas fa-check-circle"></i> Completar Repaso</h4>
+                </div>
+                
+                <div class="card-body">
+                    @* Mostrar resultados si viene de una actividad *@
+                    @if (ViewBag.MostrarResultados == true && ViewBag.RegresoDeActividad == true)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <h5><i class="fas fa-trophy"></i> ¡Actividad Completada!</h5>
+                            <p class="mb-2">Has terminado de repasar el contenido. Aquí están tus resultados:</p>
+                            
+                            @if (ViewBag.PuntajeObtenido != null)
+                            {
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-star text-warning me-2"></i>
+                                    <strong>Puntaje obtenido: @ViewBag.PuntajeObtenido%</strong>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(ViewBag.ResultadoTexto))
+                            {
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-comment text-info me-2"></i>
+                                    <span>@ViewBag.ResultadoTexto</span>
+                                </div>
+                            }
+                            
+                            <hr class="my-3">
+                            <p class="mb-0 text-muted">Ahora puedes completar oficialmente este repaso programado.</p>
+                        </div>
+                    }
+
+                    <!-- Información del repaso -->
+                    <div class="card mb-4 bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">@Model.Titulo</h5>
+                            
+                            @if (!string.IsNullOrEmpty(Model.Descripcion))
+                            {
+                                <p class="card-text">@Model.Descripcion</p>
+                            }
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> 
+                                        Programado para: @Model.FechaProgramada.ToString("dd/MM/yyyy HH:mm")
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">
+                                        <i class="fas fa-tag"></i> 
+                                        Tipo: @switch (Model.TipoRepaso)
+                                        {
+                                            case QuizCraft.Core.Enums.TipoRepaso.Manual:
+                                                <text>Manual</text>
+                                                break;
+                                            case QuizCraft.Core.Enums.TipoRepaso.Automatico:
+                                                <text>Automático</text>
+                                                break;
+                                            case QuizCraft.Core.Enums.TipoRepaso.Sugerido:
+                                                <text>Sugerido</text>
+                                                break;
+                                        }
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(Model.MateriaNombre))
+                            {
+                                <div class="mt-2">
+                                    <span class="badge bg-secondary">@Model.MateriaNombre</span>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Model.QuizTitulo))
+                            {
+                                <div class="mt-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-question-circle"></i> Quiz: @Model.QuizTitulo
+                                    </small>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(Model.FlashcardPregunta))
+                            {
+                                <div class="mt-2">
+                                    <small class="text-primary">
+                                        <i class="fas fa-clone"></i> Flashcard: @Model.FlashcardPregunta
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Formulario de completar -->
+                    <form asp-action="Completar" method="post">
+                        <input asp-for="Id" type="hidden" />
+                        <input asp-for="Titulo" type="hidden" />
+                        <input asp-for="Descripcion" type="hidden" />
+                        <input asp-for="FechaProgramada" type="hidden" />
+                        <input asp-for="TipoRepaso" type="hidden" />
+                        <input asp-for="MateriaNombre" type="hidden" />
+                        <input asp-for="QuizTitulo" type="hidden" />
+                        <input asp-for="FlashcardPregunta" type="hidden" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                        
+                        <!-- Puntaje obtenido -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Puntaje" class="form-label"></label>
+                                <div class="input-group">
+                                    <input asp-for="Puntaje" type="number" class="form-control" 
+                                           min="0" max="100" step="0.1" placeholder="0.0" />
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <span asp-validation-for="Puntaje" class="text-danger"></span>
+                                <small class="form-text text-muted">Opcional: Ingresa tu puntaje del 0 al 100%</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                @if (Model.ProgramarProximo)
+                                {
+                                    <div class="form-check mt-4">
+                                        <input asp-for="ProgramarProximo" class="form-check-input" />
+                                        <label asp-for="ProgramarProximo" class="form-check-label">
+                                            <small>Se programará automáticamente el próximo repaso</small>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Notas del repaso -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label asp-for="NotasRepaso" class="form-label"></label>
+                                <textarea asp-for="NotasRepaso" class="form-control" rows="4" 
+                                         placeholder="¿Cómo fue el repaso? ¿Qué aprendiste? ¿Qué necesitas mejorar?"></textarea>
+                                <span asp-validation-for="NotasRepaso" class="text-danger"></span>
+                                <small class="form-text text-muted">Opcional: Reflexiona sobre tu sesión de repaso</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de calificación rápida -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6><i class="fas fa-star"></i> Calificación Rápida</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">¿Cómo calificarías tu repaso?</p>
+                                <div class="btn-group" role="group" aria-label="Calificación rápida">
+                                    <button type="button" class="btn btn-outline-danger" onclick="setPuntaje(30)">
+                                        😞 Difícil (30%)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="setPuntaje(60)">
+                                        😐 Regular (60%)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="setPuntaje(85)">
+                                        😊 Bien (85%)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="setPuntaje(100)">
+                                        🎯 Excelente (100%)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="fas fa-check-circle"></i> Marcar como Completado
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        function setPuntaje(valor) {
+            $('#Puntaje').val(valor);
+            
+            // Actualizar aspecto visual de los botones
+            $('.btn-group .btn').removeClass('active');
+            event.target.classList.add('active');
+            
+            // Agregar nota automática basada en el puntaje
+            var notasActuales = $('#NotasRepaso').val();
+            var nuevaNota = '';
+            
+            switch(valor) {
+                case 30:
+                    nuevaNota = 'Repaso desafiante, necesito más práctica en este tema.';
+                    break;
+                case 60:
+                    nuevaNota = 'Repaso regular, algunos conceptos necesitan refuerzo.';
+                    break;
+                case 85:
+                    nuevaNota = 'Buen repaso, la mayoría de conceptos están claros.';
+                    break;
+                case 100:
+                    nuevaNota = 'Excelente repaso, domino completamente el tema.';
+                    break;
+            }
+            
+            if (notasActuales.trim() === '') {
+                $('#NotasRepaso').val(nuevaNota);
+            }
+        }
+        
+        // Validación del formulario
+        $('form').submit(function(e) {
+            var puntaje = $('#Puntaje').val();
+            
+            if (puntaje && (puntaje < 0 || puntaje > 100)) {
+                e.preventDefault();
+                alert('El puntaje debe estar entre 0 y 100.');
+                return false;
+            }
+            
+            // Confirmar completar repaso
+            if (!confirm('¿Estás seguro de que quieres marcar este repaso como completado?')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+}

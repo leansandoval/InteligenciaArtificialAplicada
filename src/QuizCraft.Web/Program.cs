@@ -70,6 +70,9 @@ builder.Services.AddScoped<QuizCraft.Application.Interfaces.IDocumentTextExtract
 // FUNC_ConfigurarAlgoritmoRepaso: Servicios para algoritmo de repetición espaciada
 builder.Services.AddScoped<IAlgoritmoRepasoService, QuizCraft.Infrastructure.Services.AlgoritmoRepasoService>();
 
+// FUNC_ConfigurarRepasosProgramados: Servicio para gestión de repasos programados
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IRepasoProgramadoService, QuizCraft.Infrastructure.Services.RepasoProgramadoService>();
+
 // FUNC_ConfigurarGemini: Configuración de servicios de Google Gemini para generación con IA
 builder.Services.Configure<QuizCraft.Application.Models.GeminiSettings>(builder.Configuration.GetSection("Gemini"));
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIConfigurationService, QuizCraft.Infrastructure.Services.GeminiConfigurationService>();

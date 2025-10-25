@@ -108,30 +108,4 @@ namespace QuizCraft.Application.Interfaces
         Code,
         Quote
     }
-
-    /// <summary>
-    /// Servicio principal para interactuar con servicios de IA (Gemini)
-    /// </summary>
-    public interface IAIService
-    {
-        Task<QuizCraft.Application.Models.AIResponse> GenerateFlashcardsFromTextAsync(string content, AIGenerationSettings settings);
-        Task<QuizCraft.Application.Models.AIResponse> GenerateQuizFromTextAsync(string content, QuizCraft.Application.Models.QuizGenerationSettings settings);
-        Task<bool> ValidateApiKeyAsync();
-        Task<QuizCraft.Application.Models.TokenUsageInfo> GetTokenUsageInfoAsync();
-        Task<bool> IsServiceAvailableAsync();
-        Task<int> EstimateTokenCostAsync(string content);
-        Task<QuizCraft.Application.Models.TokenUsageInfo> EstimateTokenUsageAsync(string content);
-        Task<QuizCraft.Application.Models.AIResponse> GenerateTextAsync(string prompt, QuizCraft.Application.Models.AISettings? customSettings = null);
-    }
-
-    /// <summary>
-    /// Servicio de configuración para servicios de IA
-    /// </summary>
-    public interface IAIConfigurationService
-    {
-        Task<QuizCraft.Application.Models.AISettings> GetSettingsAsync();
-        Task<bool> IsConfiguredAsync();
-        Task<string> GetApiKeyAsync();
-        Task<bool> ValidateConfigurationAsync();
-    }
 }

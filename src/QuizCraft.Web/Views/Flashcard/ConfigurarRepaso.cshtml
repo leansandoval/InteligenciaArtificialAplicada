@@ -46,96 +46,84 @@
                                             @foreach (var materia in Model.MateriasDisponibles)
                                             {
                                                 <option value="@materia.Id" data-cantidad="@materia.CantidadFlashcards">
-                                                    <i class="@materia.Icono" style="color: @materia.Color"></i>
                                                     @materia.Nombre (@materia.CantidadFlashcards flashcards)
                                                 </option>
                                             }
                                         </select>
-                                        <span asp-validation-for="MateriaId" class="text-danger"></span>
                                     </div>
-
+                                    
                                     <div class="mb-3">
                                         <label asp-for="MaximoFlashcards" class="form-label">
-                                            Número máximo de flashcards
+                                            Número de flashcards 
                                             <span class="text-muted">(máximo disponible: <span id="maxDisponible">@Model.TotalFlashcardsDisponibles</span>)</span>
                                         </label>
-                                        <input asp-for="MaximoFlashcards" class="form-control" type="number" min="1" max="@Model.TotalFlashcardsDisponibles" />
+                                        <input asp-for="MaximoFlashcards" type="number" class="form-control" 
+                                               min="1" max="@Model.TotalFlashcardsDisponibles" 
+                                               value="@(Math.Min(20, Model.TotalFlashcardsDisponibles))" />
+                                        <div class="form-text">
+                                            Se seleccionarán las flashcards que más necesites repasar
+                                        </div>
                                         <span asp-validation-for="MaximoFlashcards" class="text-danger"></span>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="DificultadFiltro" class="form-label">Filtrar por dificultad (opcional)</label>
-                                        <select asp-for="DificultadFiltro" class="form-select">
-                                            <option value="">Todas las dificultades</option>
-                                            <option value="2">Fácil</option>
-                                            <option value="3">Intermedio</option>
-                                            <option value="4">Difícil</option>
-                                        </select>
-                                        <span asp-validation-for="DificultadFiltro" class="text-danger"></span>
+                                        <label asp-for="MezclarOrden" class="form-label">Configuración adicional</label>
+                                        <div class="form-check">
+                                            <input asp-for="MezclarOrden" type="checkbox" class="form-check-input" id="mezclarOrden" />
+                                            <label class="form-check-label" for="mezclarOrden">
+                                                <i class="fas fa-shuffle me-1"></i>Mezclar orden de las flashcards
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Columna derecha: Opciones avanzadas -->
+                                <!-- Columna derecha: Información -->
                                 <div class="col-md-6">
-                                    <h5 class="text-primary mb-3">
-                                        <i class="fas fa-sliders-h me-2"></i>Opciones Avanzadas
+                                    <h5 class="text-info mb-3">
+                                        <i class="fas fa-info-circle me-2"></i>Información del Repaso
                                     </h5>
                                     
-                                    <div class="form-check mb-3">
-                                        <input asp-for="SoloVencidas" class="form-check-input" type="checkbox" />
-                                        <label asp-for="SoloVencidas" class="form-check-label">
-                                            Solo flashcards vencidas
-                                            <small class="text-muted d-block">Incluir solo flashcards que necesitan repaso urgente</small>
-                                        </label>
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-primary">
+                                                <i class="fas fa-lightbulb me-2"></i>¿Cómo funciona?
+                                            </h6>
+                                            <ul class="mb-0">
+                                                <li>Se priorizan las flashcards que más necesitas repasar</li>
+                                                <li>Cada respuesta ajusta la frecuencia de repaso</li>
+                                                <li>Responder "Fácil" espaciará más el próximo repaso</li>
+                                                <li>Responder "Difícil" hará que aparezca antes</li>
+                                            </ul>
+                                        </div>
                                     </div>
 
-                                    <div class="form-check mb-3">
-                                        <input asp-for="MezclarOrden" class="form-check-input" type="checkbox" />
-                                        <label asp-for="MezclarOrden" class="form-check-label">
-                                            Mezclar orden
-                                            <small class="text-muted d-block">Mostrar flashcards en orden aleatorio</small>
-                                        </label>
-                                    </div>
-
-                                    <div class="form-check mb-3">
-                                        <input asp-for="IncluirPistas" class="form-check-input" type="checkbox" />
-                                        <label asp-for="IncluirPistas" class="form-check-label">
-                                            Mostrar pistas
-                                            <small class="text-muted d-block">Incluir pistas cuando estén disponibles</small>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Información de flashcards por materia -->
-                            <div class="card bg-light mb-4">
-                                <div class="card-body">
-                                    <h6 class="card-title">
-                                        <i class="fas fa-chart-bar me-2"></i>Resumen de Flashcards Disponibles
-                                    </h6>
-                                    <div class="row">
-                                        @foreach (var materia in Model.MateriasDisponibles.Where(m => m.CantidadFlashcards > 0))
-                                        {
-                                            <div class="col-md-4 mb-2">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="@materia.Icono me-2" style="color: @materia.Color"></i>
-                                                    <span class="me-2">@materia.Nombre:</span>
-                                                    <span class="badge bg-primary">@materia.CantidadFlashcards</span>
+                                    <div class="card bg-primary bg-opacity-10 mt-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-primary">
+                                                <i class="fas fa-chart-line me-2"></i>Tu Progreso
+                                            </h6>
+                                            <div class="row text-center">
+                                                <div class="col-12">
+                                                    <div class="fw-bold text-success">@Model.TotalFlashcardsDisponibles</div>
+                                                    <small class="text-muted">Flashcards Disponibles para Repaso</small>
                                                 </div>
                                             </div>
-                                        }
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Botones de acción -->
-                            <div class="d-flex justify-content-between">
-                                <a asp-action="Index" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Cancelar
-                                </a>
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="fas fa-play me-2"></i>Iniciar Repaso
-                                </button>
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between">
+                                        <a asp-action="Index" class="btn btn-outline-secondary">
+                                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                                        </a>
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fas fa-play me-2"></i>Iniciar Repaso
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </form>
                     }
@@ -161,5 +149,29 @@
                 maxInput.value = cantidad;
             }
         });
+
+        @if (ViewBag.EsRepasoProgamado == true)
+        {
+            @:// Auto-envío para repaso programado
+            @:document.addEventListener('DOMContentLoaded', function() {
+            @:    const form = document.querySelector('form');
+            @:    const alert = document.createElement('div');
+            @:    alert.className = 'alert alert-info mb-3';
+            @:    alert.innerHTML = '<i class="fas fa-calendar-check me-2"></i>Iniciando repaso programado<br><small>Se enviará automáticamente en <span id="countdown">1</span> segundo.</small>';
+            @:    form.parentNode.insertBefore(alert, form);
+            @:    
+            @:    let timeLeft = 1;
+            @:    const countdownElement = document.getElementById('countdown');
+            @:    
+            @:    const countdownInterval = setInterval(function() {
+            @:        timeLeft--;
+            @:        countdownElement.textContent = timeLeft;
+            @:        if (timeLeft <= 0) {
+            @:            clearInterval(countdownInterval);
+            @:            form.submit();
+            @:        }
+            @:    }, 1000);
+            @:});
+        }
     </script>
 }

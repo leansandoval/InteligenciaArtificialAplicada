@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using QuizCraft.Application.Interfaces;
 
 namespace QuizCraft.Application.Models
 {
@@ -15,7 +16,7 @@ namespace QuizCraft.Application.Models
     public class FlashcardGenerationPrompt
     {
         public string Content { get; set; } = string.Empty;
-        public QuizCraft.Application.Interfaces.AIGenerationSettings Settings { get; set; } = new();
+        public AIGenerationSettings Settings { get; set; } = new();
         public string CustomInstructions { get; set; } = string.Empty;
     }
 

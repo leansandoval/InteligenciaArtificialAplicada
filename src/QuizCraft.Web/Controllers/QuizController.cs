@@ -877,6 +877,54 @@ namespace QuizCraft.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// Acción para cuando se completa un quiz desde un repaso programado
+        /// </summary>
+        public async Task<IActionResult> CompletarDesdeRepaso(int resultadoId)
+        {
+            try
+            {
+                var usuarioId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(usuarioId))
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+
+                // Obtener el resultado con sus relaciones
+                var context = (QuizCraft.Infrastructure.Data.ApplicationDbContext)_unitOfWork.GetType()
+                    .GetField("_context", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(_unitOfWork)!;
+
+                var resultado = await context.Set<ResultadoQuiz>()
+                    .Include(r => r.Quiz)
+                    .FirstOrDefaultAsync(r => r.Id == resultadoId && r.UsuarioId == usuarioId);
+
+                if (resultado == null)
+                {
+                    TempData["Error"] = "Resultado no encontrado.";
+                    return RedirectToAction("Index", "Repaso");
+                }
+
+                // Obtener información del repaso de TempData
+                var repasoId = TempData["RepasoId"] as int?;
+                var repasoTitulo = TempData["RepasoTitulo"] as string;
+
+                // Redirigir al completar repaso con los resultados
+                return RedirectToAction("CompletarConResultados", "Repaso", new 
+                { 
+                    repasoId = repasoId,
+                    puntaje = Math.Round(resultado.PorcentajeAcierto, 1),
+                    resultado = $"Quiz '{resultado.Quiz.Titulo}' completado - {resultado.RespuestasUsuario.Count(r => r.EsCorrecta)}/{resultado.Quiz.Preguntas.Count} respuestas correctas"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al completar quiz desde repaso {ResultadoId}", resultadoId);
+                TempData["Error"] = "Error al procesar la finalización del repaso.";
+                return RedirectToAction("Index", "Repaso");
+            }
+        }
+
         #region Generación de Quizzes con IA
 
         // GET: Quiz/ConfigureAI

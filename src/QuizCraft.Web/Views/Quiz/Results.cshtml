@@ -99,32 +99,59 @@
             <!-- Acciones Rápidas -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-md-3 mb-2">
-                            <a asp-action="Take" asp-route-id="@Model.QuizId" class="btn btn-primary w-100">
-                                <i class="fas fa-redo me-1"></i>
-                                Repetir Quiz
-                            </a>
+                    @* Verificar si viene de un repaso programado *@
+                    @if (TempData["RepasoId"] != null)
+                    {
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-calendar-check me-2"></i>
+                            <strong>¡Quiz completado como parte de tu repaso programado!</strong>
+                            <br><small>Ahora puedes finalizar oficialmente el repaso.</small>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <a asp-action="Index" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-list me-1"></i>
-                                Mis Quizzes
-                            </a>
+                        
+                        <div class="row text-center">
+                            <div class="col-md-6 mb-2">
+                                <a asp-controller="Repaso" asp-action="CompletarConResultados" asp-route-repasoId="@TempData.Peek("RepasoId")" asp-route-puntaje="@Model.PorcentajeAcierto" asp-route-resultado="Quiz '@Model.Titulo' completado - @Model.RespuestasCorrectas/@Model.TotalPreguntas respuestas correctas" class="btn btn-success w-100">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Completar Repaso
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <a asp-action="Take" asp-route-id="@Model.QuizId" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-redo me-1"></i>
+                                    Repetir Quiz
+                                </a>
+                            </div>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-info w-100">
-                                <i class="fas fa-cards-blank me-1"></i>
-                                Repasar Flashcards
-                            </a>
+                    }
+                    else
+                    {
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-2">
+                                <a asp-action="Take" asp-route-id="@Model.QuizId" class="btn btn-primary w-100">
+                                    <i class="fas fa-redo me-1"></i>
+                                    Repetir Quiz
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a asp-action="Index" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-list me-1"></i>
+                                    Mis Quizzes
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-cards-blank me-1"></i>
+                                    Repasar Flashcards
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button type="button" class="btn btn-outline-success w-100" onclick="compartirResultados()">
+                                    <i class="fas fa-share me-1"></i>
+                                    Compartir
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <button type="button" class="btn btn-outline-success w-100" onclick="compartirResultados()">
-                                <i class="fas fa-share me-1"></i>
-                                Compartir
-                            </button>
-                        </div>
-                    </div>
+                    }
                 </div>
             </div>
 

@@ -1,0 +1,191 @@
+@model List<QuizCraft.Application.ViewModels.RepasoProgramadoListViewModel>
+
+<div class="row">
+    @foreach (var repaso in Model)
+    {
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100 @(repaso.EstaVencido ? "border-danger" : repaso.EstaProximo ? "border-warning" : "")">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">
+                        @repaso.Titulo
+                        @if (repaso.TipoRepaso == QuizCraft.Core.Enums.TipoRepaso.Automatico)
+                        {
+                            <span class="badge bg-info ms-1">Auto</span>
+                        }
+                        else if (repaso.TipoRepaso == QuizCraft.Core.Enums.TipoRepaso.Sugerido)
+                        {
+                            <span class="badge bg-warning ms-1">Sugerido</span>
+                        }
+                    </h6>
+                    @if (repaso.EstaVencido)
+                    {
+                        <span class="badge bg-danger">Vencido</span>
+                    }
+                    else if (repaso.EstaProximo)
+                    {
+                        <span class="badge bg-warning">Próximo</span>
+                    }
+                    else if (repaso.Completado)
+                    {
+                        <span class="badge bg-success">Completado</span>
+                    }
+                </div>
+                
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(repaso.Descripcion))
+                    {
+                        <p class="card-text text-muted small">@repaso.Descripcion</p>
+                    }
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar"></i> 
+                            @repaso.FechaProgramada.ToString("dd/MM/yyyy HH:mm")
+                        </small>
+                    </div>
+                    
+                    @if (!string.IsNullOrEmpty(repaso.MateriaNombre))
+                    {
+                        <div class="mb-2">
+                            <span class="badge bg-secondary">@repaso.MateriaNombre</span>
+                        </div>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(repaso.QuizTitulo))
+                    {
+                        <div class="mb-2">
+                            <small class="text-info">
+                                <i class="fas fa-question-circle"></i> @repaso.QuizTitulo
+                            </small>
+                        </div>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(repaso.FlashcardPregunta))
+                    {
+                        <div class="mb-2">
+                            <small class="text-primary">
+                                <i class="fas fa-clone"></i> @(repaso.FlashcardPregunta.Length > 30 ? repaso.FlashcardPregunta.Substring(0, 30) + "..." : repaso.FlashcardPregunta)
+                            </small>
+                        </div>
+                    }
+                    
+                    @if (repaso.FrecuenciaRepeticion.HasValue && repaso.FrecuenciaRepeticion != QuizCraft.Core.Enums.FrecuenciaRepaso.Unica)
+                    {
+                        <div class="mb-2">
+                            <small class="text-success">
+                                <i class="fas fa-repeat"></i> 
+                                @switch (repaso.FrecuenciaRepeticion)
+                                {
+                                    case QuizCraft.Core.Enums.FrecuenciaRepaso.Diaria:
+                                        <text>Diario</text>
+                                        break;
+                                    case QuizCraft.Core.Enums.FrecuenciaRepaso.CadaDosDias:
+                                        <text>Cada 2 días</text>
+                                        break;
+                                    case QuizCraft.Core.Enums.FrecuenciaRepaso.CadaTresDias:
+                                        <text>Cada 3 días</text>
+                                        break;
+                                    case QuizCraft.Core.Enums.FrecuenciaRepaso.Semanal:
+                                        <text>Semanal</text>
+                                        break;
+                                    case QuizCraft.Core.Enums.FrecuenciaRepaso.Quincenal:
+                                        <text>Quincenal</text>
+                                        break;
+                                    case QuizCraft.Core.Enums.FrecuenciaRepaso.Mensual:
+                                        <text>Mensual</text>
+                                        break;
+                                    default:
+                                        <text>Personalizada</text>
+                                        break;
+                                }
+                            </small>
+                        </div>
+                    }
+                    
+                    @if (repaso.Completado && repaso.UltimoPuntaje.HasValue)
+                    {
+                        <div class="mb-2">
+                            <small class="text-success">
+                                <i class="fas fa-star"></i> Puntaje: @repaso.UltimoPuntaje.Value.ToString("F1")%
+                            </small>
+                        </div>
+                    }
+                    
+                    @if (!repaso.Completado && !repaso.EstaVencido)
+                    {
+                        <div class="mb-2">
+                            <small class="text-info">
+                                <i class="fas fa-hourglass-half"></i> 
+                                @if (repaso.TiempoRestante.TotalDays >= 1)
+                                {
+                                    <text>En @((int)repaso.TiempoRestante.TotalDays) día(s)</text>
+                                }
+                                else if (repaso.TiempoRestante.TotalHours >= 1)
+                                {
+                                    <text>En @((int)repaso.TiempoRestante.TotalHours) hora(s)</text>
+                                }
+                                else
+                                {
+                                    <text>En @((int)repaso.TiempoRestante.TotalMinutes) minuto(s)</text>
+                                }
+                            </small>
+                        </div>
+                    }
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between">
+                        <div class="btn-group" role="group">
+                            @if (!repaso.Completado)
+                            {
+                                @if (repaso.QuizId.HasValue && repaso.QuizTitulo != null)
+                                {
+                                    <!-- Repasar Quiz específico -->
+                                    <a href="@Url.Action("IniciarRepaso", new { id = repaso.Id })" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-play"></i> Repasar Quiz
+                                    </a>
+                                }
+                                else if (repaso.FlashcardId.HasValue && repaso.FlashcardPregunta != null)
+                                {
+                                    <!-- Repasar Flashcards específicas -->
+                                    <a href="@Url.Action("IniciarRepaso", new { id = repaso.Id })" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-play"></i> Repasar Flashcards
+                                    </a>
+                                }
+                                else if (repaso.MateriaId.HasValue)
+                                {
+                                    <!-- Repasar materia general -->
+                                    <a href="@Url.Action("IniciarRepaso", new { id = repaso.Id })" 
+                                       class="btn btn-primary btn-sm">
+                                        <i class="fas fa-play"></i> Repasar Materia
+                                    </a>
+                                }
+                                
+                                <!-- Botón para marcar como completado directamente -->
+                                <a href="@Url.Action("Completar", new { id = repaso.Id })" 
+                                   class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            }
+                        </div>
+                        
+                        <div>
+                            <form method="post" action="@Url.Action("Eliminar")" 
+                                  id="form-eliminar-@repaso.Id" style="display: inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@repaso.Id" />
+                                <button type="button" 
+                                        class="btn btn-outline-danger btn-sm"
+                                        onclick="confirmarEliminacion(@repaso.Id, '@Html.Raw(Html.Encode(repaso.Titulo))')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

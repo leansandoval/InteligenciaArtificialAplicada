@@ -37,4 +37,5 @@ public class ApplicationUser : IdentityUser
     public virtual ICollection<Quiz> QuizzesCreados { get; set; } = new List<Quiz>();
     public virtual ICollection<ResultadoQuiz> ResultadosQuiz { get; set; } = new List<ResultadoQuiz>();
     public virtual ICollection<EstadisticaEstudio> EstadisticasEstudio { get; set; } = new List<EstadisticaEstudio>();
+    public virtual ICollection<RepasoProgramado> RepasosProgramados { get; set; } = new List<RepasoProgramado>();
 }

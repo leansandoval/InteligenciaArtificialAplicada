@@ -23,6 +23,7 @@ namespace QuizCraft.Infrastructure.Data
         public DbSet<RespuestaUsuario> RespuestasUsuario { get; set; }
         public DbSet<ArchivoAdjunto> ArchivosAdjuntos { get; set; }
         public DbSet<EstadisticaEstudio> EstadisticasEstudio { get; set; }
+        public DbSet<RepasoProgramado> RepasosProgramados { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -242,6 +243,57 @@ namespace QuizCraft.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // Configuración de RepasoProgramado
+            builder.Entity<RepasoProgramado>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Titulo)
+                    .HasMaxLength(200)
+                    .IsRequired();
+
+                entity.Property(e => e.Descripcion)
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.FechaProgramada)
+                    .IsRequired();
+
+                entity.Property(e => e.TipoRepaso)
+                    .HasConversion<string>()
+                    .HasMaxLength(20)
+                    .IsRequired();
+
+                entity.Property(e => e.FrecuenciaRepeticion)
+                    .HasConversion<string>()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Notas)
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.UsuarioId)
+                    .IsRequired();
+
+                entity.HasOne(e => e.Usuario)
+                    .WithMany(u => u.RepasosProgramados)
+                    .HasForeignKey(e => e.UsuarioId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Materia)
+                    .WithMany()
+                    .HasForeignKey(e => e.MateriaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Quiz)
+                    .WithMany()
+                    .HasForeignKey(e => e.QuizId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Flashcard)
+                    .WithMany()
+                    .HasForeignKey(e => e.FlashcardId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             // Configuración de índices para mejorar rendimiento
             builder.Entity<Flashcard>()
                 .HasIndex(f => f.MateriaId)
@@ -262,6 +314,14 @@ namespace QuizCraft.Infrastructure.Data
             builder.Entity<EstadisticaEstudio>()
                 .HasIndex(e => new { e.UsuarioId, e.Fecha })
                 .HasDatabaseName("IX_EstadisticasEstudio_Usuario_Fecha");
+
+            builder.Entity<RepasoProgramado>()
+                .HasIndex(r => new { r.UsuarioId, r.FechaProgramada })
+                .HasDatabaseName("IX_RepasosProgramados_Usuario_Fecha");
+
+            builder.Entity<RepasoProgramado>()
+                .HasIndex(r => new { r.UsuarioId, r.Completado, r.EstaActivo })
+                .HasDatabaseName("IX_RepasosProgramados_Usuario_Estado");
         }
     }
 }

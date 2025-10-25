@@ -1,0 +1,236 @@
+@model QuizCraft.Application.ViewModels.CrearRepasoProgramadoViewModel
+@{
+    ViewData["Title"] = "Crear Repaso Programado";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-plus"></i> Crear Nuevo Repaso Programado</h4>
+                </div>
+                
+                <div class="card-body">
+                    <form asp-action="Crear" method="post" id="form-crear-repaso">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                        
+                        <!-- Campo oculto para TipoRepaso - por defecto Manual -->
+                        <input type="hidden" name="TipoRepaso" value="@((int)QuizCraft.Core.Enums.TipoRepaso.Manual)" />
+                        
+                        <!-- Información básica -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Titulo" class="form-label"></label>
+                                <input asp-for="Titulo" class="form-control" placeholder="Ej: Repaso de Matemáticas - Álgebra" />
+                                <span asp-validation-for="Titulo" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Descripcion" class="form-label"></label>
+                                <textarea asp-for="Descripcion" class="form-control" rows="3" 
+                                         placeholder="Descripción opcional del repaso..."></textarea>
+                                <span asp-validation-for="Descripcion" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Fecha y configuración -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="FechaProgramada" class="form-label"></label>
+                                <input asp-for="FechaProgramada" type="datetime-local" class="form-control" />
+                                <span asp-validation-for="FechaProgramada" class="text-danger"></span>
+                                <small class="form-text text-muted">La fecha debe ser futura</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Frecuencia de repetición -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="FrecuenciaRepeticion" class="form-label"></label>
+                                <select asp-for="FrecuenciaRepeticion" class="form-select">
+                                    <option value="">Solo una vez (sin repetición)</option>
+                                    <option value="@((int)QuizCraft.Core.Enums.FrecuenciaRepaso.Diaria)">Diaria</option>
+                                    <option value="@((int)QuizCraft.Core.Enums.FrecuenciaRepaso.CadaDosDias)">Cada 2 días</option>
+                                    <option value="@((int)QuizCraft.Core.Enums.FrecuenciaRepaso.CadaTresDias)">Cada 3 días</option>
+                                    <option value="@((int)QuizCraft.Core.Enums.FrecuenciaRepaso.Semanal)">Semanal</option>
+                                    <option value="@((int)QuizCraft.Core.Enums.FrecuenciaRepaso.Quincenal)">Quincenal</option>
+                                    <option value="@((int)QuizCraft.Core.Enums.FrecuenciaRepaso.Mensual)">Mensual</option>
+                                </select>
+                                <span asp-validation-for="FrecuenciaRepeticion" class="text-danger"></span>
+                                <small class="form-text text-muted">Si seleccionas una frecuencia, se crearán repasos automáticos según el patrón</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenido específico -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6><i class="fas fa-target"></i> Tipo de Repaso</h6>
+                                <small class="text-muted">Selecciona si quieres repasar con Quiz o con Flashcards</small>
+                            </div>
+                            <div class="card-body">
+                                <!-- Tipo de contenido -->
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label">Tipo de repaso:</label>
+                                        <div class="btn-group w-100" role="group" aria-label="Tipo de contenido">
+                                            <input type="radio" class="btn-check" name="tipoContenido" id="contenido-quiz" value="quiz" checked>
+                                            <label class="btn btn-outline-success" for="contenido-quiz">
+                                                <i class="fas fa-question-circle"></i> Quiz Específico
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="tipoContenido" id="contenido-flashcard" value="flashcard">
+                                            <label class="btn btn-outline-warning" for="contenido-flashcard">
+                                                <i class="fas fa-layer-group"></i> Flashcards por Materia
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quiz específico (visible por defecto) -->
+                                <div class="row" id="seccion-quiz">
+                                    <div class="col-md-12 mb-3">
+                                        <label asp-for="QuizId" class="form-label"></label>
+                                        <select asp-for="QuizId" class="form-select" id="quiz-select">
+                                            <option value="">Selecciona un quiz específico</option>
+                                            @foreach (var quiz in Model.QuizzesDisponibles)
+                                            {
+                                                <option value="@quiz.Value">@quiz.Text</option>
+                                            }
+                                        </select>
+                                        <span asp-validation-for="QuizId" class="text-danger"></span>
+                                        <small class="form-text text-muted">El repaso se enfocará únicamente en este quiz</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Flashcards por materia (oculto por defecto) -->
+                                <div class="row" id="seccion-flashcard" style="display: none;">
+                                    <div class="col-md-12 mb-3">
+                                        <label asp-for="MateriaId" class="form-label">Materia para Flashcards</label>
+                                        <select asp-for="MateriaId" class="form-select" id="materia-flashcard-select">
+                                            <option value="">Selecciona una materia</option>
+                                            @foreach (var materia in Model.MateriasDisponibles)
+                                            {
+                                                <option value="@materia.Value">@materia.Text</option>
+                                            }
+                                        </select>
+                                        <span asp-validation-for="MateriaId" class="text-danger"></span>
+                                        <small class="form-text text-muted">Se incluirán todas las flashcards de esta materia</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mensaje informativo -->
+                                <div class="alert alert-info" id="info-contenido">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span id="mensaje-contenido">Selecciona un quiz específico para repasar</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notas adicionales -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label asp-for="Notas" class="form-label"></label>
+                                <textarea asp-for="Notas" class="form-control" rows="3" 
+                                         placeholder="Notas adicionales sobre el repaso..."></textarea>
+                                <span asp-validation-for="Notas" class="text-danger"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Crear Repaso
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        $(document).ready(function() {
+            // Configurar fecha mínima (ahora + 1 hora)
+            var now = new Date();
+            now.setHours(now.getHours() + 1);
+            var minDateTime = now.toISOString().slice(0, 16);
+            $('#FechaProgramada').attr('min', minDateTime);
+            
+            // Inicializar la vista - mostrar sección quiz por defecto
+            $('#seccion-quiz').show();
+            $('#seccion-flashcard').hide();
+            $('#mensaje-contenido').text('Repaso enfocado en un quiz específico');
+            
+            // Manejar cambio de tipo de contenido
+            $('input[name="tipoContenido"]').change(function() {
+                var tipoSeleccionado = $(this).val();
+                
+                // Ocultar todas las secciones específicas
+                $('#seccion-quiz').hide();
+                $('#seccion-flashcard').hide();
+                
+                // Limpiar valores de campos no seleccionados
+                $('#quiz-select').val('');
+                $('#materia-flashcard-select').val('');
+                
+                // Mostrar sección correspondiente y actualizar mensaje
+                var mensaje = '';
+                switch(tipoSeleccionado) {
+                    case 'quiz':
+                        $('#seccion-quiz').show();
+                        mensaje = 'Repaso enfocado en un quiz específico';
+                        break;
+                    case 'flashcard':
+                        $('#seccion-flashcard').show();
+                        mensaje = 'Repaso con flashcards de la materia seleccionada';
+                        break;
+                }
+                $('#mensaje-contenido').text(mensaje);
+            });
+            
+            // Validación del formulario
+            $('#form-crear-repaso').submit(function(e) {
+                var fechaProgramada = new Date($('#FechaProgramada').val());
+                var ahora = new Date();
+                var tipoContenido = $('input[name="tipoContenido"]:checked').val();
+                var quizId = $('#quiz-select').val();
+                var materiaId = $('#materia-flashcard-select').val();
+                
+                if (fechaProgramada <= ahora) {
+                    e.preventDefault();
+                    alert('La fecha programada debe ser futura.');
+                    return false;
+                }
+                
+                // Validar que se haya seleccionado contenido específico
+                if (tipoContenido === 'quiz' && !quizId) {
+                    e.preventDefault();
+                    alert('Por favor selecciona un quiz específico.');
+                    return false;
+                }
+                
+                if (tipoContenido === 'flashcard' && !materiaId) {
+                    e.preventDefault();
+                    alert('Por favor selecciona una materia para las flashcards.');
+                    return false;
+                }
+                
+                return true;
+            });
+        });
+    </script>
+}

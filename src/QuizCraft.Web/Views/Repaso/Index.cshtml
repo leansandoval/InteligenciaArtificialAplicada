@@ -1,0 +1,221 @@
+@model QuizCraft.Application.ViewModels.RepasosProgramadosViewModel
+@{
+    ViewData["Title"] = "Repasos Programados";
+    var alertClass = "";
+    var alertMessage = "";
+    
+    if (TempData["Success"] != null)
+    {
+        alertClass = "alert-success";
+        alertMessage = TempData["Success"].ToString();
+    }
+    else if (TempData["Error"] != null)
+    {
+        alertClass = "alert-danger";
+        alertMessage = TempData["Error"].ToString();
+    }
+    else if (TempData["Warning"] != null)
+    {
+        alertClass = "alert-warning";
+        alertMessage = TempData["Warning"].ToString();
+    }
+    else if (TempData["Info"] != null)
+    {
+        alertClass = "alert-info";
+        alertMessage = TempData["Info"].ToString();
+    }
+}
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">📅 Repasos Programados</h1>
+                    <p class="text-muted">Gestiona tus sesiones de repaso programadas</p>
+                </div>
+                <div>
+                    <a href="@Url.Action("Crear")" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nuevo Repaso
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    @if (!string.IsNullOrEmpty(alertMessage))
+    {
+        <div class="alert @alertClass alert-dismissible fade show" role="alert">
+            @alertMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Estadísticas Resumen -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <i class="fas fa-exclamation-triangle text-danger fa-2x mb-2"></i>
+                    <h4 class="card-title">@Model.RepasosVencidosCount</h4>
+                    <p class="card-text text-danger">Vencidos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock text-warning fa-2x mb-2"></i>
+                    <h4 class="card-title">@Model.RepasosProximosCount</h4>
+                    <p class="card-text text-warning">Próximos (24h)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-alt text-info fa-2x mb-2"></i>
+                    <h4 class="card-title">@Model.RepasosPendientesCount</h4>
+                    <p class="card-text text-info">Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                    <h4 class="card-title">@Model.RepasosCompletadosCount</h4>
+                    <p class="card-text text-success">Completados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs para diferentes categorías -->
+    <ul class="nav nav-tabs" id="repasoTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="vencidos-tab" data-bs-toggle="tab" data-bs-target="#vencidos" type="button">
+                <i class="fas fa-exclamation-triangle text-danger"></i> Vencidos (@Model.RepasosVencidosCount)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="proximos-tab" data-bs-toggle="tab" data-bs-target="#proximos" type="button">
+                <i class="fas fa-clock text-warning"></i> Próximos (@Model.RepasosProximosCount)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pendientes-tab" data-bs-toggle="tab" data-bs-target="#pendientes" type="button">
+                <i class="fas fa-calendar-alt text-info"></i> Pendientes (@Model.RepasosPendientesCount)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completados-tab" data-bs-toggle="tab" data-bs-target="#completados" type="button">
+                <i class="fas fa-check-circle text-success"></i> Completados (@Model.RepasosCompletadosCount)
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenido de los tabs -->
+    <div class="tab-content mt-3" id="repasoTabContent">
+        <!-- Tab Vencidos -->
+        <div class="tab-pane fade show active" id="vencidos" role="tabpanel">
+            @if (Model.RepasosVencidos.Any())
+            {
+                @await Html.PartialAsync("_ListaRepasos", Model.RepasosVencidos)
+            }
+            else
+            {
+                <div class="alert alert-success">
+                    <i class="fas fa-smile"></i> ¡Excelente! No tienes repasos vencidos.
+                </div>
+            }
+        </div>
+
+        <!-- Tab Próximos -->
+        <div class="tab-pane fade" id="proximos" role="tabpanel">
+            @if (Model.RepasosProximos.Any())
+            {
+                @await Html.PartialAsync("_ListaRepasos", Model.RepasosProximos)
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tienes repasos programados para las próximas 24 horas.
+                </div>
+            }
+        </div>
+
+        <!-- Tab Pendientes -->
+        <div class="tab-pane fade" id="pendientes" role="tabpanel">
+            @if (Model.RepasosPendientes.Any())
+            {
+                @await Html.PartialAsync("_ListaRepasos", Model.RepasosPendientes)
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tienes repasos pendientes.
+                </div>
+            }
+        </div>
+
+        <!-- Tab Completados -->
+        <div class="tab-pane fade" id="completados" role="tabpanel">
+            @if (Model.RepasosCompletados.Any())
+            {
+                @await Html.PartialAsync("_ListaRepasos", Model.RepasosCompletados)
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No tienes repasos completados aún.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Activar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Manejar parámetro de pestaña desde URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            
+            if (tab) {
+                // Desactivar pestaña activa actual
+                document.querySelector('.nav-link.active').classList.remove('active');
+                document.querySelector('.tab-pane.active').classList.remove('active', 'show');
+                
+                // Activar la pestaña solicitada
+                const targetTab = document.getElementById(tab + '-tab');
+                const targetPane = document.getElementById(tab);
+                
+                if (targetTab && targetPane) {
+                    targetTab.classList.add('active');
+                    targetPane.classList.add('active', 'show');
+                }
+            }
+        });
+
+        // Confirmar eliminación
+        function confirmarEliminacion(id, titulo) {
+            if (confirm('¿Estás seguro de que deseas eliminar el repaso "' + titulo + '"?')) {
+                document.getElementById('form-eliminar-' + id).submit();
+            }
+        }
+
+        // Auto-refresh cada 5 minutos para mantener actualizada la información
+        setTimeout(function() {
+            location.reload();
+        }, 300000);
+    </script>
+}
