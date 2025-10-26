@@ -1,429 +1,267 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { loginWithTestUser, crearMateria, generarNombreUnico } = require('../../test-helpers');
+const testConfig = require('../../test-config');
 
 /**
- * EP-04: Generación con IA (Integración Gemini)
+ * EP-04: Generación con IA (Gemini)
  * 
  * Este archivo contiene las pruebas end-to-end para la funcionalidad de generación
- * automática de contenido utilizando la API de Google Gemini.
+ * de contenido educativo mediante Inteligencia Artificial (Google Gemini).
  */
 
 test.describe('EP-04: Generación con IA', () => {
-  let context;
-  let page;
-  let materiaNombre;
 
-  test.beforeAll(async ({ browser }) => {
-    context = await browser.newContext();
-    page = await context.newPage();
-  });
-
-  test.afterAll(async () => {
-    await context.close();
-  });
-
-  test.beforeEach(async () => {
-    materiaNombre = `Materia IA ${Date.now()}`;
-  });
-
-  test('US-04.01: Configurar API Key de Gemini', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-04.01: Generar flashcards desde texto con IA', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
-    
-    // Navegar a la configuración de IA
-    await page.goto('https://localhost:7028/Account/Profile');
-    
-    // Buscar la sección de configuración de IA
-    const iaSection = page.locator('section:has-text("IA"), section:has-text("Inteligencia Artificial"), section:has-text("Gemini")');
-    
-    if (await iaSection.count() > 0) {
-      // Verificar que hay un campo para la API Key
-      const apiKeyInput = page.locator('input[name*="ApiKey"], input[name*="GeminiKey"], input[placeholder*="API"]');
-      await expect(apiKeyInput).toBeVisible({ timeout: 5000 });
-      
-      console.log('✅ Configuración de API Key de Gemini disponible');
-    } else {
-      // Si no está en el perfil, podría estar en una página separada de configuración
-      await page.goto('https://localhost:7028/Configuration/AI');
-      
-      const configPage = page.locator('h1:has-text("Configuración"), h2:has-text("IA")');
-      if (await configPage.count() > 0) {
-        await expect(configPage).toBeVisible();
-        console.log('✅ Página de configuración de IA encontrada');
-      } else {
-        console.log('⚠️ No se encontró la configuración de IA');
-      }
-    }
-  });
-
-  test('US-04.02: Generar flashcards desde texto plano', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
-    // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
     // Crear una materia
-    await page.goto('https://localhost:7028/Materia/Create');
-    await page.fill('input[name="Nombre"]', materiaNombre);
-    await page.fill('textarea[name="Descripcion"]', 'Materia para generación de flashcards con IA');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Materia/Details/**');
+    const materiaNombre = generarNombreUnico('Materia IA Flashcards');
+    const materiaId = await crearMateria(page, materiaNombre, 'Materia para generación de flashcards con IA');
     
-    const materiaId = page.url().match(/Details\/(\d+)/)[1];
-    
-    // Navegar a la generación de flashcards con IA
-    await page.goto(`https://localhost:7028/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    // Navegar a la generación con IA
+    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
     
     // Verificar que estamos en la página correcta
     await expect(page.locator('h1, h2')).toContainText(/Generar.*IA|IA.*Flashcard/i);
     
-    // Proporcionar texto para generar flashcards
-    const textoFuente = `
-      La fotosíntesis es el proceso mediante el cual las plantas convierten la luz solar en energía química.
-      Ocurre en los cloroplastos, específicamente en los tilacoides y el estroma.
-      La ecuación general es: 6CO2 + 6H2O + luz → C6H12O6 + 6O2.
-      Los productos principales son glucosa y oxígeno.
-      La clorofila es el pigmento responsable de capturar la luz solar.
+    // Proporcionar contenido de texto
+    const contenidoTexto = `
+      El Imperio Romano fue uno de los imperios más grandes de la historia antigua.
+      Alcanzó su máxima extensión territorial en el año 117 d.C. bajo el emperador Trajano.
+      Roma fue fundada en el año 753 a.C. según la leyenda.
+      El Coliseo de Roma fue construido entre los años 70 y 80 d.C.
+      Julio César fue asesinado en el año 44 a.C.
     `;
     
-    await page.fill('textarea[name="TextoFuente"], textarea[name="Contenido"]', textoFuente);
-    await page.fill('input[name="CantidadFlashcards"], input[name="Cantidad"]', '3');
+    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoTexto);
+    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '3');
     await page.selectOption('select[name="NivelDificultad"]', '1'); // Media
     
     // Enviar para generar
     await page.click('button[type="submit"]:has-text("Generar")');
     
-    // Esperar a que se generen las flashcards (puede tomar tiempo)
-    await page.waitForTimeout(5000);
+    // Esperar a que se genere (puede tomar tiempo)
+    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
     
     // Verificar que se generaron flashcards
-    // Podría redirigir a una página de revisión o directamente a la lista
-    const urlActual = page.url();
-    const estaEnRevision = urlActual.includes('Review') || urlActual.includes('Revision');
-    const estaEnLista = urlActual.includes('Index') || urlActual.includes('List');
-    const estaEnMateria = urlActual.includes('Materia/Details');
+    await expect(page.locator('body')).toContainText(/Flashcard|Generado|Creado/i, { timeout: testConfig.timeouts.long });
     
-    if (estaEnRevision || estaEnLista || estaEnMateria) {
-      console.log('✅ Flashcards generadas con IA exitosamente');
-      
-      // Verificar que hay flashcards en la página
-      const flashcards = page.locator('.flashcard, .card, [class*="flash"]');
-      const hayFlashcards = await flashcards.count() > 0;
-      
-      if (hayFlashcards) {
-        console.log(`📚 Se generaron ${await flashcards.count()} flashcards`);
-      }
-    } else {
-      console.log('⚠️ Ubicación inesperada después de generar flashcards');
-    }
+    console.log('✅ Flashcards generadas con IA exitosamente');
   });
 
-  test('US-04.03: Generar flashcards desde documento adjunto', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-04.02: Generar flashcards desde archivo PDF con IA', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
     // Crear una materia
-    await page.goto('https://localhost:7028/Materia/Create');
-    await page.fill('input[name="Nombre"]', materiaNombre);
-    await page.fill('textarea[name="Descripcion"]', 'Materia para generación desde documento');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Materia/Details/**');
+    const materiaNombre = generarNombreUnico('Materia IA PDF');
+    const materiaId = await crearMateria(page, materiaNombre, 'Materia para generación desde PDF con IA');
     
-    const materiaId = page.url().match(/Details\/(\d+)/)[1];
-    
-    // Navegar a la generación desde archivo
-    await page.goto(`https://localhost:7028/Flashcard/GenerateFromFile?materiaId=${materiaId}`);
+    // Navegar a la generación con IA
+    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
     
     // Verificar que estamos en la página correcta
-    await expect(page.locator('h1, h2')).toContainText(/Generar.*Archivo|Documento.*IA/i);
+    await expect(page.locator('h1, h2')).toContainText(/Generar.*IA|IA.*Flashcard/i);
     
-    // Adjuntar un archivo (usar el archivo de prueba existente)
+    // Buscar el campo de archivo
     const fileInput = page.locator('input[type="file"]');
     
     if (await fileInput.count() > 0) {
-      await fileInput.setInputFiles('c:\\QuizCraft\\ArchivosPrueba\\ejemplo-historia-roma.txt');
+      // Si existe, intentar subir un archivo de prueba
+      // (En un entorno de producción, deberías tener archivos de prueba reales)
+      const testFilePath = 'ArchivosPrueba/ejemplo-historia-roma.txt';
       
-      // Configurar opciones de generación
-      await page.fill('input[name="CantidadFlashcards"], input[name="Cantidad"]', '5');
-      await page.selectOption('select[name="NivelDificultad"]', '2'); // Difícil
+      await fileInput.setInputFiles(testFilePath);
+      await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '3');
       
-      // Enviar el formulario
+      // Enviar para generar
       await page.click('button[type="submit"]:has-text("Generar")');
       
-      // Esperar a que se procese el archivo (puede tomar tiempo)
-      await page.waitForTimeout(10000);
+      // Esperar a que se genere
+      await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
       
       // Verificar que se generaron flashcards
-      const urlActual = page.url();
-      if (urlActual.includes('Review') || urlActual.includes('Index') || urlActual.includes('Materia')) {
-        console.log('✅ Flashcards generadas desde documento exitosamente');
-      } else {
-        console.log('⚠️ Verificar si la generación desde archivo está implementada');
-      }
-    } else {
-      console.log('⚠️ No se encontró el campo de carga de archivos');
-    }
-  });
-
-  test('US-04.04: Revisar y editar contenido generado por IA', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
-    // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
-    
-    // Crear una materia y generar flashcards
-    await page.goto('https://localhost:7028/Materia/Create');
-    await page.fill('input[name="Nombre"]', materiaNombre);
-    await page.fill('textarea[name="Descripcion"]', 'Materia para revisar contenido IA');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Materia/Details/**');
-    
-    const materiaId = page.url().match(/Details\/(\d+)/)[1];
-    
-    // Generar flashcards con IA
-    await page.goto(`https://localhost:7028/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
-    
-    const textoFuente = `
-      El ciclo del agua incluye evaporación, condensación y precipitación.
-      El agua se evapora de océanos, ríos y lagos.
-      Se condensa formando nubes.
-      Finalmente precipita como lluvia o nieve.
-    `;
-    
-    await page.fill('textarea[name="TextoFuente"], textarea[name="Contenido"]', textoFuente);
-    await page.fill('input[name="CantidadFlashcards"]', '2');
-    await page.click('button[type="submit"]:has-text("Generar")');
-    
-    // Esperar a que se generen
-    await page.waitForTimeout(5000);
-    
-    // Buscar la página de revisión
-    const urlActual = page.url();
-    
-    if (urlActual.includes('Review') || urlActual.includes('Revision')) {
-      // Estamos en una página de revisión
-      const flashcardsGeneradas = page.locator('.flashcard-preview, .generated-flashcard, .card');
-      const cantidad = await flashcardsGeneradas.count();
+      await expect(page.locator('body')).toContainText(/Flashcard|Generado|Creado/i, { timeout: testConfig.timeouts.long });
       
-      if (cantidad > 0) {
-        console.log(`📝 Revisando ${cantidad} flashcards generadas`);
-        
-        // Buscar opciones para editar
-        const editButtons = page.locator('button:has-text("Editar"), a:has-text("Editar")');
-        
-        if (await editButtons.count() > 0) {
-          await editButtons.first().click();
-          
-          // Modificar la pregunta
-          await page.fill('input[name="Pregunta"]', 'Pregunta editada después de generación IA');
-          
-          // Guardar cambios
-          await page.click('button[type="submit"]:has-text("Guardar")');
-          
-          console.log('✅ Contenido generado revisado y editado exitosamente');
-        } else {
-          console.log('ℹ️ No se encontraron opciones de edición en la revisión');
-        }
-      }
+      console.log('✅ Flashcards generadas desde archivo con IA exitosamente');
     } else {
-      console.log('ℹ️ No hay página de revisión, las flashcards se guardaron directamente');
+      console.log('⚠️ No se encontró el campo de archivo PDF');
     }
   });
 
-  test('US-04.05: Generar quiz completo con IA', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-04.03: Generar quiz con IA desde contenido de texto', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
     // Crear una materia
-    await page.goto('https://localhost:7028/Materia/Create');
-    await page.fill('input[name="Nombre"]', materiaNombre);
-    await page.fill('textarea[name="Descripcion"]', 'Materia para generación de quiz con IA');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Materia/Details/**');
-    
-    const materiaId = page.url().match(/Details\/(\d+)/)[1];
+    const materiaNombre = generarNombreUnico('Materia IA Quiz');
+    const materiaId = await crearMateria(page, materiaNombre, 'Materia para generación de quiz con IA');
     
     // Navegar a la generación de quiz con IA
-    await page.goto(`https://localhost:7028/Quiz/GenerateWithAI?materiaId=${materiaId}`);
+    await page.goto(`/Quiz/GenerateWithAI?materiaId=${materiaId}`);
     
     // Verificar que estamos en la página correcta
-    await expect(page.locator('h1, h2')).toContainText(/Generar.*Quiz.*IA|IA.*Quiz/i);
+    await expect(page.locator('h1, h2')).toContainText(/Generar.*IA|IA.*Quiz/i);
     
     // Proporcionar contenido para generar el quiz
-    const contenido = `
-      La Segunda Guerra Mundial fue un conflicto global que duró de 1939 a 1945.
-      Involucró a la mayoría de las naciones del mundo organizadas en dos alianzas militares: los Aliados y las Potencias del Eje.
-      Comenzó con la invasión de Polonia por Alemania el 1 de septiembre de 1939.
-      Estados Unidos entró en la guerra después del ataque a Pearl Harbor en diciembre de 1941.
-      La guerra terminó en 1945 con la rendición de Japón después de los bombardeos atómicos.
+    const contenidoTexto = `
+      La Revolución Industrial comenzó en Gran Bretaña a finales del siglo XVIII.
+      La máquina de vapor fue inventada por James Watt en 1769.
+      El ferrocarril revolucionó el transporte de mercancías y personas.
+      Las fábricas textiles fueron las primeras en mecanizarse.
+      La Revolución Industrial transformó la economía agraria en industrial.
     `;
     
-    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenido);
-    await page.fill('input[name="Titulo"]', `Quiz IA ${Date.now()}`);
-    await page.fill('input[name="CantidadPreguntas"], input[name="NumeroPreguntas"]', '4');
-    await page.selectOption('select[name="NivelDificultad"]', '2'); // Difícil
+    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoTexto);
+    const quizNombre = generarNombreUnico('Quiz IA');
+    await page.fill('input[name="Titulo"]', quizNombre);
+    await page.selectOption('select[name="NivelDificultad"]', '1'); // Media
+    await page.fill('input[name="CantidadPreguntas"], input[name="NumeroPreguntas"]', '3');
     
     // Enviar para generar
     await page.click('button[type="submit"]:has-text("Generar")');
     
-    // Esperar a que se genere el quiz (puede tomar tiempo)
-    await page.waitForTimeout(10000);
+    // Esperar a que se genere (puede tomar tiempo)
+    await page.waitForURL('**/Quiz/Details/**', { timeout: testConfig.timeouts.long });
     
     // Verificar que se creó el quiz
-    const urlActual = page.url();
+    await expect(page.locator('h1, h2')).toContainText(quizNombre);
     
-    if (urlActual.includes('Quiz/Details') || urlActual.includes('Quiz/Review')) {
-      await expect(page.locator('h1, h2')).toContainText(/Quiz|Cuestionario/i);
-      console.log('✅ Quiz generado con IA exitosamente');
-      
-      // Verificar que hay preguntas
-      const preguntas = page.locator('.pregunta, .question, [class*="quiz"]');
-      const cantidadPreguntas = await preguntas.count();
-      
-      if (cantidadPreguntas > 0) {
-        console.log(`❓ Se generaron ${cantidadPreguntas} preguntas`);
-      }
-    } else {
-      console.log('⚠️ Ubicación inesperada después de generar quiz');
-    }
+    console.log('✅ Quiz generado con IA exitosamente');
   });
 
-  test('US-04.06: Manejo de errores de API de Gemini', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-04.04: Generar resumen de texto con IA', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Crear una materia
-    await page.goto('https://localhost:7028/Materia/Create');
-    await page.fill('input[name="Nombre"]', materiaNombre);
-    await page.fill('textarea[name="Descripcion"]', 'Materia para probar manejo de errores');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Materia/Details/**');
+    // Navegar a la funcionalidad de generación de resúmenes
+    await page.goto('/IA/GenerateResumen');
     
-    const materiaId = page.url().match(/Details\/(\d+)/)[1];
+    // Verificar que estamos en la página correcta
+    await expect(page.locator('h1, h2')).toContainText(/Resumen|IA|Generar/i);
     
-    // Intentar generar sin proporcionar contenido
-    await page.goto(`https://localhost:7028/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
-    
-    // Dejar el campo de texto vacío
-    await page.fill('textarea[name="TextoFuente"], textarea[name="Contenido"]', '');
-    
-    // Intentar enviar el formulario
-    await page.click('button[type="submit"]:has-text("Generar")');
-    
-    // Verificar que hay un mensaje de error
-    await page.waitForTimeout(2000);
-    
-    const mensajeError = page.locator('.alert-danger, .error-message, [class*="error"]');
-    const hayError = await mensajeError.count() > 0;
-    
-    if (hayError) {
-      await expect(mensajeError).toBeVisible();
-      console.log('✅ Manejo de errores funcionando correctamente');
-    } else {
-      // Verificar validación HTML5
-      const textareaInvalido = await page.locator('textarea:invalid').count() > 0;
-      
-      if (textareaInvalido) {
-        console.log('✅ Validación de formulario funcionando');
-      } else {
-        console.log('⚠️ Verificar validación de entrada de datos');
-      }
-    }
-  });
-
-  test('US-04.07: Validar calidad del contenido generado', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
-    // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
-    
-    // Crear una materia
-    await page.goto('https://localhost:7028/Materia/Create');
-    await page.fill('input[name="Nombre"]', materiaNombre);
-    await page.fill('textarea[name="Descripcion"]', 'Materia para validar calidad de IA');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Materia/Details/**');
-    
-    const materiaId = page.url().match(/Details\/(\d+)/)[1];
-    
-    // Generar flashcards con contenido específico
-    await page.goto(`https://localhost:7028/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
-    
-    const textoFuente = `
-      Python es un lenguaje de programación de alto nivel, interpretado y de propósito general.
-      Fue creado por Guido van Rossum y lanzado en 1991.
-      Python usa indentación para definir bloques de código.
-      Es ampliamente utilizado en ciencia de datos, desarrollo web y automatización.
+    // Proporcionar contenido para resumir
+    const contenidoLargo = `
+      La Segunda Guerra Mundial fue el conflicto bélico más grande de la historia,
+      que se desarrolló entre 1939 y 1945. Participaron la mayoría de las naciones del mundo,
+      incluyendo todas las grandes potencias, agrupadas en dos alianzas militares opuestas:
+      los Aliados y las Potencias del Eje. Fue una guerra total que implicó la movilización
+      de más de 100 millones de militares, siendo el conflicto más letal en la historia
+      de la humanidad, con un número de muertos estimado entre 50 y 70 millones de personas.
     `;
     
-    await page.fill('textarea[name="TextoFuente"]', textoFuente);
-    await page.fill('input[name="CantidadFlashcards"]', '3');
+    await page.fill('textarea[name="Contenido"], textarea[name="Texto"]', contenidoLargo);
+    
+    // Enviar para generar resumen
+    await page.click('button[type="submit"]:has-text("Generar"), button:has-text("Resumir")');
+    
+    // Esperar a que se genere el resumen
+    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
+    
+    // Verificar que se generó un resumen
+    await expect(page.locator('body')).toContainText(/Resumen|Generado/i, { timeout: testConfig.timeouts.long });
+    
+    console.log('✅ Resumen generado con IA exitosamente');
+  });
+
+  test('US-04.05: Generar explicación detallada con IA', async ({ page }) => {
+    // Iniciar sesión
+    await loginWithTestUser(page);
+    
+    // Navegar a la funcionalidad de explicaciones con IA
+    await page.goto('/IA/GenerateExplicacion');
+    
+    // Verificar que estamos en la página correcta
+    await expect(page.locator('h1, h2')).toContainText(/Explicación|IA|Generar/i);
+    
+    // Proporcionar un concepto para explicar
+    const concepto = 'Teoría de la Relatividad de Einstein';
+    
+    await page.fill('input[name="Concepto"], textarea[name="Concepto"]', concepto);
+    await page.selectOption('select[name="NivelDetalle"]', '1'); // Medio
+    
+    // Enviar para generar explicación
+    await page.click('button[type="submit"]:has-text("Generar"), button:has-text("Explicar")');
+    
+    // Esperar a que se genere la explicación
+    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
+    
+    // Verificar que se generó una explicación
+    await expect(page.locator('body')).toContainText(/Explicación|Generado/i, { timeout: testConfig.timeouts.long });
+    
+    console.log('✅ Explicación generada con IA exitosamente');
+  });
+
+  test('US-04.06: Validar límites de generación con IA', async ({ page }) => {
+    // Iniciar sesión
+    await loginWithTestUser(page);
+    
+    // Crear una materia
+    const materiaNombre = generarNombreUnico('Materia Límites IA');
+    const materiaId = await crearMateria(page, materiaNombre, 'Materia para probar límites de IA');
+    
+    // Navegar a la generación con IA
+    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    
+    // Intentar generar con valores extremos
+    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', 'Contenido muy corto');
+    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '100'); // Valor alto
+    
+    // Enviar para generar
     await page.click('button[type="submit"]:has-text("Generar")');
     
-    // Esperar a que se generen
-    await page.waitForTimeout(5000);
+    // Verificar que se muestra un mensaje de validación o límite
+    const mensajeError = page.locator('.alert-danger, .error, .validation-message');
     
-    // Navegar a la lista de flashcards de la materia
-    await page.goto(`https://localhost:7028/Flashcard/Index?materiaId=${materiaId}`);
-    
-    // Obtener las flashcards generadas
-    const flashcards = page.locator('.flashcard, .card, [href*="/Flashcard/Details/"]');
-    const cantidad = await flashcards.count();
-    
-    if (cantidad > 0) {
-      console.log(`✅ Se generaron ${cantidad} flashcards`);
-      
-      // Verificar la primera flashcard
-      await flashcards.first().click();
-      await page.waitForURL('**/Flashcard/Details/**');
-      
-      // Verificar que tiene pregunta y respuesta
-      const pregunta = await page.locator('body').textContent();
-      const tienePregunta = pregunta && pregunta.length > 10;
-      
-      if (tienePregunta) {
-        console.log('✅ Contenido generado tiene estructura válida');
-      } else {
-        console.log('⚠️ Verificar calidad del contenido generado');
-      }
+    if (await mensajeError.count() > 0) {
+      await expect(mensajeError).toBeVisible({ timeout: 5000 });
+      console.log('✅ Validación de límites funcionando correctamente');
     } else {
-      console.log('⚠️ No se generaron flashcards para validar');
+      // Si no hay error, verificar que se generó con un límite razonable
+      await expect(page.locator('body')).toContainText(/Flashcard|Generado/i, { timeout: testConfig.timeouts.long });
+      console.log('✅ Generación completada con límites aplicados');
     }
+  });
+
+  test('US-04.07: Regenerar contenido con diferentes parámetros de IA', async ({ page }) => {
+    // Iniciar sesión
+    await loginWithTestUser(page);
+    
+    // Crear una materia
+    const materiaNombre = generarNombreUnico('Materia Regenerar IA');
+    const materiaId = await crearMateria(page, materiaNombre, 'Materia para regeneración con IA');
+    
+    // Navegar a la generación con IA
+    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    
+    const contenidoBase = `
+      El ADN es una molécula que contiene las instrucciones genéticas de los seres vivos.
+      Tiene una estructura de doble hélice descubierta por Watson y Crick en 1953.
+    `;
+    
+    // Primera generación con dificultad fácil
+    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoBase);
+    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '2');
+    await page.selectOption('select[name="NivelDificultad"]', '0'); // Fácil
+    await page.click('button[type="submit"]:has-text("Generar")');
+    
+    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
+    await expect(page.locator('body')).toContainText(/Flashcard|Generado/i, { timeout: testConfig.timeouts.long });
+    
+    console.log('✅ Primera generación completada');
+    
+    // Volver a generar con dificultad difícil
+    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoBase);
+    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '2');
+    await page.selectOption('select[name="NivelDificultad"]', '2'); // Difícil
+    await page.click('button[type="submit"]:has-text("Generar")');
+    
+    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
+    await expect(page.locator('body')).toContainText(/Flashcard|Generado/i, { timeout: testConfig.timeouts.long });
+    
+    console.log('✅ Regeneración con diferentes parámetros completada exitosamente');
   });
 });

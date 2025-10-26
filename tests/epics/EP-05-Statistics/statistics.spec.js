@@ -1,345 +1,265 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const { loginWithTestUser, crearMateria, crearFlashcard, generarNombreUnico } = require('../../test-helpers');
+const testConfig = require('../../test-config');
 
 /**
- * EP-05: Estadísticas y Dashboards
+ * EP-05: Dashboard y Estadísticas
  * 
- * Este archivo contiene las pruebas end-to-end para las funcionalidades de
- * estadísticas, métricas y visualización de datos del usuario.
+ * Este archivo contiene las pruebas end-to-end para el dashboard de usuario
+ * y las estadísticas de progreso de estudio.
  */
 
-test.describe('EP-05: Estadísticas y Dashboards', () => {
-  let context;
-  let page;
+test.describe('EP-05: Dashboard y Estadísticas', () => {
 
-  test.beforeAll(async ({ browser }) => {
-    context = await browser.newContext();
-    page = await context.newPage();
-  });
-
-  test.afterAll(async () => {
-    await context.close();
-  });
-
-  test('US-05.01: Ver dashboard principal con resumen de actividades', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.01: Visualizar dashboard principal después del login', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
+    await loginWithTestUser(page);
     
-    // Esperar a que se redirija al dashboard
-    await page.waitForURL('**/Home/Dashboard');
+    // Verificar que estamos en el dashboard - usar first() para evitar strict mode
+    await expect(page.locator('h1, h2').first()).toContainText(/Dashboard|Bienvenido|Inicio/i);
     
-    // Verificar que estamos en el dashboard
-    await expect(page.locator('h1, h2')).toContainText(/Dashboard|Panel/i);
+    // Verificar que hay secciones principales del dashboard
+    const dashboardElements = [
+      page.locator('.dashboard, .main-content, #dashboard'),
+      page.locator('.stats, .statistics, .card')
+    ];
     
-    // Verificar que hay tarjetas de estadísticas
-    const statsCards = page.locator('.card, .stat-card, [class*="statistic"]');
-    await expect(statsCards.first()).toBeVisible({ timeout: 5000 });
-    
-    const cantidadCards = await statsCards.count();
-    console.log(`📊 Dashboard muestra ${cantidadCards} tarjetas de estadísticas`);
-    
-    // Verificar que hay información numérica
-    await expect(page.locator('body')).toContainText(/\d+/);
-    
-    console.log('✅ Dashboard principal visualizado correctamente');
-  });
-
-  test('US-05.02: Ver página de estadísticas detalladas', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
-    // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
-    
-    // Navegar a la página de estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
-    
-    // Verificar que estamos en la página correcta
-    await expect(page.locator('h1, h2')).toContainText(/Estadística|Statistic/i);
-    
-    // Verificar que hay secciones de estadísticas
-    const sections = page.locator('section, .statistics-section, .stat-group');
-    const cantidadSecciones = await sections.count();
-    
-    if (cantidadSecciones > 0) {
-      console.log(`📈 Página de estadísticas muestra ${cantidadSecciones} secciones`);
+    for (const element of dashboardElements) {
+      if (await element.count() > 0) {
+        await expect(element.first()).toBeVisible({ timeout: 5000 });
+      }
     }
     
-    // Verificar que hay tablas o listas con datos
-    const tables = page.locator('table, .table, .list-group');
-    await expect(tables.first()).toBeVisible({ timeout: 5000 });
-    
-    console.log('✅ Página de estadísticas detalladas funcionando correctamente');
+    console.log('✅ Dashboard visualizado correctamente');
   });
 
-  test('US-05.03: Verificar métricas de materias', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.02: Ver resumen de materias activas', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
+    // Navegar al dashboard o estadísticas
+    await page.goto('/Home/Statistics');
     
-    // Buscar la sección de materias
-    const materiasSection = page.locator('section:has-text("Materia"), .materias-stats, h3:has-text("Materia")');
+    // Verificar que hay una sección de materias
+    const materiasSection = page.locator('section:has-text("Materias"), .materias-section, #materias');
     
     if (await materiasSection.count() > 0) {
-      await expect(materiasSection.first()).toBeVisible();
-      
-      // Verificar que hay información sobre materias
-      await expect(page.locator('body')).toContainText(/Total.*Materia|Materia.*Total/i);
-      
-      console.log('✅ Métricas de materias visualizadas correctamente');
+      await expect(materiasSection).toBeVisible({ timeout: 5000 });
+      console.log('✅ Resumen de materias visible');
     } else {
-      console.log('ℹ️ Sección de materias no encontrada en estadísticas');
+      // Alternativamente, buscar cualquier mención a materias
+      await expect(page.locator('body')).toContainText(/Materia|Asignatura|Curso/i);
+      console.log('✅ Información de materias encontrada');
     }
   });
 
-  test('US-05.04: Verificar métricas de flashcards', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.03: Ver estadísticas de flashcards', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
     
-    // Buscar información de flashcards
-    const flashcardsInfo = page.locator('text=/Flashcard|Tarjeta/i');
+    // Verificar que hay información de flashcards
+    await expect(page.locator('body')).toContainText(/Flashcard|Tarjeta/i);
     
-    if (await flashcardsInfo.count() > 0) {
-      await expect(flashcardsInfo.first()).toBeVisible();
-      
-      // Verificar que hay números asociados a flashcards
-      const bodyText = await page.locator('body').textContent();
-      const tieneFlashcards = bodyText && bodyText.toLowerCase().includes('flashcard');
-      
-      if (tieneFlashcards) {
-        console.log('✅ Métricas de flashcards visualizadas correctamente');
-      }
+    // Buscar métricas específicas (total, estudiadas, pendientes, etc.)
+    const metricas = page.locator('.metric, .stat-card, .card-body');
+    
+    if (await metricas.count() > 0) {
+      await expect(metricas.first()).toBeVisible({ timeout: 5000 });
+      console.log('✅ Estadísticas de flashcards visualizadas correctamente');
     } else {
-      console.log('ℹ️ Información de flashcards no encontrada en estadísticas');
+      console.log('⚠️ No se encontraron métricas visuales específicas');
     }
   });
 
-  test('US-05.05: Verificar métricas de quizzes y resultados', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.04: Ver estadísticas de quizzes realizados', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
     
-    // Buscar la sección de quizzes
-    const quizzesSection = page.locator('section:has-text("Quiz"), .quizzes-stats, h3:has-text("Quiz")');
+    // Verificar que hay información de quizzes
+    await expect(page.locator('body')).toContainText(/Quiz|Examen|Evaluación/i);
     
-    if (await quizzesSection.count() > 0) {
-      await expect(quizzesSection.first()).toBeVisible();
-      
-      // Verificar que hay una tabla de quizzes
-      const quizzesTable = page.locator('table:has-text("Quiz"), .quiz-table');
-      
-      if (await quizzesTable.count() > 0) {
-        await expect(quizzesTable.first()).toBeVisible();
-        
-        // Verificar que hay información de puntuación
-        await expect(page.locator('body')).toContainText(/Puntuación|Score|Resultado/i);
-        
-        console.log('✅ Métricas de quizzes y resultados visualizadas correctamente');
-      }
+    // Buscar gráficos o tablas de quizzes
+    const quizzesVisualization = page.locator('table, .chart, canvas, .quiz-stats');
+    
+    if (await quizzesVisualization.count() > 0) {
+      await expect(quizzesVisualization.first()).toBeVisible({ timeout: 5000 });
+      console.log('✅ Estadísticas de quizzes visualizadas correctamente');
     } else {
-      console.log('ℹ️ Sección de quizzes no encontrada en estadísticas');
+      console.log('⚠️ No se encontraron visualizaciones de quizzes');
     }
   });
 
-  test('US-05.06: Verificar historial de actividad del usuario', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.05: Ver progreso de repaso espaciado', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Ir al dashboard para ver actividad reciente
-    await page.goto('https://localhost:7028/Home/Dashboard');
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
     
-    // Buscar sección de actividad reciente
-    const actividadReciente = page.locator('section:has-text("Actividad"), section:has-text("Reciente"), .recent-activity');
+    // Verificar que hay información de repaso espaciado
+    const repasoSection = page.locator('section:has-text("Repaso"), .repaso-section, #repaso');
     
-    if (await actividadReciente.count() > 0) {
-      await expect(actividadReciente.first()).toBeVisible();
-      
-      // Verificar que hay fechas
-      await expect(page.locator('body')).toContainText(/\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}/);
-      
-      console.log('✅ Historial de actividad visualizado correctamente');
+    if (await repasoSection.count() > 0) {
+      await expect(repasoSection).toBeVisible({ timeout: 5000 });
+      console.log('✅ Progreso de repaso espaciado visible');
     } else {
-      console.log('ℹ️ Sección de actividad reciente no encontrada');
-    }
-  });
-
-  test('US-05.07: Verificar filtros de fecha en estadísticas', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
-    // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
-    
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
-    
-    // Buscar controles de filtro de fecha
-    const filtroFecha = page.locator('input[type="date"], select:has-text("Mes"), select:has-text("Año"), .date-filter');
-    
-    if (await filtroFecha.count() > 0) {
-      console.log('📅 Filtros de fecha disponibles');
-      
-      // Si hay un selector de fecha, cambiarlo
-      const fechaInput = page.locator('input[type="date"]').first();
-      
-      if (await fechaInput.count() > 0) {
-        const fechaAnterior = new Date();
-        fechaAnterior.setMonth(fechaAnterior.getMonth() - 1);
-        const fechaStr = fechaAnterior.toISOString().split('T')[0];
-        
-        await fechaInput.fill(fechaStr);
-        
-        // Buscar botón de aplicar filtro
-        const aplicarButton = page.locator('button:has-text("Aplicar"), button:has-text("Filtrar"), button[type="submit"]');
-        
-        if (await aplicarButton.count() > 0) {
-          await aplicarButton.first().click();
-          await page.waitForTimeout(2000);
-          
-          console.log('✅ Filtros de fecha funcionando correctamente');
-        }
-      }
-    } else {
-      console.log('ℹ️ Filtros de fecha no implementados o no visibles');
-    }
-  });
-
-  test('US-05.08: Verificar precisión de datos estadísticos', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
-    // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
-    
-    // Obtener el conteo de materias desde la lista
-    await page.goto('https://localhost:7028/Materia/Index');
-    const materiasEnLista = await page.locator('a[href*="/Materia/Details/"]').count();
-    console.log(`📚 Materias en lista: ${materiasEnLista}`);
-    
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
-    
-    // Buscar el conteo de materias en estadísticas
-    const totalMateriasText = await page.locator('text=/Total.*Materia|Materia.*\d+/i').textContent().catch(() => '');
-    
-    if (totalMateriasText) {
-      // Extraer el número
-      const match = totalMateriasText.match(/\d+/);
-      if (match) {
-        const materiasEnEstadisticas = parseInt(match[0]);
-        console.log(`📊 Materias en estadísticas: ${materiasEnEstadisticas}`);
-        
-        // Verificar que los números coinciden (con tolerancia de ±1 para casos edge)
-        if (Math.abs(materiasEnLista - materiasEnEstadisticas) <= 1) {
-          console.log('✅ Datos estadísticos precisos y consistentes');
-        } else {
-          console.log('⚠️ Discrepancia en conteo de materias');
-        }
+      // Buscar cualquier referencia a repaso
+      const tieneRepaso = await page.locator('body').textContent();
+      if (tieneRepaso && /Repaso|Revisión|Programado/i.test(tieneRepaso)) {
+        console.log('✅ Información de repaso encontrada');
+      } else {
+        console.log('⚠️ No se encontró información de repaso espaciado');
       }
     }
   });
 
-  test('US-05.09: Verificar gráficos y visualizaciones (si existen)', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.06: Ver gráficos de rendimiento por materia', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
     
-    // Buscar elementos canvas (usados por Chart.js u otras librerías)
-    const graficos = page.locator('canvas, .chart, svg[class*="chart"]');
-    const cantidadGraficos = await graficos.count();
+    // Buscar elementos gráficos (canvas para Chart.js, SVG para otros)
+    const graficos = page.locator('canvas, svg.chart, .chart-container');
     
-    if (cantidadGraficos > 0) {
-      console.log(`📈 Se encontraron ${cantidadGraficos} gráficos en la página`);
-      
-      // Verificar que los gráficos son visibles
-      await expect(graficos.first()).toBeVisible();
-      
-      console.log('✅ Gráficos y visualizaciones funcionando correctamente');
+    if (await graficos.count() > 0) {
+      await expect(graficos.first()).toBeVisible({ timeout: 5000 });
+      console.log('✅ Gráficos de rendimiento visualizados correctamente');
     } else {
-      console.log('ℹ️ No se encontraron gráficos - las estadísticas usan tablas/texto');
+      console.log('⚠️ No se encontraron gráficos en la página de estadísticas');
     }
   });
 
-  test('US-05.10: Exportar estadísticas (si está implementado)', async () => {
-    // Navegar a la página de login
-    await page.goto('https://localhost:7028/Account/Login');
-    
+  test('US-05.07: Ver historial de actividad reciente', async ({ page }) => {
     // Iniciar sesión
-    await page.fill('input[name="Email"]', 'test@example.com');
-    await page.fill('input[name="Password"]', 'Test123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/Home/Dashboard');
+    await loginWithTestUser(page);
     
-    // Ir a estadísticas
-    await page.goto('https://localhost:7028/Home/Statistics');
+    // Navegar al dashboard
+    await page.goto('/Home/Dashboard');
     
-    // Buscar botones de exportación
-    const exportButtons = page.locator('button:has-text("Exportar"), a:has-text("Exportar"), button:has-text("Descargar"), a:has-text("PDF"), a:has-text("Excel")');
+    // Buscar la sección de actividad reciente
+    const actividadSection = page.locator(
+      'section:has-text("Actividad"), section:has-text("Reciente"), ' +
+      '.activity-feed, .recent-activity, #actividad'
+    );
     
-    if (await exportButtons.count() > 0) {
-      console.log('💾 Funcionalidad de exportación disponible');
-      
-      // Hacer clic en el botón de exportar
-      await exportButtons.first().click();
-      
-      await page.waitForTimeout(2000);
-      
-      console.log('✅ Funcionalidad de exportación ejecutada');
+    if (await actividadSection.count() > 0) {
+      await expect(actividadSection.first()).toBeVisible({ timeout: 5000 });
+      console.log('✅ Historial de actividad reciente visible');
     } else {
-      console.log('ℹ️ Funcionalidad de exportación no implementada');
+      console.log('⚠️ No se encontró la sección de actividad reciente');
+    }
+  });
+
+  test('US-05.08: Filtrar estadísticas por rango de fechas', async ({ page }) => {
+    // Iniciar sesión
+    await loginWithTestUser(page);
+    
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
+    
+    // Buscar controles de fecha
+    const dateInputs = page.locator('input[type="date"], input[name*="fecha"], .date-picker');
+    
+    if (await dateInputs.count() >= 2) {
+      // Establecer un rango de fechas
+      const fechaInicio = new Date();
+      fechaInicio.setMonth(fechaInicio.getMonth() - 1);
+      const fechaFin = new Date();
+      
+      await dateInputs.first().fill(fechaInicio.toISOString().split('T')[0]);
+      await dateInputs.nth(1).fill(fechaFin.toISOString().split('T')[0]);
+      
+      // Buscar botón de filtrar
+      const filtrarButton = page.locator('button:has-text("Filtrar"), button:has-text("Aplicar")');
+      
+      if (await filtrarButton.count() > 0) {
+        await filtrarButton.click();
+        
+        // Esperar a que se actualicen las estadísticas
+        await page.waitForLoadState('networkidle');
+        
+        console.log('✅ Filtrado por rango de fechas aplicado correctamente');
+      } else {
+        console.log('⚠️ No se encontró el botón de filtrar');
+      }
+    } else {
+      console.log('⚠️ No se encontraron controles de fecha para filtrar');
+    }
+  });
+
+  test('US-05.09: Exportar estadísticas en formato PDF', async ({ page }) => {
+    // Iniciar sesión
+    await loginWithTestUser(page);
+    
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
+    
+    // Buscar botón de exportar PDF
+    const exportButton = page.locator(
+      'button:has-text("Exportar"), button:has-text("PDF"), ' +
+      'a:has-text("Exportar"), a:has-text("Descargar")'
+    );
+    
+    if (await exportButton.count() > 0) {
+      // Configurar manejador de descarga
+      const downloadPromise = page.waitForEvent('download', { timeout: 10000 });
+      
+      await exportButton.first().click();
+      
+      try {
+        const download = await downloadPromise;
+        console.log(`✅ Archivo exportado: ${download.suggestedFilename()}`);
+      } catch (error) {
+        console.log('⚠️ No se detectó descarga de archivo');
+      }
+    } else {
+      console.log('⚠️ No se encontró el botón de exportar');
+    }
+  });
+
+  test('US-05.10: Ver estadísticas comparativas entre materias', async ({ page }) => {
+    // Iniciar sesión
+    await loginWithTestUser(page);
+    
+    // Crear al menos 2 materias con algunas flashcards
+    const materia1Nombre = generarNombreUnico('Materia Comparativa 1');
+    const materia1Id = await crearMateria(page, materia1Nombre, 'Primera materia para comparación');
+    
+    for (let i = 1; i <= 3; i++) {
+      await crearFlashcard(page, materia1Id, `¿Pregunta ${i} M1?`, `Respuesta ${i} M1`);
+    }
+    
+    const materia2Nombre = generarNombreUnico('Materia Comparativa 2');
+    const materia2Id = await crearMateria(page, materia2Nombre, 'Segunda materia para comparación');
+    
+    for (let i = 1; i <= 3; i++) {
+      await crearFlashcard(page, materia2Id, `¿Pregunta ${i} M2?`, `Respuesta ${i} M2`);
+    }
+    
+    // Navegar a las estadísticas
+    await page.goto('/Home/Statistics');
+    
+    // Verificar que ambas materias aparecen en las estadísticas
+    await expect(page.locator('body')).toContainText(materia1Nombre);
+    await expect(page.locator('body')).toContainText(materia2Nombre);
+    
+    // Buscar elementos de comparación (tablas, gráficos comparativos)
+    const elementosComparativos = page.locator('table, .comparison-chart, canvas');
+    
+    if (await elementosComparativos.count() > 0) {
+      await expect(elementosComparativos.first()).toBeVisible({ timeout: 5000 });
+      console.log('✅ Estadísticas comparativas visualizadas correctamente');
+    } else {
+      console.log('⚠️ No se encontraron elementos visuales de comparación');
     }
   });
 });

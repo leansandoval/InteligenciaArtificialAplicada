@@ -406,3 +406,10 @@ userconfig.json
 *.key
 *.pem
 *.crt
+
+# ========================================
+# Playwright Test Results
+# ========================================
+tests/reports/
+tests/test-results/
+tests/playwright-report/

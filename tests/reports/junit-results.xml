@@ -1,28 +1,42 @@
-<testsuites id="" name="" tests="5" failures="0" skipped="0" errors="0" time="9.957661">
-<testsuite name="EP-01-Gestion-Materias-Flashcards\flashcard.spec.js" timestamp="2025-10-11T23:08:49.501Z" hostname="chromium" tests="4" failures="0" skipped="0" time="20.807" errors="0">
-<testcase name="QuizCraft - Creación de Flashcards › TC001: Debería autenticar usuario con credenciales demo" classname="EP-01-Gestion-Materias-Flashcards\flashcard.spec.js" time="3.53">
-</testcase>
-<testcase name="QuizCraft - Creación de Flashcards › TC002: Debería crear una nueva flashcard exitosamente" classname="EP-01-Gestion-Materias-Flashcards\flashcard.spec.js" time="7.603">
+<testsuites id="" name="" tests="6" failures="0" skipped="1" errors="0" time="25.520615999999457">
+<testsuite name="EP-02-Gestion-Quiz\quiz.spec.js" timestamp="2025-10-26T05:32:08.851Z" hostname="chromium" tests="6" failures="0" skipped="1" time="21.681" errors="0">
+<testcase name="EP-02: Gestión de Quizzes › US-02.01: Crear un nuevo quiz desde flashcards" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="10.426">
 <system-out>
-<![CDATA[Flashcard creada exitosamente
+<![CDATA[✅ Quiz creado exitosamente
 ]]>
 </system-out>
 </testcase>
-<testcase name="QuizCraft - Creación de Flashcards › TC003: Debería mostrar validaciones para campos obligatorios" classname="EP-01-Gestion-Materias-Flashcards\flashcard.spec.js" time="4.108">
-</testcase>
-<testcase name="QuizCraft - Creación de Flashcards › TC004: Debería filtrar flashcards por materia" classname="EP-01-Gestion-Materias-Flashcards\flashcard.spec.js" time="5.566">
+<testcase name="EP-02: Gestión de Quizzes › US-02.02: Editar un quiz existente" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="3.085">
 <system-out>
-<![CDATA[Encontradas 15 etiquetas de materia "Programación"
+<![CDATA[✅ Quiz editado exitosamente
 ]]>
 </system-out>
 </testcase>
-</testsuite>
-<testsuite name="EP-01-Gestion-Materias-Flashcards\materias\materias.spec.js" timestamp="2025-10-11T23:08:49.501Z" hostname="chromium" tests="1" failures="0" skipped="0" time="3.23" errors="0">
-<testcase name="US-59: Gestión de Materias de Estudio › Debería mostrar la lista de materias" classname="EP-01-Gestion-Materias-Flashcards\materias\materias.spec.js" time="3.23">
+<testcase name="EP-02: Gestión de Quizzes › US-02.03: Realizar un quiz completo" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="2.167">
 <system-out>
-<![CDATA[✅ Página de materias cargada correctamente
+<![CDATA[⚠️ No se encontró el botón para iniciar el quiz
 ]]>
 </system-out>
+</testcase>
+<testcase name="EP-02: Gestión de Quizzes › US-02.04: Ver resultados y estadísticas de quiz" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="2.628">
+<system-out>
+<![CDATA[✅ Estadísticas de quizzes visualizadas correctamente
+]]>
+</system-out>
+</testcase>
+<testcase name="EP-02: Gestión de Quizzes › US-02.05: Eliminar un quiz" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="3.375">
+<system-out>
+<![CDATA[✅ Quiz eliminado exitosamente
+]]>
+</system-out>
+</testcase>
+<testcase name="EP-02: Gestión de Quizzes › US-02.06: Generar quiz con IA desde contenido" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="0">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
 </testcase>
 </testsuite>
 </testsuites>

@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\Users\\Ivan\\Desktop\\APP Resumen\\QuizCraft-Original\\tests\\playwright.config.js",
-    "rootDir": "C:/Users/Ivan/Desktop/APP Resumen/QuizCraft-Original/tests/epics",
+    "configFile": "C:\\QuizCraft\\tests\\playwright.config.js",
+    "rootDir": "C:/QuizCraft/tests/epics",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 5
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "reporter": [
@@ -41,15 +41,15 @@
     "quiet": false,
     "projects": [
       {
-        "outputDir": "C:/Users/Ivan/Desktop/APP Resumen/QuizCraft-Original/tests/test-results",
+        "outputDir": "C:/QuizCraft/tests/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 5
+          "actualWorkers": 1
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "C:/Users/Ivan/Desktop/APP Resumen/QuizCraft-Original/tests/epics",
+        "testDir": "C:/QuizCraft/tests/epics",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -59,27 +59,27 @@
     ],
     "shard": null,
     "updateSnapshots": "missing",
-    "updateSourceMethod": "patch",
+    "updateSourceMethod": "3way",
     "version": "1.56.0",
     "workers": 6,
     "webServer": null
   },
   "suites": [
     {
-      "title": "EP-01-Gestion-Materias-Flashcards\\flashcard.spec.js",
-      "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
+      "title": "EP-02-Gestion-Quiz\\quiz.spec.js",
+      "file": "EP-02-Gestion-Quiz/quiz.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "QuizCraft - Creación de Flashcards",
-          "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
-          "line": 7,
+          "title": "EP-02: Gestión de Quizzes",
+          "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+          "line": 13,
           "column": 6,
           "specs": [
             {
-              "title": "TC001: Debería autenticar usuario con credenciales demo",
+              "title": "US-02.01: Crear un nuevo quiz desde flashcards",
               "ok": true,
               "tags": [],
               "tests": [
@@ -91,191 +91,234 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
+                      "workerIndex": 41,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3530,
+                      "duration": 10426,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Quiz creado exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T05:32:10.245Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e42010a110bd864499b8-84944f920412d3205b8e",
+              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "line": 15,
+              "column": 3
+            },
+            {
+              "title": "US-02.02: Editar un quiz existente",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 41,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3085,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Quiz editado exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T05:32:21.049Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e42010a110bd864499b8-06cd71c0d3a64720e4ee",
+              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "line": 58,
+              "column": 3
+            },
+            {
+              "title": "US-02.03: Realizar un quiz completo",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 41,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2167,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "⚠️ No se encontró el botón para iniciar el quiz\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T05:32:24.165Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e42010a110bd864499b8-9f5f910a69f7653d837f",
+              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "line": 112,
+              "column": 3
+            },
+            {
+              "title": "US-02.04: Ver resultados y estadísticas de quiz",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 41,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2628,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Estadísticas de quizzes visualizadas correctamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T05:32:26.364Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e42010a110bd864499b8-5df2bd22de281be80368",
+              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "line": 176,
+              "column": 3
+            },
+            {
+              "title": "US-02.05: Eliminar un quiz",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 41,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3375,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Quiz eliminado exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T05:32:29.018Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e42010a110bd864499b8-77ba239de762ed6cdf8d",
+              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "line": 197,
+              "column": 3
+            },
+            {
+              "title": "US-02.06: Generar quiz con IA desde contenido",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "C:\\QuizCraft\\tests\\epics\\EP-02-Gestion-Quiz\\quiz.spec.js",
+                        "line": 244,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 41,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 0,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-11T23:08:50.899Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ef7cec4897c87e003acc-c6bfa62f00ee6170a3c3",
-              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
-              "line": 13,
-              "column": 3
-            },
-            {
-              "title": "TC002: Debería crear una nueva flashcard exitosamente",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "passed",
-                      "duration": 7603,
-                      "errors": [],
-                      "stdout": [
+                      "startTime": "2025-10-26T05:32:32.419Z",
+                      "annotations": [
                         {
-                          "text": "Flashcard creada exitosamente\n"
+                          "type": "skip",
+                          "location": {
+                            "file": "C:\\QuizCraft\\tests\\epics\\EP-02-Gestion-Quiz\\quiz.spec.js",
+                            "line": 244,
+                            "column": 8
+                          }
                         }
                       ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-11T23:08:50.913Z",
-                      "annotations": [],
                       "attachments": []
                     }
                   ],
-                  "status": "expected"
+                  "status": "skipped"
                 }
               ],
-              "id": "ef7cec4897c87e003acc-92024a689b705354ae53",
-              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
-              "line": 28,
-              "column": 3
-            },
-            {
-              "title": "TC003: Debería mostrar validaciones para campos obligatorios",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "passed",
-                      "duration": 4108,
-                      "errors": [],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-11T23:08:50.938Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ef7cec4897c87e003acc-d47394dbb553dab049ef",
-              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
-              "line": 81,
-              "column": 3
-            },
-            {
-              "title": "TC004: Debería filtrar flashcards por materia",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 3,
-                      "parallelIndex": 3,
-                      "status": "passed",
-                      "duration": 5566,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "Encontradas 15 etiquetas de materia \"Programación\"\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-11T23:08:50.940Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "ef7cec4897c87e003acc-00563093fc6019df4e61",
-              "file": "EP-01-Gestion-Materias-Flashcards/flashcard.spec.js",
-              "line": 98,
-              "column": 3
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "EP-01-Gestion-Materias-Flashcards\\materias\\materias.spec.js",
-      "file": "EP-01-Gestion-Materias-Flashcards/materias/materias.spec.js",
-      "column": 0,
-      "line": 0,
-      "specs": [],
-      "suites": [
-        {
-          "title": "US-59: Gestión de Materias de Estudio",
-          "file": "EP-01-Gestion-Materias-Flashcards/materias/materias.spec.js",
-          "line": 3,
-          "column": 6,
-          "specs": [
-            {
-              "title": "Debería mostrar la lista de materias",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 4,
-                      "parallelIndex": 4,
-                      "status": "passed",
-                      "duration": 3230,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ Página de materias cargada correctamente\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-11T23:08:50.929Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "a7c8a46d14d4f3a4f8d4-663a9f8f2fae36da5e6f",
-              "file": "EP-01-Gestion-Materias-Flashcards/materias/materias.spec.js",
-              "line": 22,
-              "column": 7
+              "id": "e42010a110bd864499b8-9deaecb67cff9bceb800",
+              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "line": 244,
+              "column": 8
             }
           ]
         }
@@ -284,10 +327,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-11T23:08:49.374Z",
-    "duration": 9957.661,
+    "startTime": "2025-10-26T05:32:07.439Z",
+    "duration": 25520.615999999456,
     "expected": 5,
-    "skipped": 0,
+    "skipped": 1,
     "unexpected": 0,
     "flaky": 0
   }

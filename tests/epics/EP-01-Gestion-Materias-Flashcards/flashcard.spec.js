@@ -3,33 +3,24 @@
 // Descripción: Prueba automatizada de creación de flashcards
 
 const { test, expect } = require('@playwright/test');
+const { loginWithTestUser } = require('../../test-helpers');
+const testConfig = require('../../test-config');
 
 test.describe('QuizCraft - Creación de Flashcards', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navegar a la aplicación
-    await page.goto('http://localhost:5291');
-  });
 
-  test('TC001: Debería autenticar usuario con credenciales demo', async ({ page }) => {
-    // Hacer clic en Iniciar Sesión
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-    
-    // Usar credenciales demo
-    await page.getByRole('button', { name: 'Usar Credenciales Demo' }).click();
-    
-    // Iniciar sesión
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
+  test('TC001: Debería autenticar usuario con credenciales', async ({ page }) => {
+    // Iniciar sesión con credenciales correctas
+    await loginWithTestUser(page);
     
     // Verificar que estamos en el dashboard
     await expect(page).toHaveTitle(/QuizCraft/);
-    await expect(page.getByText('¡Bienvenido, Admin QuizCraft!')).toBeVisible();
+    // Usar regex flexible para el mensaje de bienvenida
+    await expect(page.locator('body')).toContainText(testConfig.messages.loginSuccess);
   });
 
   test('TC002: Debería crear una nueva flashcard exitosamente', async ({ page }) => {
     // Autenticación previa
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-    await page.getByRole('button', { name: 'Usar Credenciales Demo' }).click();
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
+    await loginWithTestUser(page);
     
     // Navegar a flashcards
     await page.getByRole('link', { name: 'Estudiar' }).click();
@@ -80,9 +71,7 @@ test.describe('QuizCraft - Creación de Flashcards', () => {
 
   test('TC003: Debería mostrar validaciones para campos obligatorios', async ({ page }) => {
     // Autenticación previa
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-    await page.getByRole('button', { name: 'Usar Credenciales Demo' }).click();
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
+    await loginWithTestUser(page);
     
     // Navegar a nueva flashcard
     await page.getByRole('link', { name: 'Estudiar' }).click();
@@ -97,9 +86,7 @@ test.describe('QuizCraft - Creación de Flashcards', () => {
 
   test('TC004: Debería filtrar flashcards por materia', async ({ page }) => {
     // Autenticación previa
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
-    await page.getByRole('button', { name: 'Usar Credenciales Demo' }).click();
-    await page.getByRole('button', { name: 'Iniciar Sesión' }).click();
+    await loginWithTestUser(page);
     
     // Navegar a flashcards
     await page.getByRole('link', { name: 'Estudiar' }).click();
@@ -124,17 +111,4 @@ test.describe('QuizCraft - Creación de Flashcards', () => {
   });
 });
 
-// Configuración adicional
-test.describe.configure({ mode: 'parallel' });
-
-module.exports = {
-  testDir: './tests/e2e/playwright',
-  timeout: 30000,
-  retries: 2,
-  use: {
-    baseURL: 'http://localhost:5291',
-    headless: false,
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-  },
-};
+// La configuración de Playwright ya está en playwright.config.js

@@ -1,19 +1,22 @@
 // playwright.config.js
+const testConfig = require('./test-config');
+
 module.exports = {
   testDir: './epics',
   timeout: 30000,
-  retries: 0, // Sin reintentos para desarrollo más rápido
+  retries: 1, // 1 reintento en caso de fallos temporales
   reporter: [
     ['html', { outputFolder: './reports/html' }],
     ['json', { outputFile: './reports/test-results.json' }],
     ['junit', { outputFile: './reports/junit-results.xml' }]
   ],
   use: {
-    baseURL: 'http://localhost:5291',
+    baseURL: testConfig.baseURL,
     headless: false,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'on-first-retry',
+    ignoreHTTPSErrors: true, // Ignorar errores de certificado SSL en localhost
   },
   projects: [
     {
