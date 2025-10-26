@@ -2,9 +2,6 @@
 
 class ThemeManager {
     constructor() {
-        this.themeToggle = document.getElementById('themeToggle');
-        this.themeIcon = document.getElementById('themeIcon');
-        
         // Obtener tema actual (ya debería estar aplicado por el script inmediato)
         this.currentTheme = document.documentElement.getAttribute('data-theme') || 
                            this.getStoredTheme() || 
@@ -14,17 +11,7 @@ class ThemeManager {
     }
     
     init() {
-        // Sincronizar el estado del tema con la UI
-        this.updateIcon(this.currentTheme);
-        
-        // Event listener para el toggle
-        if (this.themeToggle) {
-            this.themeToggle.addEventListener('click', () => {
-                this.toggleTheme();
-            });
-        }
-        
-        // Escuchar cambios en las preferencias del sistema
+        // Escuchar cambios en las preferencias del sistema para tema automático
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             if (!this.getStoredTheme()) {
                 this.setTheme(e.matches ? 'dark' : 'light');
@@ -43,31 +30,7 @@ class ThemeManager {
     setTheme(theme) {
         this.currentTheme = theme;
         document.documentElement.setAttribute('data-theme', theme);
-        this.updateIcon(theme);
         localStorage.setItem('theme', theme);
-    }
-    
-    toggleTheme() {
-        const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-        this.setTheme(newTheme);
-        
-        // Animación suave
-        document.body.style.transition = 'all 0.3s ease';
-        setTimeout(() => {
-            document.body.style.transition = '';
-        }, 300);
-    }
-    
-    updateIcon(theme) {
-        if (this.themeIcon) {
-            if (theme === 'dark') {
-                this.themeIcon.className = 'fas fa-sun';
-                this.themeToggle.title = 'Cambiar a tema claro';
-            } else {
-                this.themeIcon.className = 'fas fa-moon';
-                this.themeToggle.title = 'Cambiar a tema oscuro';
-            }
-        }
     }
 }
 

@@ -32,6 +32,9 @@
   /* Badges y etiquetas */
   --badge-text: #ffffff;
   --badge-muted-bg: #6c757d;
+  /* Banner (welcome) text defaults for light theme */
+  --banner-text: #ffffff;
+  --banner-lead-color: rgba(255,255,255,0.92);
 }
 
 [data-theme="dark"] {
@@ -67,6 +70,9 @@
   /* Badges y etiquetas para modo oscuro */
   --badge-text: #ffffff;
   --badge-muted-bg: #495057;
+  /* Banner (welcome) text defaults for dark theme */
+  --banner-text: var(--text-primary);
+  --banner-lead-color: rgba(248,249,250,0.92);
 }
 
 html {
@@ -125,6 +131,26 @@ footer {
 .bg-gradient-primary {
   background: var(--gradient-primary) !important;
   box-shadow: 0 10px 30px var(--gradient-shadow);
+  /* Use banner text variable which varies by theme */
+  color: var(--banner-text) !important;
+}
+
+.bg-gradient-primary .lead {
+  /* Use theme-aware lead color for readability */
+  color: var(--banner-lead-color) !important;
+  opacity: 0.95;
+}
+
+/* Force banner headings and display classes to use the banner text color (higher specificity)
+   This ensures the title in the gradient header is white in the light theme. */
+.bg-gradient-primary h1,
+.bg-gradient-primary .display-1,
+.bg-gradient-primary .display-2,
+.bg-gradient-primary .display-3,
+.bg-gradient-primary .display-4,
+.bg-gradient-primary .display-5,
+.bg-gradient-primary .display-6 {
+  color: var(--banner-text) !important;
 }
 
 /* ===== COMPONENTES CON TEMA ===== */
@@ -197,14 +223,21 @@ footer {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Improve contrast for footer text in both themes */
+footer, footer p, footer small, footer .text-muted {
+  color: var(--footer-text) !important;
+  opacity: 0.95;
+}
+
 footer a {
   color: var(--footer-text) !important;
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
+  opacity: 0.98;
+  transition: opacity 0.15s ease, color 0.15s ease;
 }
 
 footer a:hover {
   opacity: 1;
+  text-decoration: underline;
 }
 
 /* ===== FORMULARIOS MEJORADOS ===== */

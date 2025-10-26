@@ -193,11 +193,38 @@ public class HomeController : Controller
     /// FUNC_MostrarEstadisticas - Página de estadísticas del usuario
     /// </summary>
     [Authorize]
-    public IActionResult Statistics()
+    public async Task<IActionResult> Statistics()
     {
-        // Por ahora, redirigir al Dashboard
-        // En el futuro se puede crear una vista específica de estadísticas
-        return RedirectToAction("Dashboard");
+        try
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Obtener todas las estadísticas del usuario
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
+            var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
+            var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
+
+            var model = new StatisticsViewModel
+            {
+                NombreUsuario = user.NombreCompleto,
+                TotalMaterias = materias.Count(),
+                TotalFlashcards = flashcards.Count(),
+                TotalQuizzes = quizzes.Count(),
+                Materias = materias.ToList(),
+                QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(10).ToList()
+            };
+
+            return View(model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al cargar las estadísticas del usuario");
+            return RedirectToAction("Dashboard");
+        }
     }
 
     /// <summary>

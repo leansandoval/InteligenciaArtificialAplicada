@@ -1,0 +1,172 @@
+@model QuizCraft.Web.ViewModels.Home.StatisticsViewModel
+
+@{
+    ViewData["Title"] = "Estadísticas - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h2 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Mis Estadísticas
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <p class="lead text-muted">
+                        Resumen completo de tu actividad de estudio, @Model.NombreUsuario
+                    </p>
+                </div>
+            </div>
+
+            <!-- Estadísticas Generales -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-3 text-primary mb-3">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <h2 class="text-primary mb-2">@Model.TotalMaterias</h2>
+                            <p class="text-muted mb-0">Materias Totales</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-3 text-success mb-3">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <h2 class="text-success mb-2">@Model.TotalFlashcards</h2>
+                            <p class="text-muted mb-0">Flashcards Creadas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-3 text-warning mb-3">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <h2 class="text-warning mb-2">@Model.TotalQuizzes</h2>
+                            <p class="text-muted mb-0">Quizzes Realizados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Materias -->
+            @if (Model.Materias.Any())
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-book-open me-2"></i>Mis Materias
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var materia in Model.Materias)
+                            {
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border-start border-primary border-4 h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">@materia.Nombre</h5>
+                                            <p class="card-text text-muted small">@materia.Descripcion</p>
+                                            <div class="mt-2">
+                                                <span class="badge bg-primary me-2">
+                                                    <i class="fas fa-layer-group"></i> @materia.Flashcards.Count Flashcards
+                                                </span>
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-question-circle"></i> @materia.Quizzes.Count Quizzes
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Aún no tienes materias creadas. 
+                    <a asp-controller="Materia" asp-action="Create" class="alert-link">Crea tu primera materia</a>
+                </div>
+            }
+
+            <!-- Quizzes Recientes -->
+            @if (Model.QuizzesRecientes.Any())
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h4 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Quizzes Recientes
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Título</th>
+                                        <th>Materia</th>
+                                        <th>Dificultad</th>
+                                        <th>Preguntas</th>
+                                        <th>Fecha Creación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var quiz in Model.QuizzesRecientes)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@quiz.Titulo</strong>
+                                            </td>
+                                            <td>@quiz.Materia?.Nombre</td>
+                                            <td>
+                                                @if (quiz.NivelDificultad <= 2)
+                                                {
+                                                    <span class="badge bg-success">Fácil</span>
+                                                }
+                                                else if (quiz.NivelDificultad == 3)
+                                                {
+                                                    <span class="badge bg-warning">Intermedio</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Difícil</span>
+                                                }
+                                            </td>
+                                            <td>@quiz.Preguntas.Count</td>
+                                            <td>@quiz.FechaCreacion.ToString("dd/MM/yyyy")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Botones de Acción -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <a asp-controller="Home" asp-action="Dashboard" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-tachometer-alt me-2"></i>Ir al Dashboard
+                    </a>
+                    <a asp-controller="Materia" asp-action="Index" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-book me-2"></i>Ver Materias
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

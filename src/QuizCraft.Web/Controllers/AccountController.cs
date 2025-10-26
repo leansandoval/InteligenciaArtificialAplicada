@@ -51,6 +51,14 @@ public class AccountController : Controller
 
         try
         {
+            // Primero verificar que el usuario existe
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                ModelState.AddModelError(string.Empty, "Email o contraseña incorrectos.");
+                return View(model);
+            }
+
             var result = await _signInManager.PasswordSignInAsync(
                 model.Email,
                 model.Password,
@@ -59,6 +67,13 @@ public class AccountController : Controller
 
             if (result.Succeeded)
             {
+                // Agregar claims personalizados después del login exitoso
+                await _userManager.RemoveClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", string.Empty));
+                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto ?? $"{user.Nombre} {user.Apellido}"));
+                
+                // Refrescar el signin para incluir los nuevos claims
+                await _signInManager.RefreshSignInAsync(user);
+                
                 _logger.LogInformation("Usuario {Email} inició sesión exitosamente", model.Email);
                 return RedirectToLocal(returnUrl);
             }
@@ -123,6 +138,9 @@ public class AccountController : Controller
             {
                 // Asignar rol de Estudiante por defecto
                 await _userManager.AddToRoleAsync(user, "Estudiante");
+                
+                // Agregar claim del nombre completo
+                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto));
 
                 _logger.LogInformation("Usuario {Email} registrado exitosamente", model.Email);
 
@@ -185,10 +203,13 @@ public class AccountController : Controller
                 Nombre = user.Nombre ?? string.Empty,
                 Apellido = user.Apellido ?? string.Empty,
                 Email = user.Email ?? string.Empty,
+                NotificacionesHabilitadas = user.NotificacionesHabilitadas,
                 NotificacionesEmail = user.NotificacionesEmail,
                 NotificacionesWeb = user.NotificacionesWeb,
-                PreferenciaIdioma = user.PreferenciaIdioma ?? string.Empty,
-                TemaPreferido = user.TemaPreferido ?? string.Empty
+                PreferenciaIdioma = user.PreferenciaIdioma ?? "es",
+                TemaPreferido = user.TemaPreferido ?? "light",
+                FechaRegistro = user.FechaRegistro,
+                UltimoAcceso = user.UltimoAcceso
             };
 
             return View(model);
@@ -224,6 +245,7 @@ public class AccountController : Controller
             user.Nombre = model.Nombre;
             user.Apellido = model.Apellido;
             user.NombreCompleto = $"{model.Nombre} {model.Apellido}";
+            user.NotificacionesHabilitadas = model.NotificacionesHabilitadas;
             user.NotificacionesEmail = model.NotificacionesEmail;
             user.NotificacionesWeb = model.NotificacionesWeb;
             user.PreferenciaIdioma = model.PreferenciaIdioma;
@@ -233,6 +255,20 @@ public class AccountController : Controller
 
             if (result.Succeeded)
             {
+                // Actualizar el claim del nombre completo
+                var existingClaim = (await _userManager.GetClaimsAsync(user)).FirstOrDefault(c => c.Type == "NombreCompleto");
+                if (existingClaim != null)
+                {
+                    await _userManager.ReplaceClaimAsync(user, existingClaim, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto));
+                }
+                else
+                {
+                    await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto));
+                }
+                
+                // Refrescar el signin para incluir los claims actualizados
+                await _signInManager.RefreshSignInAsync(user);
+                
                 TempData["SuccessMessage"] = "Perfil actualizado correctamente";
                 return RedirectToAction(nameof(Profile));
             }

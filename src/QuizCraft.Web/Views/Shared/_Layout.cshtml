@@ -59,12 +59,6 @@
                                     <li><a class="dropdown-item" asp-controller="Flashcard" asp-action="Index"><i class="fas fa-layer-group"></i> Flashcards</a></li>
                                     <li><a class="dropdown-item" asp-controller="Quiz" asp-action="Index"><i class="fas fa-question-circle"></i> Quizzes</a></li>
                                     <li><a class="dropdown-item" asp-controller="Repaso" asp-action="Index"><i class="fas fa-calendar-alt"></i> Repasos Programados</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-controller="Flashcard" asp-action="Create"><i class="fas fa-plus"></i> Nueva Flashcard</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Quiz" asp-action="Create"><i class="fas fa-plus"></i> Nuevo Quiz</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Repaso" asp-action="Crear"><i class="fas fa-plus"></i> Nuevo Repaso</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Generacion" asp-action="Index"><i class="fas fa-magic"></i> Generar Automáticamente</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Materia" asp-action="Create"><i class="fas fa-plus"></i> Nueva Materia</a></li>
                                 </ul>
                             </li>
                             <li class="nav-item">
@@ -82,9 +76,10 @@
                     <ul class="navbar-nav">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            var nombreCompleto = User.FindFirstValue("NombreCompleto") ?? User.Identity?.Name ?? "Usuario";
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="javascript:void(0)" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user"></i> @User.Identity.Name
+                                    <i class="fas fa-user"></i> @nombreCompleto
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">
@@ -115,10 +110,6 @@
                             </li>
                         }
                     </ul>
-                    <!-- Theme Toggle Button -->
-                    <button class="theme-toggle" id="themeToggle" title="Cambiar tema">
-                        <i class="fas fa-moon" id="themeIcon"></i>
-                    </button>
                 </div>
             </div>
         </nav>
@@ -133,7 +124,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5><i class="fas fa-graduation-cap"></i> QuizCraft</h5>
+                    <h5><i class="fas fa-graduation-cap text-white"></i> <span class="text-white">QuizCraft</span></h5>
                     <p class="mb-0">Plataforma de aprendizaje personalizada para mejorar tu conocimiento.</p>
                 </div>
                 <div class="col-md-6 text-md-end">

@@ -74,8 +74,6 @@
                                 <select asp-for="PreferenciaIdioma" class="form-select">
                                     <option value="es">Español</option>
                                     <option value="en">English</option>
-                                    <option value="fr">Français</option>
-                                    <option value="de">Deutsch</option>
                                 </select>
                                 <span asp-validation-for="PreferenciaIdioma" class="text-danger"></span>
                             </div>
@@ -215,6 +213,45 @@
     <partial name="_ValidationScriptsPartial" />
     
     <script>
+        // Sincronizar tema del perfil con localStorage al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const temaPreferido = '@Model.TemaPreferido';
+            if (temaPreferido && temaPreferido !== '') {
+                const currentTheme = localStorage.getItem('theme');
+                // Si el tema del perfil es diferente al del localStorage, sincronizar
+                if (temaPreferido !== 'auto' && currentTheme !== temaPreferido) {
+                    localStorage.setItem('theme', temaPreferido);
+                    document.documentElement.setAttribute('data-theme', temaPreferido);
+                }
+            }
+        });
+
+        // Interceptar el submit del formulario para aplicar el tema inmediatamente
+        const profileForm = document.querySelector('form[method="post"]');
+        if (profileForm) {
+            profileForm.addEventListener('submit', function(e) {
+                const temaSelect = document.querySelector('select[name="TemaPreferido"]');
+                const temaSeleccionado = temaSelect ? temaSelect.value : null;
+                
+                if (temaSeleccionado && temaSeleccionado !== 'auto') {
+                    // Aplicar tema inmediatamente
+                    localStorage.setItem('theme', temaSeleccionado);
+                    document.documentElement.setAttribute('data-theme', temaSeleccionado);
+                    
+                    // Animación suave
+                    document.body.style.transition = 'all 0.3s ease';
+                    setTimeout(() => {
+                        document.body.style.transition = '';
+                    }, 300);
+                } else if (temaSeleccionado === 'auto') {
+                    // Si es automático, eliminar preferencia y usar sistema
+                    localStorage.removeItem('theme');
+                    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                    document.documentElement.setAttribute('data-theme', systemTheme);
+                }
+            });
+        }
+
         function changePassword() {
             // Implementar cambio de contraseña
             alert('Funcionalidad de cambio de contraseña por implementar');
