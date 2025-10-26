@@ -7,22 +7,22 @@
     if (TempData["Success"] != null)
     {
         alertClass = "alert-success";
-        alertMessage = TempData["Success"].ToString();
+        alertMessage = TempData["Success"]?.ToString() ?? "";
     }
     else if (TempData["Error"] != null)
     {
         alertClass = "alert-danger";
-        alertMessage = TempData["Error"].ToString();
+        alertMessage = TempData["Error"]?.ToString() ?? "";
     }
     else if (TempData["Warning"] != null)
     {
         alertClass = "alert-warning";
-        alertMessage = TempData["Warning"].ToString();
+        alertMessage = TempData["Warning"]?.ToString() ?? "";
     }
     else if (TempData["Info"] != null)
     {
         alertClass = "alert-info";
-        alertMessage = TempData["Info"].ToString();
+        alertMessage = TempData["Info"]?.ToString() ?? "";
     }
 }
 

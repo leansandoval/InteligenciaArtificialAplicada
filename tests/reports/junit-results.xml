@@ -1,42 +1,79 @@
-<testsuites id="" name="" tests="6" failures="0" skipped="1" errors="0" time="25.520615999999457">
-<testsuite name="EP-02-Gestion-Quiz\quiz.spec.js" timestamp="2025-10-26T05:32:08.851Z" hostname="chromium" tests="6" failures="0" skipped="1" time="21.681" errors="0">
-<testcase name="EP-02: Gestión de Quizzes › US-02.01: Crear un nuevo quiz desde flashcards" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="10.426">
+<testsuites id="" name="" tests="7" failures="1" skipped="1" errors="0" time="45.07418500000006">
+<testsuite name="EP-04-IA-Generation\ia-generation.spec.js" timestamp="2025-10-26T17:33:47.104Z" hostname="chromium" tests="7" failures="1" skipped="1" time="39.146" errors="0">
+<testcase name="EP-04: Generación con IA › US-04.01: Generar flashcards desde texto con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="7.924">
 <system-out>
-<![CDATA[✅ Quiz creado exitosamente
+<![CDATA[✅ Flashcards generadas con IA exitosamente
 ]]>
 </system-out>
 </testcase>
-<testcase name="EP-02: Gestión de Quizzes › US-02.02: Editar un quiz existente" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="3.085">
+<testcase name="EP-04: Generación con IA › US-04.02: Generar flashcards desde archivo PDF con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="3.215">
+<failure message="ia-generation.spec.js:55:3 US-04.02: Generar flashcards desde archivo PDF con IA" type="FAILURE">
+<![CDATA[  [chromium] › EP-04-IA-Generation\ia-generation.spec.js:55:3 › EP-04: Generación con IA › US-04.02: Generar flashcards desde archivo PDF con IA 
+
+    Error: ENOENT: no such file or directory, stat 'C:\ArchivosPrueba\ejemplo-historia-roma.txt'
+
+      77 |       const testFilePath = '../ArchivosPrueba/ejemplo-historia-roma.txt';
+      78 |       
+    > 79 |       await fileInput.setInputFiles(testFilePath);
+         |       ^
+      80 |       await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '3');
+      81 |       
+      82 |       // Enviar para generar
+        at C:\QuizCraft\tests\epics\EP-04-IA-Generation\ia-generation.spec.js:79:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\test-results\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\test-results\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\test-results\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\error-context.md
+]]>
+</failure>
 <system-out>
-<![CDATA[✅ Quiz editado exitosamente
+<![CDATA[
+[[ATTACHMENT|..\test-results\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|..\test-results\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\video.webm]]
+
+[[ATTACHMENT|..\test-results\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\error-context.md]]
 ]]>
 </system-out>
 </testcase>
-<testcase name="EP-02: Gestión de Quizzes › US-02.03: Realizar un quiz completo" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="2.167">
-<system-out>
-<![CDATA[⚠️ No se encontró el botón para iniciar el quiz
-]]>
-</system-out>
-</testcase>
-<testcase name="EP-02: Gestión de Quizzes › US-02.04: Ver resultados y estadísticas de quiz" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="2.628">
-<system-out>
-<![CDATA[✅ Estadísticas de quizzes visualizadas correctamente
-]]>
-</system-out>
-</testcase>
-<testcase name="EP-02: Gestión de Quizzes › US-02.05: Eliminar un quiz" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="3.375">
-<system-out>
-<![CDATA[✅ Quiz eliminado exitosamente
-]]>
-</system-out>
-</testcase>
-<testcase name="EP-02: Gestión de Quizzes › US-02.06: Generar quiz con IA desde contenido" classname="EP-02-Gestion-Quiz\quiz.spec.js" time="0">
+<testcase name="EP-04: Generación con IA › US-04.03: Generar quiz con IA desde contenido de texto" classname="EP-04-IA-Generation\ia-generation.spec.js" time="0">
 <properties>
 <property name="skip" value="">
 </property>
 </properties>
 <skipped>
 </skipped>
+</testcase>
+<testcase name="EP-04: Generación con IA › US-04.04: Generar resumen de texto con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="4.301">
+<system-out>
+<![CDATA[✅ Resumen generado con IA exitosamente
+]]>
+</system-out>
+</testcase>
+<testcase name="EP-04: Generación con IA › US-04.05: Generar explicación detallada con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="13.726">
+<system-out>
+<![CDATA[✅ Explicación generada con IA exitosamente
+]]>
+</system-out>
+</testcase>
+<testcase name="EP-04: Generación con IA › US-04.06: Validar límites de generación con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="3.097">
+<system-out>
+<![CDATA[✅ Generación completada con límites aplicados
+]]>
+</system-out>
+</testcase>
+<testcase name="EP-04: Generación con IA › US-04.07: Regenerar contenido con diferentes parámetros de IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="6.883">
+<system-out>
+<![CDATA[✅ Primera generación completada
+✅ Regeneración con diferentes parámetros completada exitosamente
+]]>
+</system-out>
 </testcase>
 </testsuite>
 </testsuites>

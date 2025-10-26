@@ -1565,3 +1565,82 @@ blockquote {
     --bg-primary: #000000;
   }
 }
+/* ===== CORRECCIONES DE CONTRASTE PARA TEMA OSCURO ===== */
+/* Corregir campos con bg-light y text-dark en tema oscuro */
+[data-theme="dark"] .bg-light {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .text-dark {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .flashcard-question,
+[data-theme="dark"] .flashcard-answer {
+  color: var(--text-primary) !important;
+}
+
+/* Mejorar contraste en card-body para flashcards */
+[data-theme="dark"] .card-body p,
+[data-theme="dark"] .card-body .fs-5 {
+  color: var(--text-primary) !important;
+}
+
+/* Asegurar que los contenedores de pregunta/respuesta tengan buen contraste */
+[data-theme="dark"] .rounded-3.bg-light {
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .rounded-3.bg-light p {
+  color: var(--text-primary) !important;
+}
+
+/* ===== SWEETALERT2 - SOPORTE TEMA OSCURO ===== */
+/* Mejorar los popups de SweetAlert2 para tema oscuro */
+[data-theme="dark"] .swal2-popup {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .swal2-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .swal2-html-container {
+  color: var(--text-primary) !important;
+}
+
+/* Ajustar el spinner/loader en tema oscuro */
+[data-theme="dark"] .swal2-loader {
+  border-color: var(--text-primary) transparent var(--text-primary) transparent !important;
+}
+
+/* Botones en tema oscuro */
+[data-theme="dark"] .swal2-confirm,
+[data-theme="dark"] .swal2-cancel {
+  background-color: var(--primary-color) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+[data-theme="dark"] .swal2-styled:focus {
+  box-shadow: 0 0 0 3px rgba(100, 150, 200, 0.5) !important;
+}
+
+/* Iconos en tema oscuro */
+[data-theme="dark"] .swal2-icon-content {
+  color: var(--text-primary) !important;
+}
+/* ===== REVIEW FLASHCARDS - CORRECCION CONTRASTE TEMA OSCURO ===== */
+/* Corregir fondo de los campos de pregunta/respuesta en tema oscuro */
+[data-theme="dark"] .flashcard-question,
+[data-theme="dark"] .flashcard-answer {
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border-left-color: #4a90e2 !important;
+}
+
+[data-theme="dark"] .flashcard-answer {
+  border-left-color: #5cb85c !important;
+}

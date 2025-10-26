@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using QuizCraft.Application.ViewModels;
 using QuizCraft.Application.Interfaces;
 using QuizCraft.Core.Entities;
 using QuizCraft.Core.Enums;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Infrastructure.Data;
+using AIService = QuizCraft.Application.Interfaces.IAIService;
 
 namespace QuizCraft.Web.Controllers;
 
@@ -23,6 +25,7 @@ public class FlashcardController : Controller
     private readonly IFileUploadService _fileUploadService;
     private readonly IAlgoritmoRepasoService _algoritmoRepasoService;
     private readonly ApplicationDbContext _context;
+    private readonly AIService _aiService;
 
     public FlashcardController(
         IUnitOfWork unitOfWork,
@@ -30,7 +33,8 @@ public class FlashcardController : Controller
         ILogger<FlashcardController> logger,
         IFileUploadService fileUploadService,
         IAlgoritmoRepasoService algoritmoRepasoService,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        AIService aiService)
     {
         _unitOfWork = unitOfWork;
         _userManager = userManager;
@@ -38,6 +42,7 @@ public class FlashcardController : Controller
         _fileUploadService = fileUploadService;
         _algoritmoRepasoService = algoritmoRepasoService;
         _context = context;
+        _aiService = aiService;
     }
 
     /// <summary>
@@ -1064,6 +1069,241 @@ public class FlashcardController : Controller
         estadisticaHoy.PromedioAcierto = estadisticaHoy.FlashcardsRevisadas > 0 
             ? (double)estadisticaHoy.FlashcardsCorrectas / estadisticaHoy.FlashcardsRevisadas * 100 
             : 0;
+    }
+
+    #endregion
+
+    #region Generación con IA
+
+    /// <summary>
+    /// Muestra el formulario para generar flashcards con IA
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GenerateWithAI(int? materiaId)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return Challenge();
+        }
+
+        var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+        
+        var viewModel = new GenerateFlashcardsWithAIViewModel
+        {
+            MateriaId = materiaId,
+            Materias = materias.ToList(),
+            CantidadFlashcards = 5,
+            NivelDificultad = NivelDificultad.Intermedio
+        };
+
+        return View(viewModel);
+    }
+
+    /// <summary>
+    /// Procesa la generación de flashcards con IA
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GenerateWithAI(GenerateFlashcardsWithAIViewModel model)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return Challenge();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+            model.Materias = materias.ToList();
+            return View(model);
+        }
+
+        try
+        {
+            var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId ?? 0);
+            if (materia == null || materia.UsuarioId != usuario.Id)
+            {
+                ModelState.AddModelError("", "Materia no encontrada");
+                var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+                model.Materias = materias.ToList();
+                return View(model);
+            }
+
+            string contenido = model.Contenido ?? string.Empty;
+
+            if (model.ArchivoPDF != null && model.ArchivoPDF.Length > 0)
+            {
+                _logger.LogWarning("Carga de PDF no implementada aún, usando contenido de texto");
+            }
+
+            if (string.IsNullOrWhiteSpace(contenido))
+            {
+                ModelState.AddModelError("", "Debe proporcionar contenido o subir un archivo");
+                var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+                model.Materias = materias.ToList();
+                return View(model);
+            }
+
+            var settings = new QuizCraft.Application.Interfaces.AIGenerationSettings
+            {
+                MaxCardsPerDocument = model.CantidadFlashcards ?? 5,
+                Difficulty = model.NivelDificultad.ToString(),
+                IncludeExplanations = true
+            };
+
+            var response = await _aiService.GenerateFlashcardsFromTextAsync(contenido, settings);
+
+            if (!response.Success)
+            {
+                ModelState.AddModelError("", $"Error al generar flashcards: {response.ErrorMessage}");
+                var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+                model.Materias = materias.ToList();
+                return View(model);
+            }
+
+            // Parsear el JSON de respuesta para extraer flashcards
+            int flashcardsCreadas = 0;
+            try
+            {
+                // El contenido puede venir en formato JSON
+                if (!string.IsNullOrWhiteSpace(response.Content))
+                {
+                    // Intentar parsear como array de flashcards
+                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    
+                    // Intentar diferentes formatos de respuesta
+                    JsonDocument doc = JsonDocument.Parse(response.Content);
+                    JsonElement root = doc.RootElement;
+                    
+                    JsonElement flashcardsElement;
+                    
+                    // Verificar si tiene una propiedad "flashcards" o es directamente un array
+                    if (root.TryGetProperty("flashcards", out flashcardsElement) || 
+                        root.TryGetProperty("Flashcards", out flashcardsElement))
+                    {
+                        // Caso: { "flashcards": [...] }
+                    }
+                    else if (root.ValueKind == JsonValueKind.Array)
+                    {
+                        // Caso: [...] directamente
+                        flashcardsElement = root;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Formato de respuesta JSON no reconocido");
+                    }
+
+                    foreach (JsonElement item in flashcardsElement.EnumerateArray())
+                    {
+                        // Intentar extraer pregunta y respuesta con diferentes nombres de propiedad
+                        string pregunta = GetJsonStringProperty(item, "pregunta", "question", "Pregunta", "Question") ?? "";
+                        string respuesta = GetJsonStringProperty(item, "respuesta", "answer", "Respuesta", "Answer") ?? "";
+
+                        if (!string.IsNullOrWhiteSpace(pregunta) && !string.IsNullOrWhiteSpace(respuesta))
+                        {
+                            var flashcard = new Flashcard
+                            {
+                                Pregunta = pregunta,
+                                Respuesta = respuesta,
+                                Dificultad = model.NivelDificultad,
+                                MateriaId = materia.Id,
+                                FechaCreacion = DateTime.UtcNow,
+                                EstaActivo = true
+                            };
+
+                            await _unitOfWork.FlashcardRepository.AddAsync(flashcard);
+                            flashcardsCreadas++;
+                        }
+                    }
+
+                    if (flashcardsCreadas > 0)
+                    {
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                if (flashcardsCreadas == 0)
+                {
+                    // Si no se pudo parsear JSON, crear flashcards de ejemplo basadas en el contenido
+                    _logger.LogWarning("No se pudieron parsear flashcards del JSON, usando modo fallback");
+                    flashcardsCreadas = await CrearFlashcardsDeEjemplo(contenido, materia, usuario, model.CantidadFlashcards ?? 5);
+                }
+
+                TempData["SuccessMessage"] = $"Se generaron {flashcardsCreadas} flashcard(s) con IA exitosamente";
+                return RedirectToAction("Details", "Materia", new { id = materia.Id });
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "Error al parsear JSON de respuesta de IA");
+                
+                // Fallback: crear flashcards de ejemplo
+                flashcardsCreadas = await CrearFlashcardsDeEjemplo(contenido, materia, usuario, model.CantidadFlashcards ?? 5);
+                
+                TempData["SuccessMessage"] = $"Se generaron {flashcardsCreadas} flashcard(s) (modo básico)";
+                TempData["InfoMessage"] = "La IA generó contenido pero en formato no estructurado";
+                return RedirectToAction("Details", "Materia", new { id = materia.Id });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al generar flashcards con IA");
+            ModelState.AddModelError("", "Ocurrió un error al generar las flashcards");
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+            model.Materias = materias.ToList();
+            return View(model);
+        }
+    }
+
+    /// <summary>
+    /// Método auxiliar para obtener una propiedad string de un JsonElement con múltiples nombres posibles
+    /// </summary>
+    private string? GetJsonStringProperty(JsonElement element, params string[] propertyNames)
+    {
+        foreach (var name in propertyNames)
+        {
+            if (element.TryGetProperty(name, out JsonElement property))
+            {
+                return property.GetString();
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Crea flashcards de ejemplo cuando no se puede parsear la respuesta de IA
+    /// </summary>
+    private async Task<int> CrearFlashcardsDeEjemplo(string contenido, Materia materia, ApplicationUser usuario, int cantidad)
+    {
+        int creadas = 0;
+        var lineas = contenido.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                             .Where(l => l.Length > 10)
+                             .Take(cantidad * 2)
+                             .ToList();
+
+        for (int i = 0; i < Math.Min(cantidad, lineas.Count / 2); i++)
+        {
+            var flashcard = new Flashcard
+            {
+                Pregunta = $"Pregunta sobre: {lineas[i * 2].Substring(0, Math.Min(50, lineas[i * 2].Length))}...",
+                Respuesta = lineas[i * 2 + 1].Length > 200 ? lineas[i * 2 + 1].Substring(0, 200) + "..." : lineas[i * 2 + 1],
+                Dificultad = NivelDificultad.Intermedio,
+                MateriaId = materia.Id,
+                FechaCreacion = DateTime.UtcNow,
+                EstaActivo = true
+            };
+
+            await _unitOfWork.FlashcardRepository.AddAsync(flashcard);
+            creadas++;
+        }
+
+        if (creadas > 0)
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        return creadas;
     }
 
     #endregion

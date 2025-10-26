@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Generar Explicación con IA";
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+    <p class="text-muted">Obtén una explicación detallada de cualquier concepto usando Inteligencia Artificial</p>
+
+    @if (ViewBag.Success != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @ViewBag.Success
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="GenerateExplicacion" method="post">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Concepto a Explicar</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label for="Concepto" class="form-label">Concepto</label>
+                    <input type="text" name="Concepto" id="Concepto" class="form-control" required 
+                           placeholder="Ej: Teoría de la Relatividad, Fotosíntesis, etc."
+                           value="@(ViewBag.ConceptoOriginal ?? "")"/>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="NivelDetalle" class="form-label">Nivel de Detalle</label>
+                    <select name="NivelDetalle" id="NivelDetalle" class="form-select">
+                        <option value="0" selected="@(ViewBag.NivelDetalle == 0)">Básico (Simple y breve)</option>
+                        <option value="1" selected="@(ViewBag.NivelDetalle == 1 || ViewBag.NivelDetalle == null)">Intermedio (Claro y comprensible)</option>
+                        <option value="2" selected="@(ViewBag.NivelDetalle == 2)">Avanzado (Detallado y técnico)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-lightbulb"></i> Generar Explicación
+            </button>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Volver</a>
+        </div>
+    </form>
+
+    @if (ViewBag.Explicacion != null)
+    {
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Explicación Generada</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light">
+                    @Html.Raw(ViewBag.Explicacion.Replace("\n", "<br/>"))
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+

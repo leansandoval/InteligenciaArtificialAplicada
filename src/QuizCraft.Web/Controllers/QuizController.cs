@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Text.Json;
 using QuizCraft.Core.Entities;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Application.ViewModels;
@@ -10,6 +11,7 @@ using QuizCraft.Application.Interfaces;
 using QuizCraft.Application.Models;
 using QuizCraft.Web.ViewModels;
 using QuizCraft.Core.Enums;
+using AIService = QuizCraft.Application.Interfaces.IAIService;
 
 namespace QuizCraft.Web.Controllers
 {
@@ -20,17 +22,20 @@ namespace QuizCraft.Web.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<QuizController> _logger;
         private readonly IQuizGenerationService _quizGenerationService;
+        private readonly AIService _aiService;
 
         public QuizController(
             IUnitOfWork unitOfWork, 
             UserManager<ApplicationUser> userManager, 
             ILogger<QuizController> logger,
-            IQuizGenerationService quizGenerationService)
+            IQuizGenerationService quizGenerationService,
+            AIService aiService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _logger = logger;
             _quizGenerationService = quizGenerationService;
+            _aiService = aiService;
         }
 
         // GET: Quiz
@@ -440,10 +445,10 @@ namespace QuizCraft.Web.Controllers
                 {
                     Id = p.Id,
                     TextoPregunta = p.TextoPregunta,
-                    OpcionA = p.OpcionA,
-                    OpcionB = p.OpcionB,
-                    OpcionC = p.OpcionC,
-                    OpcionD = p.OpcionD,
+                    OpcionA = p.OpcionA ?? "",
+                    OpcionB = p.OpcionB ?? "",
+                    OpcionC = p.OpcionC ?? "",
+                    OpcionD = p.OpcionD ?? "",
                     RespuestaCorrecta = p.RespuestaCorrecta,
                     Explicacion = p.Explicacion,
                     Puntos = p.Puntos,
@@ -931,6 +936,9 @@ namespace QuizCraft.Web.Controllers
         public async Task<IActionResult> ConfigureAI(int? materiaId)
         {
             var usuarioId = _userManager.GetUserId(User);
+            if (string.IsNullOrEmpty(usuarioId))
+                return RedirectToAction("Login", "Account");
+                
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
 
             var viewModel = new QuizGenerationConfigViewModel
@@ -975,6 +983,9 @@ namespace QuizCraft.Web.Controllers
                     }
                     
                     var usuarioId = _userManager.GetUserId(User);
+                    if (string.IsNullOrEmpty(usuarioId))
+                        return RedirectToAction("Login", "Account");
+                        
                     var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
                     ViewBag.Materias = materias.Select(m => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
                     {
@@ -983,6 +994,14 @@ namespace QuizCraft.Web.Controllers
                         Selected = m.Id == model.MateriaId
                     }).ToList();
                     return View("ConfigureAI", model);
+                }
+
+                // Validar que el contenido no sea nulo o vacío
+                if (string.IsNullOrWhiteSpace(model.TextContent))
+                {
+                    ModelState.AddModelError("TextContent", "El contenido de texto no puede estar vacío.");
+                    TempData["Error"] = "Debes proporcionar contenido de texto para generar el quiz.";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
                 }
 
                 // Convertir ViewModel a configuración de generación
@@ -1009,6 +1028,13 @@ namespace QuizCraft.Web.Controllers
                     _logger.LogWarning("No se generaron preguntas. Success: {Success}, Error: {Error}", result.Success, result.ErrorMessage);
                     TempData["Error"] = "No se pudieron generar preguntas. Intenta con un texto más largo o diferente.";
                     return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                // Validar que MateriaId no sea nulo
+                if (!model.MateriaId.HasValue)
+                {
+                    TempData["Error"] = "La materia no fue especificada correctamente.";
+                    return RedirectToAction("Index", "Materia");
                 }
 
                 // Redirigir a la vista de revisión y nombrar quiz
@@ -1515,6 +1541,9 @@ namespace QuizCraft.Web.Controllers
                 if (!ModelState.IsValid)
                 {
                     var usuarioId = _userManager.GetUserId(User);
+                    if (string.IsNullOrEmpty(usuarioId))
+                        return RedirectToAction("Login", "Account");
+                        
                     var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
                     ViewBag.Materias = materias.Select(m => new SelectListItem
                     {
@@ -1566,6 +1595,248 @@ namespace QuizCraft.Web.Controllers
         }
 
         #endregion
+        #region Generación con IA
+        
+        // GET: Quiz/GenerateWithAI
+        [HttpGet]
+        public async Task<IActionResult> GenerateWithAI(int? materiaId)
+        {
+            var usuario = await _userManager.GetUserAsync(User);
+            if (usuario == null) return RedirectToAction("Login", "Account");
+
+            var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+
+            var viewModel = new GenerateQuizWithAIViewModel
+            {
+                MateriaId = materiaId,
+                Materias = materias.ToList()
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: Quiz/GenerateWithAI
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GenerateWithAI(GenerateQuizWithAIViewModel model)
+        {
+            var usuario = await _userManager.GetUserAsync(User);
+            if (usuario == null) return RedirectToAction("Login", "Account");
+
+            if (!ModelState.IsValid)
+            {
+                model.Materias = (await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id)).ToList();
+                return View(model);
+            }
+
+            try
+            {
+                // Verificar que la materia existe y pertenece al usuario
+                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId!.Value);
+                if (materia == null || materia.UsuarioId != usuario.Id)
+                {
+                    TempData["Error"] = "Materia no encontrada o no tiene permiso para acceder.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Obtener contenido (texto o PDF)
+                string contenido = model.Contenido ?? string.Empty;
+
+                // TODO: Si hay archivo PDF, extraer texto del PDF
+                if (model.ArchivoPDF != null && model.ArchivoPDF.Length > 0)
+                {
+                    _logger.LogWarning("PDF upload not implemented yet. Using text content instead.");
+                    // Por ahora, usar el contenido de texto si existe
+                }
+
+                if (string.IsNullOrWhiteSpace(contenido))
+                {
+                    TempData["Error"] = "Debe proporcionar contenido de texto o un archivo PDF.";
+                    model.Materias = (await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id)).ToList();
+                    return View(model);
+                }
+
+                // Configurar parámetros de generación
+                var settings = new QuizGenerationSettings
+                {
+                    NumberOfQuestions = model.CantidadPreguntas ?? 5,
+                    DifficultyLevel = model.NivelDificultad,
+                    IncludeExplanations = true
+                };
+
+                // Llamar al servicio de IA
+                var response = await _aiService.GenerateQuizFromTextAsync(contenido, settings);
+
+                if (!response.Success || string.IsNullOrWhiteSpace(response.Content))
+                {
+                    _logger.LogWarning("AI service returned error: {Error}", response.ErrorMessage);
+                    // Crear quiz de ejemplo con preguntas simples del texto
+                    var quizEjemplo = await CrearQuizDeEjemplo(contenido, materia, model, usuario.Id);
+                    TempData["Warning"] = $"Se creó un quiz básico con {quizEjemplo.Item2} preguntas (servicio IA no disponible).";
+                    return RedirectToAction("Details", new { id = quizEjemplo.Item1.Id });
+                }
+
+                // Parsear respuesta JSON
+                var quiz = new Quiz
+                {
+                    Titulo = model.Titulo ?? $"Quiz generado por IA - {materia.Nombre}",
+                    Descripcion = "Generado automáticamente con IA",
+                    MateriaId = materia.Id,
+                    CreadorId = usuario.Id,
+                    NivelDificultad = (int)model.NivelDificultad,
+                    EsPublico = false,
+                    FechaCreacion = DateTime.UtcNow,
+                    EstaActivo = true,
+                    TiempoLimite = (model.CantidadPreguntas ?? 5) * 2, // 2 minutos por pregunta
+                    NumeroPreguntas = model.CantidadPreguntas ?? 5
+                };
+
+                try
+                {
+                    // Intentar parsear como JSON
+                    using var doc = JsonDocument.Parse(response.Content);
+                    var root = doc.RootElement;
+
+                    // Intentar obtener array de preguntas
+                    JsonElement preguntasElement;
+                    if (root.TryGetProperty("preguntas", out preguntasElement) || 
+                        root.TryGetProperty("questions", out preguntasElement) ||
+                        root.TryGetProperty("quiz", out preguntasElement))
+                    {
+                        // Tiene property wrapper
+                    }
+                    else if (root.ValueKind == JsonValueKind.Array)
+                    {
+                        preguntasElement = root;
+                    }
+                    else
+                    {
+                        throw new JsonException("No se encontró array de preguntas en la respuesta");
+                    }
+
+                    var preguntas = new List<PreguntaQuiz>();
+
+                    foreach (var item in preguntasElement.EnumerateArray())
+                    {
+                        var pregunta = GetJsonStringProperty(item, "pregunta", "question", "Pregunta", "Question");
+                        var opcionA = GetJsonStringProperty(item, "opcionA", "optionA", "opciona", "a", "A");
+                        var opcionB = GetJsonStringProperty(item, "opcionB", "optionB", "opcionb", "b", "B");
+                        var opcionC = GetJsonStringProperty(item, "opcionC", "optionC", "opcionc", "c", "C");
+                        var opcionD = GetJsonStringProperty(item, "opcionD", "optionD", "opciond", "d", "D");
+                        var respuestaCorrecta = GetJsonStringProperty(item, "respuestaCorrecta", "correctAnswer", "respuesta", "answer");
+                        var explicacion = GetJsonStringProperty(item, "explicacion", "explanation", "Explicacion");
+
+                        if (!string.IsNullOrWhiteSpace(pregunta) && !string.IsNullOrWhiteSpace(respuestaCorrecta))
+                        {
+                            var nuevaPregunta = new PreguntaQuiz
+                            {
+                                TextoPregunta = pregunta,
+                                OpcionA = opcionA ?? "Opción A",
+                                OpcionB = opcionB ?? "Opción B",
+                                OpcionC = opcionC ?? "Opción C",
+                                OpcionD = opcionD ?? "Opción D",
+                                RespuestaCorrecta = respuestaCorrecta,
+                                Explicacion = explicacion,
+                                Puntos = 1,
+                                Orden = preguntas.Count + 1,
+                                EstaActivo = true
+                            };
+
+                            preguntas.Add(nuevaPregunta);
+                        }
+                    }
+
+                    quiz.Preguntas = preguntas;
+
+                    if (preguntas.Count == 0)
+                    {
+                        throw new InvalidOperationException("No se generaron preguntas válidas");
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse AI response as JSON. Creating example quiz.");
+                    var quizEjemplo = await CrearQuizDeEjemplo(contenido, materia, model, usuario.Id);
+                    TempData["Warning"] = $"Se creó un quiz básico con {quizEjemplo.Item2} preguntas (formato IA no válido).";
+                    return RedirectToAction("Details", new { id = quizEjemplo.Item1.Id });
+                }
+
+                // Guardar quiz
+                await _unitOfWork.QuizRepository.AddAsync(quiz);
+                await _unitOfWork.SaveChangesAsync();
+
+                TempData["Success"] = $"Quiz generado exitosamente con {quiz.Preguntas.Count} preguntas.";
+                return RedirectToAction("Details", new { id = quiz.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating quiz with AI");
+                TempData["Error"] = "Ocurrió un error al generar el quiz.";
+                model.Materias = (await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id)).ToList();
+                return View(model);
+            }
+        }
+
+        private string? GetJsonStringProperty(JsonElement element, params string[] propertyNames)
+        {
+            foreach (var name in propertyNames)
+            {
+                if (element.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String)
+                {
+                    return prop.GetString();
+                }
+            }
+            return null;
+        }
+
+        private async Task<(Quiz, int)> CrearQuizDeEjemplo(string contenido, Materia materia, GenerateQuizWithAIViewModel model, string usuarioId)
+        {
+            var lineas = contenido.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                 .Where(l => !string.IsNullOrWhiteSpace(l))
+                                 .Take(model.CantidadPreguntas ?? 5)
+                                 .ToList();
+
+            var quiz = new Quiz
+            {
+                Titulo = model.Titulo ?? $"Quiz - {materia.Nombre}",
+                Descripcion = "Quiz generado desde texto",
+                MateriaId = materia.Id,
+                CreadorId = usuarioId,
+                NivelDificultad = (int)model.NivelDificultad,
+                EsPublico = false,
+                FechaCreacion = DateTime.UtcNow,
+                EstaActivo = true,
+                TiempoLimite = lineas.Count * 2,
+                NumeroPreguntas = lineas.Count,
+                Preguntas = new List<PreguntaQuiz>()
+            };
+
+            for (int i = 0; i < lineas.Count; i++)
+            {
+                var pregunta = new PreguntaQuiz
+                {
+                    TextoPregunta = $"¿Qué se menciona sobre: {lineas[i].Substring(0, Math.Min(50, lineas[i].Length))}...?",
+                    OpcionA = lineas[i].Length > 20 ? lineas[i].Substring(0, 20) : lineas[i],
+                    OpcionB = "Respuesta incorrecta B",
+                    OpcionC = "Respuesta incorrecta C",
+                    OpcionD = "Respuesta incorrecta D",
+                    RespuestaCorrecta = lineas[i].Length > 20 ? lineas[i].Substring(0, 20) : lineas[i],
+                    Puntos = 1,
+                    Orden = i + 1,
+                    EstaActivo = true
+                };
+                quiz.Preguntas.Add(pregunta);
+            }
+
+            await _unitOfWork.QuizRepository.AddAsync(quiz);
+            await _unitOfWork.SaveChangesAsync();
+
+            return (quiz, quiz.Preguntas.Count);
+        }
+
+        #endregion
+
+
 
         // Método auxiliar para generar opciones incorrectas
         private string GenerarOpcionIncorrecta()
@@ -1583,3 +1854,4 @@ namespace QuizCraft.Web.Controllers
         }
     }
 }
+

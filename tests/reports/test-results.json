@@ -66,20 +66,20 @@
   },
   "suites": [
     {
-      "title": "EP-02-Gestion-Quiz\\quiz.spec.js",
-      "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+      "title": "EP-04-IA-Generation\\ia-generation.spec.js",
+      "file": "EP-04-IA-Generation/ia-generation.spec.js",
       "column": 0,
       "line": 0,
       "specs": [],
       "suites": [
         {
-          "title": "EP-02: Gestión de Quizzes",
-          "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+          "title": "EP-04: Generación con IA",
+          "file": "EP-04-IA-Generation/ia-generation.spec.js",
           "line": 13,
           "column": 6,
           "specs": [
             {
-              "title": "US-02.01: Crear un nuevo quiz desde flashcards",
+              "title": "US-04.01: Generar flashcards desde texto con IA",
               "ok": true,
               "tags": [],
               "tests": [
@@ -91,19 +91,19 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 41,
+                      "workerIndex": 8,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 10426,
+                      "duration": 7924,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ Quiz creado exitosamente\n"
+                          "text": "✅ Flashcards generadas con IA exitosamente\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T05:32:10.245Z",
+                      "startTime": "2025-10-26T17:33:48.483Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -111,14 +111,14 @@
                   "status": "expected"
                 }
               ],
-              "id": "e42010a110bd864499b8-84944f920412d3205b8e",
-              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
+              "id": "f05bb6c7c440cc861e03-de71ac641d199a721bb3",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
               "line": 15,
               "column": 3
             },
             {
-              "title": "US-02.02: Editar un quiz existente",
-              "ok": true,
+              "title": "US-04.02: Generar flashcards desde archivo PDF con IA",
+              "ok": false,
               "tags": [],
               "tests": [
                 {
@@ -129,147 +129,69 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 41,
+                      "workerIndex": 8,
                       "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3085,
-                      "errors": [],
-                      "stdout": [
+                      "status": "failed",
+                      "duration": 3215,
+                      "error": {
+                        "message": "Error: ENOENT: no such file or directory, stat 'C:\\ArchivosPrueba\\ejemplo-historia-roma.txt'",
+                        "stack": "Error: ENOENT: no such file or directory, stat 'C:\\ArchivosPrueba\\ejemplo-historia-roma.txt'\n    at C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js:79:7",
+                        "location": {
+                          "file": "C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js",
+                          "column": 7,
+                          "line": 79
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 77 |\u001b[39m       \u001b[36mconst\u001b[39m testFilePath \u001b[33m=\u001b[39m \u001b[32m'../ArchivosPrueba/ejemplo-historia-roma.txt'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 78 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 79 |\u001b[39m       \u001b[36mawait\u001b[39m fileInput\u001b[33m.\u001b[39msetInputFiles(testFilePath)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 80 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"CantidadFlashcards\"], input[name=\"NumeroFlashcards\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'3'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 81 |\u001b[39m       \n \u001b[90m 82 |\u001b[39m       \u001b[90m// Enviar para generar\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
                         {
-                          "text": "✅ Quiz editado exitosamente\n"
+                          "location": {
+                            "file": "C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js",
+                            "column": 7,
+                            "line": 79
+                          },
+                          "message": "Error: ENOENT: no such file or directory, stat 'C:\\ArchivosPrueba\\ejemplo-historia-roma.txt'\n\n\u001b[0m \u001b[90m 77 |\u001b[39m       \u001b[36mconst\u001b[39m testFilePath \u001b[33m=\u001b[39m \u001b[32m'../ArchivosPrueba/ejemplo-historia-roma.txt'\u001b[39m\u001b[33m;\u001b[39m\n \u001b[90m 78 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 79 |\u001b[39m       \u001b[36mawait\u001b[39m fileInput\u001b[33m.\u001b[39msetInputFiles(testFilePath)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m       \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 80 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[name=\"CantidadFlashcards\"], input[name=\"NumeroFlashcards\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'3'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 81 |\u001b[39m       \n \u001b[90m 82 |\u001b[39m       \u001b[90m// Enviar para generar\u001b[39m\u001b[0m\n\u001b[2m    at C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js:79:7\u001b[22m"
                         }
                       ],
+                      "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T05:32:21.049Z",
+                      "startTime": "2025-10-26T17:33:56.799Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\QuizCraft\\tests\\test-results\\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\QuizCraft\\tests\\test-results\\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\QuizCraft\\tests\\test-results\\EP-04-IA-Generation-ia-gen-90564-ds-desde-archivo-PDF-con-IA-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js",
+                        "column": 7,
+                        "line": 79
+                      }
                     }
                   ],
-                  "status": "expected"
+                  "status": "unexpected"
                 }
               ],
-              "id": "e42010a110bd864499b8-06cd71c0d3a64720e4ee",
-              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
-              "line": 58,
+              "id": "f05bb6c7c440cc861e03-ceab7ff592cc05476f04",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
+              "line": 55,
               "column": 3
             },
             {
-              "title": "US-02.03: Realizar un quiz completo",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 41,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2167,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "⚠️ No se encontró el botón para iniciar el quiz\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-26T05:32:24.165Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "e42010a110bd864499b8-9f5f910a69f7653d837f",
-              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
-              "line": 112,
-              "column": 3
-            },
-            {
-              "title": "US-02.04: Ver resultados y estadísticas de quiz",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 41,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 2628,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ Estadísticas de quizzes visualizadas correctamente\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-26T05:32:26.364Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "e42010a110bd864499b8-5df2bd22de281be80368",
-              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
-              "line": 176,
-              "column": 3
-            },
-            {
-              "title": "US-02.05: Eliminar un quiz",
-              "ok": true,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium",
-                  "projectName": "chromium",
-                  "results": [
-                    {
-                      "workerIndex": 41,
-                      "parallelIndex": 0,
-                      "status": "passed",
-                      "duration": 3375,
-                      "errors": [],
-                      "stdout": [
-                        {
-                          "text": "✅ Quiz eliminado exitosamente\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2025-10-26T05:32:29.018Z",
-                      "annotations": [],
-                      "attachments": []
-                    }
-                  ],
-                  "status": "expected"
-                }
-              ],
-              "id": "e42010a110bd864499b8-77ba239de762ed6cdf8d",
-              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
-              "line": 197,
-              "column": 3
-            },
-            {
-              "title": "US-02.06: Generar quiz con IA desde contenido",
+              "title": "US-04.03: Generar quiz con IA desde contenido de texto",
               "ok": true,
               "tags": [],
               "tests": [
@@ -279,8 +201,8 @@
                     {
                       "type": "skip",
                       "location": {
-                        "file": "C:\\QuizCraft\\tests\\epics\\EP-02-Gestion-Quiz\\quiz.spec.js",
-                        "line": 244,
+                        "file": "C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js",
+                        "line": 97,
                         "column": 8
                       }
                     }
@@ -290,7 +212,7 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 41,
+                      "workerIndex": 9,
                       "parallelIndex": 0,
                       "status": "skipped",
                       "duration": 0,
@@ -298,13 +220,13 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T05:32:32.419Z",
+                      "startTime": "2025-10-26T17:34:01.789Z",
                       "annotations": [
                         {
                           "type": "skip",
                           "location": {
-                            "file": "C:\\QuizCraft\\tests\\epics\\EP-02-Gestion-Quiz\\quiz.spec.js",
-                            "line": 244,
+                            "file": "C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js",
+                            "line": 97,
                             "column": 8
                           }
                         }
@@ -315,10 +237,165 @@
                   "status": "skipped"
                 }
               ],
-              "id": "e42010a110bd864499b8-9deaecb67cff9bceb800",
-              "file": "EP-02-Gestion-Quiz/quiz.spec.js",
-              "line": 244,
+              "id": "f05bb6c7c440cc861e03-7de267c7ad3e28d9908c",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
+              "line": 97,
               "column": 8
+            },
+            {
+              "title": "US-04.04: Generar resumen de texto con IA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4301,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Resumen generado con IA exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T17:34:01.790Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f05bb6c7c440cc861e03-0b135829e9e4bb24ae75",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
+              "line": 141,
+              "column": 3
+            },
+            {
+              "title": "US-04.05: Generar explicación detallada con IA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13726,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Explicación generada con IA exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T17:34:06.497Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f05bb6c7c440cc861e03-8b67cc856d55c08530f4",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
+              "line": 177,
+              "column": 3
+            },
+            {
+              "title": "US-04.06: Validar límites de generación con IA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3097,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Generación completada con límites aplicados\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T17:34:20.256Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f05bb6c7c440cc861e03-8d994da19e210883f18c",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
+              "line": 206,
+              "column": 3
+            },
+            {
+              "title": "US-04.07: Regenerar contenido con diferentes parámetros de IA",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6883,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ Primera generación completada\n"
+                        },
+                        {
+                          "text": "✅ Regeneración con diferentes parámetros completada exitosamente\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-26T17:34:23.379Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "f05bb6c7c440cc861e03-ed04e90fb809f9a888c3",
+              "file": "EP-04-IA-Generation/ia-generation.spec.js",
+              "line": 239,
+              "column": 3
             }
           ]
         }
@@ -327,11 +404,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-26T05:32:07.439Z",
-    "duration": 25520.615999999456,
+    "startTime": "2025-10-26T17:33:45.627Z",
+    "duration": 45074.185000000056,
     "expected": 5,
     "skipped": 1,
-    "unexpected": 0,
+    "unexpected": 1,
     "flaky": 0
   }
 }

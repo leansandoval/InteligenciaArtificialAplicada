@@ -1,0 +1,99 @@
+@model QuizCraft.Application.ViewModels.GenerateQuizWithAIViewModel
+
+@{
+    ViewData["Title"] = "Generar Quiz con IA";
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+    <p class="text-muted">Genera un quiz automáticamente usando Inteligencia Artificial</p>
+
+    <form asp-action="GenerateWithAI" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Configuración del Quiz</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label asp-for="MateriaId" class="form-label"></label>
+                    <select asp-for="MateriaId" class="form-select" required>
+                        <option value="">-- Seleccione una materia --</option>
+                        @foreach (var materia in Model.Materias)
+                        {
+                            <option value="@materia.Id" selected="@(materia.Id == Model.MateriaId)">
+                                @materia.Nombre
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="MateriaId" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="Titulo" class="form-label"></label>
+                    <input asp-for="Titulo" name="Titulo" class="form-control" placeholder="Opcional - se generará automáticamente si se deja vacío" />
+                    <span asp-validation-for="Titulo" class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CantidadPreguntas" class="form-label"></label>
+                        <input asp-for="CantidadPreguntas" type="number" class="form-control" min="1" max="50" />
+                        <span asp-validation-for="CantidadPreguntas" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="NivelDificultad" class="form-label"></label>
+                        <select asp-for="NivelDificultad" class="form-select">
+                            <option value="1">Muy Fácil</option>
+                            <option value="2">Fácil</option>
+                            <option value="3" selected>Intermedio</option>
+                            <option value="4">Difícil</option>
+                            <option value="5">Muy Difícil</option>
+                        </select>
+                        <span asp-validation-for="NivelDificultad" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Contenido de Origen</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label asp-for="Contenido" class="form-label"></label>
+                    <textarea asp-for="Contenido" class="form-control" rows="8" 
+                              placeholder="Ingrese el texto del cual desea generar el quiz..."></textarea>
+                    <span asp-validation-for="Contenido" class="text-danger"></span>
+                    <small class="form-text text-muted">
+                        Proporcione el contenido desde el cual la IA generará las preguntas del quiz.
+                    </small>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="ArchivoPDF" class="form-label"></label>
+                    <input asp-for="ArchivoPDF" type="file" class="form-control" accept=".pdf,.txt" />
+                    <span asp-validation-for="ArchivoPDF" class="text-danger"></span>
+                    <small class="form-text text-muted">
+                        Opcionalmente, suba un archivo PDF o TXT (la extracción de PDF está en desarrollo).
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-magic"></i> Generar Quiz con IA
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

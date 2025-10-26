@@ -55,79 +55,13 @@ namespace QuizCraft.Infrastructure.Services.QuizGeneration
                     };
                 }
 
-                // Extraer texto del documento
-                string extractedText;
-                try
+                // TODO: Implementar extracción de texto de documentos
+                _logger.LogWarning("Document text extraction not implemented yet for file: {FileName}", fileName);
+                return new QuizGenerationResult
                 {
-                    // TODO: Implementar extracción de texto de documentos
-                    throw new NotImplementedException("La extracción de texto de documentos no está implementada aún.");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error extracting text from document: {FileName}", fileName);
-                    return new QuizGenerationResult
-                    {
-                        Success = false,
-                        ErrorMessage = $"Error al extraer texto del documento: {ex.Message}"
-                    };
-                }
-
-                if (string.IsNullOrWhiteSpace(extractedText))
-                {
-                    return new QuizGenerationResult
-                    {
-                        Success = false,
-                        ErrorMessage = "No se pudo extraer texto válido del documento"
-                    };
-                }
-
-                // Verificar longitud del contenido
-                if (extractedText.Length < 100)
-                {
-                    return new QuizGenerationResult
-                    {
-                        Success = false,
-                        ErrorMessage = "El contenido del documento es demasiado corto para generar un quiz"
-                    };
-                }
-
-                // Estimar tokens
-                var estimatedTokens = await _aiService.EstimateTokenCostAsync(extractedText);
-                _logger.LogInformation("Estimated tokens for quiz generation: {Tokens}", estimatedTokens);
-
-                // Generar quiz usando IA
-                var response = await _aiService.GenerateQuizFromTextAsync(extractedText, settings);
-
-                if (!response.Success)
-                {
-                    return new QuizGenerationResult
-                    {
-                        Success = false,
-                        ErrorMessage = $"Error generando quiz: {response.ErrorMessage}",
-                        ProcessingMethod = "Gemini AI",
-                        TokensUsed = response.TokenUsage?.TotalTokens ?? 0,
-                        EstimatedCost = response.TokenUsage?.EstimatedCost ?? 0
-                    };
-                }
-
-                // Parsear respuesta JSON
-                var quizResult = ParseAIResponse(response.Content);
-                if (!quizResult.Success)
-                {
-                    return quizResult;
-                }
-
-                // Completar información del resultado
-                quizResult.ProcessingMethod = "Gemini AI";
-                quizResult.TokensUsed = response.TokenUsage?.TotalTokens ?? estimatedTokens;
-                quizResult.EstimatedCost = response.TokenUsage?.EstimatedCost ?? 0;
-                quizResult.TokenUsage = response.TokenUsage;
-                quizResult.SourceContent = $"Documento: {fileName}";
-
-                _logger.LogInformation("Quiz generation completed successfully. Generated {Count} questions", 
-                    quizResult.Questions.Count);
-
-                return quizResult;
+                    Success = false,
+                    ErrorMessage = "La extracción de texto de documentos no está implementada aún."
+                };
             }
             catch (Exception ex)
             {
@@ -205,7 +139,8 @@ namespace QuizCraft.Infrastructure.Services.QuizGeneration
                 quizResult.ProcessingMethod = "Gemini AI";
                 quizResult.TokensUsed = response.TokenUsage?.TotalTokens ?? estimatedTokens;
                 quizResult.EstimatedCost = response.TokenUsage?.EstimatedCost ?? 0;
-                quizResult.TokenUsage = response.TokenUsage;
+                if (response.TokenUsage != null)
+                    quizResult.TokenUsage = response.TokenUsage;
                 quizResult.SourceContent = "Texto directo";
 
                 _logger.LogInformation("Quiz generation from text completed successfully. Generated {Count} questions", 
@@ -295,12 +230,21 @@ namespace QuizCraft.Infrastructure.Services.QuizGeneration
             }
         }
 
-        private QuizGenerationResult ParseAIResponse(string jsonContent)
+        private QuizGenerationResult ParseAIResponse(string? jsonContent)
         {
             try
             {
                 _logger.LogInformation("Parseando respuesta de IA. Longitud del JSON: {Length}", jsonContent?.Length ?? 0);
                 _logger.LogDebug("Contenido JSON recibido: {Json}", jsonContent);
+                
+                if (string.IsNullOrWhiteSpace(jsonContent))
+                {
+                    return new QuizGenerationResult
+                    {
+                        Success = false,
+                        ErrorMessage = "La respuesta de IA estaba vacía"
+                    };
+                }
                 
                 using var document = JsonDocument.Parse(jsonContent);
                 

@@ -1,0 +1,61 @@
+@{
+    ViewData["Title"] = "Generar Resumen con IA";
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+    <p class="text-muted">Genera un resumen conciso de cualquier texto usando Inteligencia Artificial</p>
+
+    @if (ViewBag.Success != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @ViewBag.Success
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (ViewBag.Error != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @ViewBag.Error
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="GenerateResumen" method="post">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Contenido a Resumir</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <label for="Contenido" class="form-label">Texto</label>
+                    <textarea name="Contenido" id="Contenido" class="form-control" rows="10" required 
+                              placeholder="Pegue aquí el texto que desea resumir...">@(ViewBag.ContenidoOriginal ?? "")</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-magic"></i> Generar Resumen
+            </button>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Volver</a>
+        </div>
+    </form>
+
+    @if (ViewBag.Resumen != null)
+    {
+        <div class="card mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Resumen Generado</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-light">
+                    @Html.Raw(ViewBag.Resumen.Replace("\n", "<br/>"))
+                </div>
+            </div>
+        </div>
+    }
+</div>
+

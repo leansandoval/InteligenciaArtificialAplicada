@@ -1,0 +1,68 @@
+@model QuizCraft.Application.ViewModels.GenerateFlashcardsWithAIViewModel
+@{
+    ViewData["Title"] = "Generar Flashcards con IA";
+}
+
+<div class="container my-4">
+    <h2>Generar Flashcards con IA</h2>
+    <p class="text-muted">Proporciona contenido de texto y la IA generará flashcards automáticamente</p>
+
+    <form asp-action="GenerateWithAI" method="post" enctype="multipart/form-data">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="MateriaId" class="form-label"></label>
+            <select asp-for="MateriaId" class="form-select" required>
+                <option value="">-- Seleccione una materia --</option>
+                @foreach (var materia in Model.Materias)
+                {
+                    <option value="@materia.Id" selected="@(materia.Id == Model.MateriaId)">@materia.Nombre</option>
+                }
+            </select>
+            <span asp-validation-for="MateriaId" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Contenido" class="form-label"></label>
+            <textarea asp-for="Contenido" name="Contenido" class="form-control" rows="8" 
+                      placeholder="Escribe o pega el contenido aquí..."></textarea>
+            <span asp-validation-for="Contenido" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="ArchivoPDF" class="form-label"></label>
+            <input asp-for="ArchivoPDF" type="file" class="form-control" accept=".pdf" />
+            <small class="form-text text-muted">Opcional: Sube un archivo PDF para extraer el contenido</small>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label asp-for="CantidadFlashcards" class="form-label"></label>
+                <input asp-for="CantidadFlashcards" name="CantidadFlashcards" type="number" class="form-control" min="1" max="50" />
+                <span asp-validation-for="CantidadFlashcards" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label asp-for="NivelDificultad" class="form-label"></label>
+                <select asp-for="NivelDificultad" name="NivelDificultad" class="form-select">
+                    <option value="0">Fácil</option>
+                    <option value="1" selected>Medio</option>
+                    <option value="2">Difícil</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-magic"></i> Generar con IA
+            </button>
+            <a asp-controller="Materia" asp-action="Details" asp-route-id="@Model.MateriaId" class="btn btn-secondary">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
