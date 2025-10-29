@@ -13,7 +13,7 @@ const testConfig = require('../../test-config');
 test.describe('EP-04: Generación con IA', () => {
 
   test('US-04.01: Generar flashcards desde texto con IA', async ({ page }) => {
-    // Ruta implementada: /Flashcard/GenerateWithAI
+    // Ruta implementada: /Generacion/Index
     // Iniciar sesión
     await loginWithTestUser(page);
     
@@ -22,38 +22,71 @@ test.describe('EP-04: Generación con IA', () => {
     const materiaId = await crearMateria(page, materiaNombre, 'Materia para generación de flashcards con IA');
     
     // Navegar a la generación con IA
-    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    await page.goto('/Generacion/Index');
+    await page.waitForLoadState('domcontentloaded');
     
     // Verificar que estamos en la página correcta
-    await expect(page.locator('h1, h2')).toContainText(/Generar.*IA|IA.*Flashcard/i);
+    await expect(page.locator('h2')).toContainText(/Generar Flashcards/i);
     
-    // Proporcionar contenido de texto
-    const contenidoTexto = `
-      El Imperio Romano fue uno de los imperios más grandes de la historia antigua.
-      Alcanzó su máxima extensión territorial en el año 117 d.C. bajo el emperador Trajano.
-      Roma fue fundada en el año 753 a.C. según la leyenda.
-      El Coliseo de Roma fue construido entre los años 70 y 80 d.C.
-      Julio César fue asesinado en el año 44 a.C.
-    `;
+    // Disparar el evento jQuery para seleccionar el modo IA
+    await page.evaluate(() => {
+      const btn = $('button.mode-btn[data-mode="ai"]');
+      btn.trigger('click');
+    });
     
-    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoTexto);
-    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '3');
-    await page.selectOption('select[name="NivelDificultad"]', '1'); // Media
+    // Dar tiempo al evento jQuery para procesar
+    await page.waitForTimeout(500);
     
-    // Enviar para generar
-    await page.click('button[type="submit"]:has-text("Generar")');
+    // Esperar a que aparezca el formulario Y el panel de configuración AI
+    await page.waitForSelector('#formularioGeneracion', { state: 'visible', timeout: 5000 });
+    await page.waitForSelector('#configuracionAI', { state: 'visible', timeout: 5000 });
     
-    // Esperar a que se genere (puede tomar tiempo)
-    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
+    // Seleccionar la materia
+    await page.selectOption('select#materiaId', materiaId.toString());
+    
+    // Subir archivo (la UI de IA requiere archivo)
+    const testFilePath = '../ArchivosPrueba/ejemplo-historia-roma.txt';
+    await page.setInputFiles('input#documento', testFilePath);
+    
+    // Configurar parámetros de IA (usando selector específico del panel AI)
+    await page.fill('#configuracionAI input[name="maxCards"]', '3');
+    await page.selectOption('#configuracionAI select[name="difficulty"]', 'Medium');
+    
+    // Debug: Verificar que todo está configurado correctamente antes de hacer clic en Vista Previa
+    const debug = await page.evaluate(() => {
+      return {
+        modoSeleccionado: window.modoSeleccionado,
+        materiaId: $('#materiaId').val(),
+        hasFile: $('#documento')[0].files.length > 0,
+        maxCards: $('#configuracionAI input[name="maxCards"]').val(),
+        difficulty: $('#configuracionAI select[name="difficulty"]').val()
+      };
+    });
+    console.log('Estado antes de Vista Previa:', JSON.stringify(debug, null, 2));
+    
+    // Hacer clic en Vista Previa
+    await page.click('button#btnVistaPrevia');
+    
+    // Esperar un poco para ver si hay errores
+    await page.waitForTimeout(2000);
+    
+    // Verificar si hay mensajes de error
+    const errorMessage = await page.locator('.alert-danger, .swal2-popup').textContent().catch(() => '');
+    if (errorMessage) {
+      console.log('Mensaje de error encontrado:', errorMessage);
+    }
+    
+    // Esperar a que se genere la vista previa (puede tardar por la API de IA)
+    await page.waitForSelector('#preview-container, #areaResultados', { timeout: testConfig.timeouts.long });
     
     // Verificar que se generaron flashcards
-    await expect(page.locator('body')).toContainText(/Flashcard|Generado|Creado/i, { timeout: testConfig.timeouts.long });
+    await expect(page.locator('#preview-container, #areaResultados, body')).toContainText(/Flashcard|pregunta|respuesta/i, { timeout: testConfig.timeouts.long });
     
     console.log('✅ Flashcards generadas con IA exitosamente');
   });
 
   test('US-04.02: Generar flashcards desde archivo PDF con IA', async ({ page }) => {
-    // Ruta implementada: /Flashcard/GenerateWithAI
+    // Ruta implementada: /Generacion/Index
     
     // Iniciar sesión
     await loginWithTestUser(page);
@@ -63,35 +96,40 @@ test.describe('EP-04: Generación con IA', () => {
     const materiaId = await crearMateria(page, materiaNombre, 'Materia para generación desde PDF con IA');
     
     // Navegar a la generación con IA
-    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    await page.goto('/Generacion/Index');
+    await page.waitForLoadState('domcontentloaded');
     
     // Verificar que estamos en la página correcta
-    await expect(page.locator('h1, h2')).toContainText(/Generar.*IA|IA.*Flashcard/i);
+    await expect(page.locator('h2')).toContainText(/Generar Flashcards/i);
     
-    // Buscar el campo de archivo
-    const fileInput = page.locator('input[type="file"]');
+    // Seleccionar modo IA
+    await page.click('button.mode-btn[data-mode="ai"], button#btnModoIA');
     
-    if (await fileInput.count() > 0) {
-      // Si existe, intentar subir un archivo de prueba
-      // (En un entorno de producción, deberías tener archivos de prueba reales)
-      const testFilePath = '../ArchivosPrueba/ejemplo-historia-roma.txt';
-      
-      await fileInput.setInputFiles(testFilePath);
-      await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '3');
-      
-      // Enviar para generar
-      await page.click('button[type="submit"]:has-text("Generar")');
-      
-      // Esperar a que se genere
-      await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
-      
-      // Verificar que se generaron flashcards
-      await expect(page.locator('body')).toContainText(/Flashcard|Generado|Creado/i, { timeout: testConfig.timeouts.long });
-      
-      console.log('✅ Flashcards generadas desde archivo con IA exitosamente');
-    } else {
-      console.log('⚠️ No se encontró el campo de archivo PDF');
-    }
+    // Esperar a que aparezca el formulario y configuración AI
+    await page.waitForSelector('#formularioGeneracion', { state: 'visible', timeout: 5000 });
+    await page.waitForSelector('#configuracionAI', { state: 'visible', timeout: 5000 });
+    
+    // Seleccionar la materia
+    await page.selectOption('select#materiaId', materiaId.toString());
+    
+    // Subir archivo de prueba
+    const testFilePath = '../ArchivosPrueba/ejemplo-historia-roma.txt';
+    await page.setInputFiles('input#documento', testFilePath);
+    
+    // Configurar parámetros
+    await page.fill('#configuracionAI input[name="maxCards"]', '3');
+    await page.selectOption('#configuracionAI select[name="difficulty"]', 'Medium');
+    
+    // Hacer clic en Vista Previa
+    await page.click('button#btnVistaPrevia');
+    
+    // Esperar a que se genere (puede tomar tiempo por la API de IA)
+    await page.waitForSelector('#preview-container, #areaResultados', { timeout: testConfig.timeouts.long });
+    
+    // Verificar que se generaron flashcards
+    await expect(page.locator('#preview-container, #areaResultados, body')).toContainText(/Flashcard|pregunta|respuesta/i, { timeout: testConfig.timeouts.long });
+    
+    console.log('✅ Flashcards generadas desde archivo con IA exitosamente');
   });
 
   test.skip('US-04.03: Generar quiz con IA desde contenido de texto', async ({ page }) => {
@@ -204,7 +242,7 @@ test.describe('EP-04: Generación con IA', () => {
     console.log('✅ Explicación generada con IA exitosamente');
   });
   test('US-04.06: Validar límites de generación con IA', async ({ page }) => {
-    // Ruta implementada: /Flashcard/GenerateWithAI
+    // Ruta implementada: /Generacion/Index
     
     // Iniciar sesión
     await loginWithTestUser(page);
@@ -214,30 +252,45 @@ test.describe('EP-04: Generación con IA', () => {
     const materiaId = await crearMateria(page, materiaNombre, 'Materia para probar límites de IA');
     
     // Navegar a la generación con IA
-    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
+    await page.goto('/Generacion/Index');
+    await page.waitForLoadState('domcontentloaded');
     
-    // Intentar generar con valores extremos
-    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', 'Contenido muy corto');
-    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '100'); // Valor alto
+    // Seleccionar modo IA
+    await page.click('button.mode-btn[data-mode="ai"], button#btnModoIA');
     
-    // Enviar para generar
-    await page.click('button[type="submit"]:has-text("Generar")');
+    // Esperar a que aparezca el formulario y configuración
+    await page.waitForSelector('#formularioGeneracion', { state: 'visible', timeout: 5000 });
+    await page.waitForSelector('#configuracionAI', { state: 'visible', timeout: 5000 });
     
-    // Verificar que se muestra un mensaje de validación o límite
-    const mensajeError = page.locator('.alert-danger, .error, .validation-message');
+    // Seleccionar la materia
+    await page.selectOption('select#materiaId', materiaId.toString());
     
-    if (await mensajeError.count() > 0) {
-      await expect(mensajeError).toBeVisible({ timeout: 5000 });
+    // Subir archivo pequeño
+    const testFilePath = '../ArchivosPrueba/bases_de_datos.txt';
+    await page.setInputFiles('input#documento', testFilePath);
+    
+    // Intentar generar con valores extremos (max=50 según el HTML)
+    await page.fill('#configuracionAI input[name="maxCards"]', '100'); // Valor muy alto
+    
+    // Hacer clic en Vista Previa
+    await page.click('button#btnVistaPrevia');
+    
+    // Verificar que se muestra un mensaje de validación o límite, o que se genera con límite aplicado
+    const tieneError = await page.locator('.alert-danger, .error, .validation-message, .invalid-feedback').count() > 0;
+    
+    if (tieneError) {
+      await expect(page.locator('.alert-danger, .error, .validation-message, .invalid-feedback')).toBeVisible({ timeout: 5000 });
       console.log('✅ Validación de límites funcionando correctamente');
     } else {
       // Si no hay error, verificar que se generó con un límite razonable
-      await expect(page.locator('body')).toContainText(/Flashcard|Generado/i, { timeout: testConfig.timeouts.long });
+      await page.waitForSelector('#preview-container, #areaResultados', { timeout: testConfig.timeouts.long });
+      await expect(page.locator('#preview-container, #areaResultados, body')).toContainText(/Flashcard|pregunta/i, { timeout: testConfig.timeouts.long });
       console.log('✅ Generación completada con límites aplicados');
     }
   });
 
   test('US-04.07: Regenerar contenido con diferentes parámetros de IA', async ({ page }) => {
-    // Ruta implementada: /Flashcard/GenerateWithAI
+    // Ruta implementada: /Generacion/Index
     
     // Iniciar sesión
     await loginWithTestUser(page);
@@ -246,34 +299,41 @@ test.describe('EP-04: Generación con IA', () => {
     const materiaNombre = generarNombreUnico('Materia Regenerar IA');
     const materiaId = await crearMateria(page, materiaNombre, 'Materia para regeneración con IA');
     
-    // Navegar a la generación con IA
-    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
-    
-    const contenidoBase = `
-      El ADN es una molécula que contiene las instrucciones genéticas de los seres vivos.
-      Tiene una estructura de doble hélice descubierta por Watson y Crick en 1953.
-    `;
+    const testFilePath = '../ArchivosPrueba/bases_de_datos.txt';
     
     // Primera generación con dificultad fácil
-    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoBase);
-    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '2');
-    await page.selectOption('select[name="NivelDificultad"]', '0'); // Fácil
-    await page.click('button[type="submit"]:has-text("Generar")');
+    await page.goto('/Generacion/Index');
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('button.mode-btn[data-mode="ai"], button#btnModoIA');
+    await page.waitForSelector('#formularioGeneracion', { state: 'visible', timeout: 5000 });
+    await page.waitForSelector('#configuracionAI', { state: 'visible', timeout: 5000 });
     
-    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
-    await expect(page.locator('body')).toContainText(/Flashcard|Generado/i, { timeout: testConfig.timeouts.long });
+    await page.selectOption('select#materiaId', materiaId.toString());
+    await page.setInputFiles('input#documento', testFilePath);
+    await page.fill('#configuracionAI input[name="maxCards"]', '2');
+    await page.selectOption('#configuracionAI select[name="difficulty"]', 'Easy');
+    await page.click('button#btnVistaPrevia');
+    
+    await page.waitForSelector('#preview-container, #areaResultados', { timeout: testConfig.timeouts.long });
+    await expect(page.locator('#preview-container, #areaResultados, body')).toContainText(/Flashcard|pregunta/i, { timeout: testConfig.timeouts.long });
     
     console.log('✅ Primera generación completada');
     
     // Volver a generar con dificultad difícil
-    await page.goto(`/Flashcard/GenerateWithAI?materiaId=${materiaId}`);
-    await page.fill('textarea[name="Contenido"], textarea[name="TextoFuente"]', contenidoBase);
-    await page.fill('input[name="CantidadFlashcards"], input[name="NumeroFlashcards"]', '2');
-    await page.selectOption('select[name="NivelDificultad"]', '2'); // Difícil
-    await page.click('button[type="submit"]:has-text("Generar")');
+    await page.goto('/Generacion/Index');
+    await page.waitForLoadState('domcontentloaded');
+    await page.click('button.mode-btn[data-mode="ai"], button#btnModoIA');
+    await page.waitForSelector('#formularioGeneracion', { state: 'visible', timeout: 5000 });
+    await page.waitForSelector('#configuracionAI', { state: 'visible', timeout: 5000 });
     
-    await page.waitForLoadState('networkidle', { timeout: testConfig.timeouts.long });
-    await expect(page.locator('body')).toContainText(/Flashcard|Generado/i, { timeout: testConfig.timeouts.long });
+    await page.selectOption('select#materiaId', materiaId.toString());
+    await page.setInputFiles('input#documento', testFilePath);
+    await page.fill('#configuracionAI input[name="maxCards"]', '2');
+    await page.selectOption('#configuracionAI select[name="difficulty"]', 'Hard');
+    await page.click('button#btnVistaPrevia');
+    
+    await page.waitForSelector('#preview-container, #areaResultados', { timeout: testConfig.timeouts.long });
+    await expect(page.locator('#preview-container, #areaResultados, body')).toContainText(/Flashcard|pregunta/i, { timeout: testConfig.timeouts.long });
     
     console.log('✅ Regeneración con diferentes parámetros completada exitosamente');
   });

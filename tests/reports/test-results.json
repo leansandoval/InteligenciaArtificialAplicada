@@ -91,10 +91,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 8,
+                      "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 7924,
+                      "duration": 7451,
                       "errors": [],
                       "stdout": [
                         {
@@ -103,7 +103,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:33:48.483Z",
+                      "startTime": "2025-10-26T18:19:58.152Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -129,10 +129,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 8,
+                      "workerIndex": 3,
                       "parallelIndex": 0,
                       "status": "failed",
-                      "duration": 3215,
+                      "duration": 2734,
                       "error": {
                         "message": "Error: ENOENT: no such file or directory, stat 'C:\\ArchivosPrueba\\ejemplo-historia-roma.txt'",
                         "stack": "Error: ENOENT: no such file or directory, stat 'C:\\ArchivosPrueba\\ejemplo-historia-roma.txt'\n    at C:\\QuizCraft\\tests\\epics\\EP-04-IA-Generation\\ia-generation.spec.js:79:7",
@@ -156,7 +156,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:33:56.799Z",
+                      "startTime": "2025-10-26T18:20:06.001Z",
                       "annotations": [],
                       "attachments": [
                         {
@@ -212,7 +212,7 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 9,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "skipped",
                       "duration": 0,
@@ -220,7 +220,7 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:34:01.789Z",
+                      "startTime": "2025-10-26T18:20:10.609Z",
                       "annotations": [
                         {
                           "type": "skip",
@@ -255,10 +255,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 9,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 4301,
+                      "duration": 3809,
                       "errors": [],
                       "stdout": [
                         {
@@ -267,7 +267,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:34:01.790Z",
+                      "startTime": "2025-10-26T18:20:10.610Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -293,10 +293,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 9,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 13726,
+                      "duration": 12885,
                       "errors": [],
                       "stdout": [
                         {
@@ -305,7 +305,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:34:06.497Z",
+                      "startTime": "2025-10-26T18:20:14.787Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -331,10 +331,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 9,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3097,
+                      "duration": 4078,
                       "errors": [],
                       "stdout": [
                         {
@@ -343,7 +343,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:34:20.256Z",
+                      "startTime": "2025-10-26T18:20:27.700Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -369,10 +369,10 @@
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 9,
+                      "workerIndex": 4,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 6883,
+                      "duration": 6042,
                       "errors": [],
                       "stdout": [
                         {
@@ -384,7 +384,7 @@
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2025-10-26T17:34:23.379Z",
+                      "startTime": "2025-10-26T18:20:31.811Z",
                       "annotations": [],
                       "attachments": []
                     }
@@ -404,8 +404,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-26T17:33:45.627Z",
-    "duration": 45074.185000000056,
+    "startTime": "2025-10-26T18:19:55.218Z",
+    "duration": 43083.94299999997,
     "expected": 5,
     "skipped": 1,
     "unexpected": 1,

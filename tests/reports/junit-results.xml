@@ -1,12 +1,12 @@
-<testsuites id="" name="" tests="7" failures="1" skipped="1" errors="0" time="45.07418500000006">
-<testsuite name="EP-04-IA-Generation\ia-generation.spec.js" timestamp="2025-10-26T17:33:47.104Z" hostname="chromium" tests="7" failures="1" skipped="1" time="39.146" errors="0">
-<testcase name="EP-04: Generación con IA › US-04.01: Generar flashcards desde texto con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="7.924">
+<testsuites id="" name="" tests="7" failures="1" skipped="1" errors="0" time="43.08394299999997">
+<testsuite name="EP-04-IA-Generation\ia-generation.spec.js" timestamp="2025-10-26T18:19:56.711Z" hostname="chromium" tests="7" failures="1" skipped="1" time="36.999" errors="0">
+<testcase name="EP-04: Generación con IA › US-04.01: Generar flashcards desde texto con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="7.451">
 <system-out>
 <![CDATA[✅ Flashcards generadas con IA exitosamente
 ]]>
 </system-out>
 </testcase>
-<testcase name="EP-04: Generación con IA › US-04.02: Generar flashcards desde archivo PDF con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="3.215">
+<testcase name="EP-04: Generación con IA › US-04.02: Generar flashcards desde archivo PDF con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="2.734">
 <failure message="ia-generation.spec.js:55:3 US-04.02: Generar flashcards desde archivo PDF con IA" type="FAILURE">
 <![CDATA[  [chromium] › EP-04-IA-Generation\ia-generation.spec.js:55:3 › EP-04: Generación con IA › US-04.02: Generar flashcards desde archivo PDF con IA 
 
@@ -50,25 +50,25 @@
 <skipped>
 </skipped>
 </testcase>
-<testcase name="EP-04: Generación con IA › US-04.04: Generar resumen de texto con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="4.301">
+<testcase name="EP-04: Generación con IA › US-04.04: Generar resumen de texto con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="3.809">
 <system-out>
 <![CDATA[✅ Resumen generado con IA exitosamente
 ]]>
 </system-out>
 </testcase>
-<testcase name="EP-04: Generación con IA › US-04.05: Generar explicación detallada con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="13.726">
+<testcase name="EP-04: Generación con IA › US-04.05: Generar explicación detallada con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="12.885">
 <system-out>
 <![CDATA[✅ Explicación generada con IA exitosamente
 ]]>
 </system-out>
 </testcase>
-<testcase name="EP-04: Generación con IA › US-04.06: Validar límites de generación con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="3.097">
+<testcase name="EP-04: Generación con IA › US-04.06: Validar límites de generación con IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="4.078">
 <system-out>
 <![CDATA[✅ Generación completada con límites aplicados
 ]]>
 </system-out>
 </testcase>
-<testcase name="EP-04: Generación con IA › US-04.07: Regenerar contenido con diferentes parámetros de IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="6.883">
+<testcase name="EP-04: Generación con IA › US-04.07: Regenerar contenido con diferentes parámetros de IA" classname="EP-04-IA-Generation\ia-generation.spec.js" time="6.042">
 <system-out>
 <![CDATA[✅ Primera generación completada
 ✅ Regeneración con diferentes parámetros completada exitosamente
