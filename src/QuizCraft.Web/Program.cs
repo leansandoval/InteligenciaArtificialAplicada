@@ -40,6 +40,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     
     // Configuración de usuarios
     options.User.RequireUniqueEmail = true;
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
     
     // Configuración de bloqueo de cuenta
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
@@ -51,7 +52,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.SignIn.RequireConfirmedPhoneNumber = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddSignInManager<SignInManager<ApplicationUser>>();
 
 // FUNC_ConfigurarRepositorios: Inyección de dependencias para repositorios
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -170,84 +172,163 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     
     try
     {
+        logger.LogWarning("=================================================");
+        logger.LogWarning("INICIO DE INICIALIZACIÓN DE BASE DE DATOS");
+        logger.LogWarning("=================================================");
+        
+        logger.LogInformation("Iniciando migraciones de base de datos...");
         // Aplicar migraciones pendientes
         await context.Database.MigrateAsync();
+        logger.LogInformation("Migraciones completadas exitosamente");
         
+        logger.LogInformation("Inicializando roles del sistema...");
         // Inicializar roles básicos
-        await FUNC_InicializarRoles(roleManager);
+        await FUNC_InicializarRoles(roleManager, logger);
+        logger.LogInformation("Roles inicializados correctamente");
         
+        logger.LogWarning("==> VERIFICANDO USUARIO ADMINISTRADOR...");
         // Crear usuario administrador si no existe
-        await FUNC_CrearUsuarioAdministrador(userManager);
+        await FUNC_CrearUsuarioAdministrador(userManager, logger);
+        logger.LogWarning("==> VERIFICACIÓN DE USUARIO ADMINISTRADOR COMPLETADA");
+        
+        logger.LogWarning("=================================================");
+        logger.LogWarning("INICIALIZACIÓN COMPLETADA CON ÉXITO");
+        logger.LogWarning("=================================================");
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Error durante la inicialización de la base de datos");
+        logger.LogCritical(ex, "❌❌❌ ERROR CRÍTICO durante la inicialización de la base de datos ❌❌❌");
+        logger.LogCritical($"Mensaje: {ex.Message}");
+        logger.LogCritical($"StackTrace: {ex.StackTrace}");
+        if (ex.InnerException != null)
+        {
+            logger.LogCritical($"InnerException: {ex.InnerException.Message}");
+        }
+        // NO lanzar la excepción para que la app siga arrancando
+        Console.WriteLine($"\n\n❌❌❌ ERROR FATAL: {ex.Message}\n\n");
     }
 }
 
 app.Run();
 
 // FUNC_InicializarRoles: Crear roles básicos del sistema
-static async Task FUNC_InicializarRoles(RoleManager<IdentityRole> roleManager)
+static async Task FUNC_InicializarRoles(RoleManager<IdentityRole> roleManager, ILogger logger)
 {
     string[] roles = { "Administrador", "Profesor", "Estudiante" };
     
     foreach (var role in roles)
     {
-        if (!await roleManager.RoleExistsAsync(role))
+        try
         {
-            await roleManager.CreateAsync(new IdentityRole(role));
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                var result = await roleManager.CreateAsync(new IdentityRole(role));
+                if (result.Succeeded)
+                {
+                    logger.LogInformation($"✅ Rol '{role}' creado exitosamente");
+                }
+                else
+                {
+                    logger.LogError($"❌ Error al crear rol '{role}': {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            else
+            {
+                logger.LogInformation($"ℹ️  Rol '{role}' ya existe");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, $"❌ Excepción al crear/verificar rol '{role}'");
         }
     }
 }
 
 // FUNC_CrearUsuarioAdministrador: Crear usuario administrador por defecto
-static async Task FUNC_CrearUsuarioAdministrador(UserManager<ApplicationUser> userManager)
+static async Task FUNC_CrearUsuarioAdministrador(UserManager<ApplicationUser> userManager, ILogger logger)
 {
     const string adminEmail = "admin@quizcraft.com";
     // IMPORTANTE: Cambiar esta contraseña en producción
     var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "Admin123!";
     
-    // Buscar si ya existe el usuario administrador
-    var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+    logger.LogWarning($">>> Iniciando verificación de usuario administrador: {adminEmail}");
+    Console.WriteLine($"\n>>> VERIFICANDO ADMIN: {adminEmail}\n");
     
-    if (existingAdmin == null)
+    try
     {
-        // Si no existe, crear nuevo usuario
-        var adminUser = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            NombreCompleto = "Administrador del Sistema",
-            EmailConfirmed = true,
-            FechaRegistro = DateTime.UtcNow,
-            PreferenciaIdioma = "es",
-            NotificacionesHabilitadas = true
-        };
+        // Buscar si ya existe el usuario administrador
+        logger.LogWarning(">>> Buscando usuario administrador en la base de datos...");
+        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         
-        var result = await userManager.CreateAsync(adminUser, adminPassword);
-        
-        if (result.Succeeded)
+        if (existingAdmin == null)
         {
-            await userManager.AddToRoleAsync(adminUser, "Administrador");
+            logger.LogWarning($">>> Usuario administrador NO encontrado. Procediendo a crear...");
+            Console.WriteLine($">>> CREANDO NUEVO USUARIO ADMIN\n");
+            // Si no existe, crear nuevo usuario
+            var adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true,
+                Nombre = "Admin",
+                Apellido = "QuizCraft",
+                NombreCompleto = "Admin QuizCraft",
+                FechaRegistro = DateTime.UtcNow,
+                PreferenciaIdioma = "es",
+                EstaActivo = true,
+                NotificacionesEmail = true,
+                NotificacionesWeb = true,
+                NotificacionesHabilitadas = true,
+                TemaPreferido = "dark"
+            };
+            
+            logger.LogWarning($">>> Intentando crear usuario con email: {adminUser.Email}");
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
+            
+            if (result.Succeeded)
+            {
+                logger.LogWarning($">>> ✅ Usuario creado exitosamente. Asignando rol...");
+                await userManager.AddToRoleAsync(adminUser, "Administrador");
+                logger.LogWarning($"✅✅✅ Usuario administrador creado y configurado: {adminEmail}");
+                Console.WriteLine($"\n✅✅✅ ADMIN CREADO: {adminEmail}\n");
+            }
+            else
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                logger.LogCritical($"❌❌❌ Error al crear usuario administrador: {errors}");
+                Console.WriteLine($"\n❌❌❌ ERROR CREANDO ADMIN: {errors}\n");
+            }
+        }
+        else
+        {
+            logger.LogWarning($">>> ℹ️ Usuario administrador YA EXISTE: {existingAdmin.Email}");
+            Console.WriteLine($"\n>>> ADMIN YA EXISTE: {existingAdmin.Email}\n");
+            
+            // Si existe pero no tiene contraseña (viene de migración), asignar contraseña
+            if (string.IsNullOrEmpty(existingAdmin.PasswordHash))
+            {
+                logger.LogWarning(">>> Usuario sin contraseña detectado. Asignando contraseña...");
+                await userManager.AddPasswordAsync(existingAdmin, adminPassword);
+                logger.LogWarning("✅ Contraseña asignada al usuario administrador existente");
+                Console.WriteLine("✅ CONTRASEÑA ASIGNADA\n");
+            }
+            
+            // Asegurar que tiene el rol de administrador
+            if (!await userManager.IsInRoleAsync(existingAdmin, "Administrador"))
+            {
+                logger.LogWarning(">>> Asignando rol Administrador al usuario existente...");
+                await userManager.AddToRoleAsync(existingAdmin, "Administrador");
+                logger.LogWarning("✅ Rol Administrador asignado al usuario existente");
+            }
         }
     }
-    else
+    catch (Exception ex)
     {
-        // Si existe pero no tiene contraseña (viene de migración), asignar contraseña
-        if (string.IsNullOrEmpty(existingAdmin.PasswordHash))
-        {
-            await userManager.AddPasswordAsync(existingAdmin, adminPassword);
-        }
-        
-        // Asegurar que tiene el rol de administrador
-        if (!await userManager.IsInRoleAsync(existingAdmin, "Administrador"))
-        {
-            await userManager.AddToRoleAsync(existingAdmin, "Administrador");
-        }
+        logger.LogCritical(ex, "❌❌❌ EXCEPCIÓN CRÍTICA al crear usuario administrador");
+        Console.WriteLine($"\n❌❌❌ EXCEPCIÓN: {ex.Message}\n{ex.StackTrace}\n");
     }
 }

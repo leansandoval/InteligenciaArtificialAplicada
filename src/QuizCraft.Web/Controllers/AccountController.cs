@@ -67,12 +67,9 @@ public class AccountController : Controller
 
             if (result.Succeeded)
             {
-                // Agregar claims personalizados después del login exitoso
-                await _userManager.RemoveClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", string.Empty));
-                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto ?? $"{user.Nombre} {user.Apellido}"));
-                
-                // Refrescar el signin para incluir los nuevos claims
-                await _signInManager.RefreshSignInAsync(user);
+                // Actualizar último acceso
+                user.UltimoAcceso = DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
                 
                 _logger.LogInformation("Usuario {Email} inició sesión exitosamente", model.Email);
                 return RedirectToLocal(returnUrl);
@@ -90,8 +87,20 @@ public class AccountController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error durante el inicio de sesión para {Email}", model.Email);
-            ModelState.AddModelError(string.Empty, "Ocurrió un error durante el inicio de sesión.");
+            _logger.LogCritical(ex, "❌❌❌ ERROR CRÍTICO durante el inicio de sesión para {Email}", model.Email);
+            _logger.LogCritical("Mensaje: {Message}", ex.Message);
+            _logger.LogCritical("StackTrace: {StackTrace}", ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                _logger.LogCritical("InnerException: {InnerMessage}", ex.InnerException.Message);
+            }
+            
+            // MOSTRAR ERROR DETALLADO (temporal para debugging)
+            ModelState.AddModelError(string.Empty, $"ERROR: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                ModelState.AddModelError(string.Empty, $"Detalle: {ex.InnerException.Message}");
+            }
             return View(model);
         }
     }
@@ -119,30 +128,46 @@ public class AccountController : Controller
 
         try
         {
+            _logger.LogInformation("Iniciando registro para email: {Email}", model.Email);
+            
             var user = new ApplicationUser
             {
                 UserName = model.Email,
                 Email = model.Email,
-                Nombre = model.Nombre,
-                Apellido = model.Apellido,
+                Nombre = model.Nombre ?? string.Empty,
+                Apellido = model.Apellido ?? string.Empty,
                 NombreCompleto = $"{model.Nombre} {model.Apellido}",
+                FechaRegistro = DateTime.UtcNow,
                 EstaActivo = true,
                 NotificacionesEmail = true,
                 NotificacionesWeb = true,
-                PreferenciaIdioma = "es"
+                NotificacionesHabilitadas = true,
+                PreferenciaIdioma = "es",
+                TemaPreferido = "dark"
             };
 
+            _logger.LogInformation("Creando usuario en la base de datos...");
             var result = await _userManager.CreateAsync(user, model.Password);
+            _logger.LogInformation("Resultado de CreateAsync: {Succeeded}", result.Succeeded);
 
             if (result.Succeeded)
             {
-                // Asignar rol de Estudiante por defecto
-                await _userManager.AddToRoleAsync(user, "Estudiante");
+                _logger.LogInformation("Usuario {Email} creado exitosamente, asignando rol...", model.Email);
                 
-                // Agregar claim del nombre completo
-                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto));
+                // Asignar rol de Estudiante por defecto
+                var roleResult = await _userManager.AddToRoleAsync(user, "Estudiante");
+                
+                if (!roleResult.Succeeded)
+                {
+                    _logger.LogError("Error al asignar rol Estudiante al usuario {Email}: {Errors}", 
+                        model.Email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                }
+                else
+                {
+                    _logger.LogInformation("Rol 'Estudiante' asignado correctamente a {Email}", model.Email);
+                }
 
-                _logger.LogInformation("Usuario {Email} registrado exitosamente", model.Email);
+                _logger.LogInformation("Usuario {Email} registrado exitosamente, iniciando sesión...", model.Email);
 
                 await _signInManager.SignInAsync(user, isPersistent: false);
                 return RedirectToAction("Index", "Home");
@@ -155,8 +180,20 @@ public class AccountController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error durante el registro de {Email}", model.Email);
-            ModelState.AddModelError(string.Empty, "Ocurrió un error durante el registro.");
+            _logger.LogCritical(ex, "❌❌❌ ERROR CRÍTICO durante el registro de {Email}", model.Email);
+            _logger.LogCritical("Mensaje: {Message}", ex.Message);
+            _logger.LogCritical("StackTrace: {StackTrace}", ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                _logger.LogCritical("InnerException: {InnerMessage}", ex.InnerException.Message);
+            }
+            
+            // MOSTRAR ERROR DETALLADO (temporal para debugging)
+            ModelState.AddModelError(string.Empty, $"ERROR: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                ModelState.AddModelError(string.Empty, $"Detalle: {ex.InnerException.Message}");
+            }
         }
 
         return View(model);

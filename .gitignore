@@ -368,10 +368,8 @@ FodyWeavers.xsd
 # Archivos de configuración con datos sensibles
 appsettings.json
 appsettings.Development.json
-appsettings.Production.json
 appsettings.Staging.json
 appsettings.Local.json
-appsettings.*.json
 !appsettings.Example.json
 
 # Claves API y secretos
@@ -395,6 +393,7 @@ App_Data/
 logs/
 *.log
 *.log.*
+logs-new/
 
 # Configuraciones de usuario específicas
 *.user.json
