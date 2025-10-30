@@ -130,6 +130,16 @@ az webapp config appsettings set `
   --settings "ASPNETCORE_DETAILEDERRORS=true" "Logging__LogLevel__Default=Information"
 ```
 
+### Configurar API Key de Gemini (IA)
+```powershell
+az webapp config appsettings set `
+  --name "quizcraft-webapp" `
+  --resource-group "IAAplicadaGrupo2" `
+  --settings "Gemini__ApiKey=TU_API_KEY_AQUI"
+```
+
+**Nota**: Necesario para generar flashcards y quizzes con IA. Sin esto, obtendrás el error "Error en el procesamiento con IA".
+
 ---
 
 ## 🔥 FIREWALL DE SQL SERVER

@@ -144,6 +144,19 @@ az webapp config appsettings set `
     "Logging__LogLevel__Microsoft.AspNetCore=Warning"
 ```
 
+### 4. Configurar API Key de Gemini (IA)
+
+**⚠️ CRÍTICO para funcionalidad de IA**: La generación de flashcards y quizzes con IA requiere la API Key de Gemini configurada:
+
+```powershell
+az webapp config appsettings set `
+  --name "quizcraft-webapp" `
+  --resource-group "IAAplicadaGrupo2" `
+  --settings "Gemini__ApiKey=TU_API_KEY_AQUI"
+```
+
+**Nota**: Obtén tu API Key en [Google AI Studio](https://makersuite.google.com/app/apikey). Sin esta configuración, obtendrás el error "Error en el procesamiento con IA".
+
 ---
 
 ## 🚀 Proceso de Despliegue

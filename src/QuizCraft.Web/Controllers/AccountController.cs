@@ -87,20 +87,8 @@ public class AccountController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "❌❌❌ ERROR CRÍTICO durante el inicio de sesión para {Email}", model.Email);
-            _logger.LogCritical("Mensaje: {Message}", ex.Message);
-            _logger.LogCritical("StackTrace: {StackTrace}", ex.StackTrace);
-            if (ex.InnerException != null)
-            {
-                _logger.LogCritical("InnerException: {InnerMessage}", ex.InnerException.Message);
-            }
-            
-            // MOSTRAR ERROR DETALLADO (temporal para debugging)
-            ModelState.AddModelError(string.Empty, $"ERROR: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                ModelState.AddModelError(string.Empty, $"Detalle: {ex.InnerException.Message}");
-            }
+            _logger.LogError(ex, "Error durante el inicio de sesión para {Email}", model.Email);
+            ModelState.AddModelError(string.Empty, "Ocurrió un error durante el inicio de sesión. Por favor, inténtelo de nuevo.");
             return View(model);
         }
     }
@@ -180,20 +168,8 @@ public class AccountController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "❌❌❌ ERROR CRÍTICO durante el registro de {Email}", model.Email);
-            _logger.LogCritical("Mensaje: {Message}", ex.Message);
-            _logger.LogCritical("StackTrace: {StackTrace}", ex.StackTrace);
-            if (ex.InnerException != null)
-            {
-                _logger.LogCritical("InnerException: {InnerMessage}", ex.InnerException.Message);
-            }
-            
-            // MOSTRAR ERROR DETALLADO (temporal para debugging)
-            ModelState.AddModelError(string.Empty, $"ERROR: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                ModelState.AddModelError(string.Empty, $"Detalle: {ex.InnerException.Message}");
-            }
+            _logger.LogError(ex, "Error durante el registro de {Email}", model.Email);
+            ModelState.AddModelError(string.Empty, "Ocurrió un error durante el registro. Por favor, inténtelo de nuevo.");
         }
 
         return View(model);
