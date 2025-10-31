@@ -3,6 +3,9 @@
     ViewData["Title"] = "Quizzes Compartidos";
 }
 
+@* Token antiforgery para peticiones AJAX *@
+@Html.AntiForgeryToken()
+
 <div class="container-fluid my-5">
     <div class="row">
         <div class="col-12">
@@ -181,12 +184,12 @@
                                                     <i class="fas fa-eye me-1"></i>
                                                     Ver Quiz
                                                 </a>
-                                                <form asp-action="Revocar" asp-route-id="@compartido.Id" method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro de que deseas revocar esta compartición?');">
-                                                    <button type="submit" class="btn btn-sm btn-danger">
-                                                        <i class="fas fa-times me-1"></i>
-                                                        Revocar
-                                                    </button>
-                                                </form>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger" 
+                                                        onclick="mostrarModalRevocar(@compartido.Id, '@compartido.TituloQuiz')">
+                                                    <i class="fas fa-times me-1"></i>
+                                                    Revocar
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -273,6 +276,57 @@
     </div>
 </div>
 
+<!-- Modal de Confirmación para Revocar -->
+<div class="modal fade" id="modalRevocar" tabindex="-1" aria-labelledby="modalRevocarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalRevocarLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmar Revocación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-shield-alt text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <h6 class="text-center mb-3">¿Estás seguro de que deseas revocar esta compartición?</h6>
+                <p class="text-center mb-2">
+                    <strong id="tituloQuizRevocar"></strong>
+                </p>
+                <div class="alert alert-info mb-2">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>¿Qué sucederá?</strong>
+                        <ul class="mb-0 mt-1 ps-3">
+                            <li>El código dejará de funcionar inmediatamente</li>
+                            <li>Nadie más podrá importar este quiz</li>
+                            <li>Los usuarios que ya lo importaron lo conservarán</li>
+                        </ul>
+                    </small>
+                </div>
+                <div class="alert alert-warning mb-0">
+                    <small>
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Esta acción no se puede deshacer.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarRevocar">
+                    <i class="fas fa-check me-1"></i>
+                    Sí, Revocar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         // Debug: Mostrar valores de ViewBag en consola
@@ -282,6 +336,135 @@
         console.log('ViewBag.UrlCompartir:', '@ViewBag.UrlCompartir');
         console.log('URL actual:', window.location.href);
         console.log('========================');
+
+        // Variables para el modal de revocar
+        let quizCompartidoIdARevocar = null;
+        const modalRevocar = new bootstrap.Modal(document.getElementById('modalRevocar'));
+
+        // Mostrar modal de confirmación
+        function mostrarModalRevocar(id, titulo) {
+            quizCompartidoIdARevocar = id;
+            document.getElementById('tituloQuizRevocar').textContent = titulo;
+            modalRevocar.show();
+        }
+
+        // Confirmar revocación
+        document.getElementById('btnConfirmarRevocar').addEventListener('click', function() {
+            if (!quizCompartidoIdARevocar) {
+                console.error('No hay ID de quiz para revocar');
+                return;
+            }
+
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            console.log('=== INICIANDO REVOCACIÓN ===');
+            console.log('ID a revocar:', quizCompartidoIdARevocar);
+            
+            // Deshabilitar botón y mostrar spinner
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Revocando...';
+
+            // Obtener el token antiforgery
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            console.log('Token encontrado:', token ? 'Sí' : 'No');
+            console.log('Token value:', token);
+
+            const url = '@Url.Action("Revocar", "QuizCompartido")/' + quizCompartidoIdARevocar;
+            console.log('URL:', url);
+
+            // Crear FormData con el token antiforgery
+            const formData = new FormData();
+            formData.append('__RequestVerificationToken', token);
+
+            // Hacer la petición AJAX
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                
+                // Resetear botón SIEMPRE
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                
+                if (data.success) {
+                    // Cerrar modal
+                    modalRevocar.hide();
+                    
+                    // Encontrar y animar la tarjeta antes de eliminarla
+                    const card = document.querySelector(`button[onclick*="${quizCompartidoIdARevocar}"]`)
+                        ?.closest('.col-md-6, .col-lg-4');
+                    
+                    console.log('Card encontrada:', card ? 'Sí' : 'No');
+                    
+                    if (card) {
+                        // Animación de salida
+                        card.style.transition = 'all 0.5s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.8)';
+                        
+                        setTimeout(() => {
+                            card.remove();
+                            
+                            // Actualizar contador
+                            const contador = document.querySelector('#compartidos-tab');
+                            if (contador) {
+                                const match = contador.textContent.match(/\((\d+)\)/);
+                                if (match) {
+                                    const nuevoConteo = parseInt(match[1]) - 1;
+                                    contador.innerHTML = contador.innerHTML.replace(/\(\d+\)/, `(${nuevoConteo})`);
+                                }
+                            }
+
+                            // Mostrar mensaje de éxito
+                            mostrarNotificacion('success', data.message || '¡Compartición revocada exitosamente!');
+                        }, 500);
+                    } else {
+                        // Si no encontramos la card, recargar la página
+                        mostrarNotificacion('success', data.message || '¡Compartición revocada exitosamente!');
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } else {
+                    console.error('Error en respuesta:', data.message);
+                    mostrarNotificacion('danger', data.message || 'Error al revocar la compartición');
+                }
+            })
+            .catch(error => {
+                console.error('Error en fetch:', error);
+                // Resetear botón
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                mostrarNotificacion('danger', 'Error al procesar la solicitud');
+            });
+        });
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(tipo, mensaje) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+
+            // Auto-cerrar después de 5 segundos
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 5000);
+        }
         
         function copiarCodigo(codigo, button) {
             navigator.clipboard.writeText(codigo).then(function() {

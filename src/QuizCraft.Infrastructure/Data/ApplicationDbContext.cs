@@ -366,7 +366,7 @@ namespace QuizCraft.Infrastructure.Data
                 entity.HasOne(e => e.Quiz)
                     .WithMany()
                     .HasForeignKey(e => e.QuizId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Restrict); // NO se puede usar Cascade por ciclos múltiples
                 
                 entity.HasOne(e => e.Usuario)
                     .WithMany()

@@ -62,6 +62,7 @@ builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IQuizCompartidoRepository, QuizCompartidoRepository>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 // FUNC_ConfigurarServicios: Inyección de dependencias para servicios de aplicación
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFileUploadService, QuizCraft.Infrastructure.Services.FileUploadService>();

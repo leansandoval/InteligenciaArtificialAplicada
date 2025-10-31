@@ -3,8 +3,8 @@
     ViewData["Title"] = "Importar Quiz";
 }
 
-<div class="container">
-    <div class="row justify-content-center">
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center min-vh-50">
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-success text-white">
@@ -124,21 +124,29 @@
                             Ingresa el código de 8 caracteres que te compartieron para importar un quiz.
                         </div>
 
+                        @if (TempData["Error"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                @TempData["Error"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+
                         <form asp-action="Importar" method="get">
                             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                             <div class="mb-4">
-                                <label asp-for="CodigoCompartido" class="form-label">
+                                <label for="codigo" class="form-label">
                                     <i class="fas fa-key me-1"></i>
                                     Código de Compartición
                                 </label>
-                                <input asp-for="CodigoCompartido" class="form-control form-control-lg text-center font-monospace" 
+                                <input id="codigo" name="codigo" type="text" class="form-control form-control-lg text-center font-monospace" 
                                        placeholder="ABCD1234" maxlength="8" style="letter-spacing: 0.3em;" 
-                                       onkeyup="this.value = this.value.toUpperCase()" />
+                                       onkeyup="this.value = this.value.toUpperCase()" required />
                                 <div class="form-text">
                                     Ingresa el código exactamente como te lo compartieron (8 caracteres).
                                 </div>
-                                <span asp-validation-for="CodigoCompartido" class="text-danger"></span>
                             </div>
 
                             <!-- Botones -->

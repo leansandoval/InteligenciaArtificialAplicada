@@ -233,17 +233,25 @@ public class QuizCompartidoController : Controller
             // Si se proporciona un código, obtener información del quiz
             if (!string.IsNullOrEmpty(codigo))
             {
+                _logger.LogInformation("=== IMPORTAR: Buscando quiz con código: {Codigo}", codigo);
                 viewModel.CodigoCompartido = codigo.ToUpper();
-                var infoResult = await _quizCompartidoService.ObtenerInfoQuizCompartidoAsync(codigo);
+                var infoResult = await _quizCompartidoService.ObtenerInfoQuizCompartidoAsync(codigo.ToUpper());
                 
                 if (infoResult.IsSuccess)
                 {
+                    _logger.LogInformation("=== IMPORTAR: Quiz encontrado - Título: {Titulo}, Preguntas: {NumPreguntas}", 
+                        infoResult.Data?.TituloQuiz, infoResult.Data?.NumeroPreguntas);
                     viewModel.InfoQuiz = infoResult.Data;
                 }
                 else
                 {
+                    _logger.LogWarning("=== IMPORTAR: No se encontró quiz - Error: {Error}", infoResult.ErrorMessage);
                     TempData["Error"] = infoResult.ErrorMessage;
                 }
+            }
+            else
+            {
+                _logger.LogInformation("=== IMPORTAR: No se proporcionó código");
             }
 
             return View(viewModel);
@@ -319,14 +327,43 @@ public class QuizCompartidoController : Controller
     {
         try
         {
+            _logger.LogInformation("=== REVOCAR: ID={Id}, Headers={Headers}", id, string.Join(", ", Request.Headers.Select(h => $"{h.Key}={h.Value}")));
+            
             var userId = _userManager.GetUserId(User);
             if (string.IsNullOrEmpty(userId))
             {
+                _logger.LogWarning("REVOCAR: Usuario no autenticado");
+                // Si es petición AJAX, devolver JSON
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                    Request.Headers["Content-Type"].ToString().Contains("application/json"))
+                {
+                    return Json(new { success = false, message = "Sesión expirada" });
+                }
                 return RedirectToAction("Login", "Account");
             }
 
+            _logger.LogInformation("REVOCAR: Procesando para usuario {UserId}", userId);
             var resultado = await _quizCompartidoService.RevocarComparticionAsync(id, userId);
+            _logger.LogInformation("REVOCAR: Resultado - Success={Success}, Message={Message}", resultado.IsSuccess, resultado.ErrorMessage);
 
+            // Detectar si es petición AJAX
+            bool esAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                         Request.Headers["Content-Type"].ToString().Contains("application/json");
+            
+            _logger.LogInformation("REVOCAR: Es AJAX={EsAjax}", esAjax);
+
+            // Si es petición AJAX, devolver JSON
+            if (esAjax)
+            {
+                var jsonResult = Json(new { 
+                    success = resultado.IsSuccess, 
+                    message = resultado.IsSuccess ? "Compartición revocada exitosamente" : resultado.ErrorMessage 
+                });
+                _logger.LogInformation("REVOCAR: Devolviendo JSON - Success={Success}", resultado.IsSuccess);
+                return jsonResult;
+            }
+
+            // Si no es AJAX, mantener el comportamiento original
             if (resultado.IsSuccess)
             {
                 TempData["Success"] = "Compartición revocada exitosamente";
@@ -341,6 +378,17 @@ public class QuizCompartidoController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error al revocar compartición {Id}", id);
+            
+            // Detectar si es petición AJAX
+            bool esAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
+                         Request.Headers["Content-Type"].ToString().Contains("application/json");
+            
+            // Si es petición AJAX, devolver JSON
+            if (esAjax)
+            {
+                return Json(new { success = false, message = "Error al revocar la compartición: " + ex.Message });
+            }
+            
             TempData["Error"] = "Error al revocar la compartición";
             return RedirectToAction(nameof(Index));
         }

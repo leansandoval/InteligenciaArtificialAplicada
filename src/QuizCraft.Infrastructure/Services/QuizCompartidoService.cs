@@ -14,17 +14,20 @@ public class QuizCompartidoService : IQuizCompartidoService
 {
     private readonly IQuizCompartidoRepository _quizCompartidoRepository;
     private readonly IQuizRepository _quizRepository;
+    private readonly IGenericRepository<QuizImportado> _quizImportadoRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<QuizCompartidoService> _logger;
 
     public QuizCompartidoService(
         IQuizCompartidoRepository quizCompartidoRepository,
         IQuizRepository quizRepository,
+        IGenericRepository<QuizImportado> quizImportadoRepository,
         IUnitOfWork unitOfWork,
         ILogger<QuizCompartidoService> logger)
     {
         _quizCompartidoRepository = quizCompartidoRepository;
         _quizRepository = quizRepository;
+        _quizImportadoRepository = quizImportadoRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
     }
@@ -176,10 +179,13 @@ public class QuizCompartidoService : IQuizCompartidoService
                 nuevoQuiz.Preguntas.Add(nuevaPregunta);
             }
 
-            // Guardar nuevo quiz
+            // Guardar nuevo quiz primero para obtener su ID
             await _quizRepository.AddAsync(nuevoQuiz);
+            await _unitOfWork.SaveChangesAsync();
 
-            // Registrar importación
+            _logger.LogInformation("Nuevo quiz creado con ID: {QuizId}", nuevoQuiz.Id);
+
+            // Ahora registrar importación con el ID real del quiz
             var importacion = new QuizImportado
             {
                 QuizCompartidoId = quizCompartido.Id,
@@ -192,6 +198,7 @@ public class QuizCompartidoService : IQuizCompartidoService
             // Actualizar contador de usos
             quizCompartido.VecesUsado++;
 
+            // Guardar la importación y el contador
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation(
@@ -211,11 +218,35 @@ public class QuizCompartidoService : IQuizCompartidoService
     {
         try
         {
+            _logger.LogInformation("Buscando quiz compartido con código: {Codigo}", codigo);
             var quizCompartido = await _quizCompartidoRepository.GetByCodigoAsync(codigo);
             
             if (quizCompartido == null)
             {
+                _logger.LogWarning("No se encontró quiz compartido con código: {Codigo}", codigo);
                 return ServiceResult<QuizCompartidoInfo>.Failure("El código de compartición no existe");
+            }
+            
+            _logger.LogInformation("Quiz compartido encontrado - Id: {Id}, EstaActivo: {EstaActivo}, Quiz: {QuizTitulo}", 
+                quizCompartido.Id, quizCompartido.EstaActivo, quizCompartido.Quiz?.Titulo ?? "NULL");
+
+            // Verificar que el Quiz y sus relaciones se cargaron correctamente
+            if (quizCompartido.Quiz == null)
+            {
+                _logger.LogError("El Quiz asociado al código {Codigo} es NULL", codigo);
+                return ServiceResult<QuizCompartidoInfo>.Failure("Error: El quiz no se cargó correctamente");
+            }
+
+            if (quizCompartido.Quiz.Materia == null)
+            {
+                _logger.LogError("La Materia del Quiz {QuizId} es NULL", quizCompartido.QuizId);
+                return ServiceResult<QuizCompartidoInfo>.Failure("Error: La materia del quiz no se cargó correctamente");
+            }
+
+            if (quizCompartido.Propietario == null)
+            {
+                _logger.LogError("El Propietario del código {Codigo} es NULL", codigo);
+                return ServiceResult<QuizCompartidoInfo>.Failure("Error: El propietario no se cargó correctamente");
             }
 
             var disponible = quizCompartido.EstaActivo &&
@@ -230,13 +261,16 @@ public class QuizCompartidoService : IQuizCompartidoService
                 usosRestantes = quizCompartido.MaximoUsos.Value - quizCompartido.VecesUsado;
             }
 
+            _logger.LogInformation("Info calculada - Disponible: {Disponible}, Preguntas: {NumPreguntas}, UsosRestantes: {UsosRestantes}", 
+                disponible, quizCompartido.Quiz.Preguntas?.Count ?? 0, usosRestantes);
+
             var info = new QuizCompartidoInfo
             {
                 TituloQuiz = quizCompartido.Quiz.Titulo,
                 Descripcion = quizCompartido.Quiz.Descripcion,
                 NombreMateria = quizCompartido.Quiz.Materia.Nombre,
                 NombrePropietario = quizCompartido.Propietario.UserName ?? "Usuario",
-                NumeroPreguntas = quizCompartido.Quiz.Preguntas.Count,
+                NumeroPreguntas = quizCompartido.Quiz.Preguntas?.Count ?? 0,
                 Dificultad = quizCompartido.Quiz.NivelDificultad.ToString(),
                 FechaExpiracion = quizCompartido.FechaExpiracion,
                 UsosRestantes = usosRestantes,
@@ -270,19 +304,44 @@ public class QuizCompartidoService : IQuizCompartidoService
                 return ServiceResult.Failure("No tienes permisos para revocar esta compartición");
             }
 
-            quizCompartido.EstaActivo = false;
+            // ELIMINACIÓN COMPLETA EN CASCADA MANUAL:
+            // 1. Obtener todos los QuizImportado relacionados
+            var importaciones = await _quizImportadoRepository.FindAsync(qi => qi.QuizCompartidoId == quizCompartidoId);
+            var importacionesList = importaciones.ToList();
+            
+            _logger.LogInformation(
+                "Revocando compartición {Id}: Encontradas {Count} importaciones para eliminar",
+                quizCompartidoId, importacionesList.Count);
+            
+            // 2. Eliminar los Quizzes importados (el Quiz de cada estudiante)
+            foreach (var importacion in importacionesList)
+            {
+                var quizImportado = await _quizRepository.GetByIdAsync(importacion.QuizId);
+                if (quizImportado != null)
+                {
+                    _quizRepository.Remove(quizImportado);
+                    _logger.LogInformation(
+                        "Eliminando Quiz importado {QuizId} del usuario {UsuarioId}",
+                        quizImportado.Id, importacion.UsuarioId);
+                }
+            }
+            
+            // 3. Eliminar el QuizCompartido (que eliminará los QuizImportado por cascada)
+            _quizCompartidoRepository.Remove(quizCompartido);
+            
+            // 4. Guardar todos los cambios
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Compartición {Id} revocada por usuario {UsuarioId}",
-                quizCompartidoId, usuarioId);
+                "Compartición {Id} ELIMINADA COMPLETAMENTE por usuario {UsuarioId} - {Count} quizzes importados eliminados",
+                quizCompartidoId, usuarioId, importacionesList.Count);
 
             return ServiceResult.Success();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al revocar compartición {Id}", quizCompartidoId);
-            return ServiceResult.Failure("Error al revocar la compartición");
+            _logger.LogError(ex, "Error al eliminar compartición {Id}", quizCompartidoId);
+            return ServiceResult.Failure("Error al eliminar la compartición");
         }
     }
 

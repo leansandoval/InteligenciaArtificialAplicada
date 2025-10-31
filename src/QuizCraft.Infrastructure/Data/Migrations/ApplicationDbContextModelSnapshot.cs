@@ -321,7 +321,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
 
                     b.HasIndex("FlashcardId");
 
-                    b.ToTable("ArchivosAdjuntos");
+                    b.ToTable("ArchivosAdjuntos", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.EstadisticaEstudio", b =>
@@ -384,7 +384,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                     b.HasIndex("UsuarioId", "Fecha")
                         .HasDatabaseName("IX_EstadisticasEstudio_Usuario_Fecha");
 
-                    b.ToTable("EstadisticasEstudio");
+                    b.ToTable("EstadisticasEstudio", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.Flashcard", b =>
@@ -460,7 +460,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                     b.HasIndex("MateriaId")
                         .HasDatabaseName("IX_Flashcards_MateriaId");
 
-                    b.ToTable("Flashcards");
+                    b.ToTable("Flashcards", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.Materia", b =>
@@ -505,7 +505,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
 
                     b.HasIndex("UsuarioId");
 
-                    b.ToTable("Materias");
+                    b.ToTable("Materias", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.PreguntaQuiz", b =>
@@ -578,7 +578,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("PreguntasQuiz");
+                    b.ToTable("PreguntasQuiz", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.Quiz", b =>
@@ -648,7 +648,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                     b.HasIndex("MateriaId")
                         .HasDatabaseName("IX_Quizzes_MateriaId");
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.QuizCompartido", b =>
@@ -703,7 +703,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
 
                     b.HasIndex("QuizId");
 
-                    b.ToTable("QuizzesCompartidos");
+                    b.ToTable("QuizzesCompartidos", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.QuizImportado", b =>
@@ -743,7 +743,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                     b.HasIndex("QuizCompartidoId", "UsuarioId")
                         .HasDatabaseName("IX_QuizzesImportados_Compartido_Usuario");
 
-                    b.ToTable("QuizzesImportados");
+                    b.ToTable("QuizzesImportados", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.RepasoProgramado", b =>
@@ -833,7 +833,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                     b.HasIndex("UsuarioId", "Completado", "EstaActivo")
                         .HasDatabaseName("IX_RepasosProgramados_Usuario_Estado");
 
-                    b.ToTable("RepasosProgramados");
+                    b.ToTable("RepasosProgramados", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.RespuestaUsuario", b =>
@@ -889,7 +889,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
 
                     b.HasIndex("ResultadoQuizId");
 
-                    b.ToTable("RespuestasUsuario");
+                    b.ToTable("RespuestasUsuario", (string)null);
                 });
 
             modelBuilder.Entity("QuizCraft.Core.Entities.ResultadoQuiz", b =>
@@ -953,7 +953,7 @@ namespace QuizCraft.Infrastructure.Data.Migrations
                     b.HasIndex("UsuarioId", "FechaRealizacion")
                         .HasDatabaseName("IX_ResultadosQuiz_Usuario_Fecha");
 
-                    b.ToTable("ResultadosQuiz");
+                    b.ToTable("ResultadosQuiz", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
