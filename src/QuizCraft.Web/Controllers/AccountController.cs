@@ -71,6 +71,20 @@ public class AccountController : Controller
                 user.UltimoAcceso = DateTime.UtcNow;
                 await _userManager.UpdateAsync(user);
                 
+                // Verificar y agregar claim NombreCompleto si no existe
+                var claims = await _userManager.GetClaimsAsync(user);
+                var nombreCompletoClaim = claims.FirstOrDefault(c => c.Type == "NombreCompleto");
+                
+                if (nombreCompletoClaim == null)
+                {
+                    // Si no existe el claim, agregarlo
+                    await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto));
+                    _logger.LogInformation("Claim NombreCompleto agregado para usuario existente {Email}", model.Email);
+                    
+                    // Refrescar el sign in para que el claim esté disponible
+                    await _signInManager.RefreshSignInAsync(user);
+                }
+                
                 _logger.LogInformation("Usuario {Email} inició sesión exitosamente", model.Email);
                 return RedirectToLocal(returnUrl);
             }
@@ -154,6 +168,10 @@ public class AccountController : Controller
                 {
                     _logger.LogInformation("Rol 'Estudiante' asignado correctamente a {Email}", model.Email);
                 }
+
+                // Agregar claim NombreCompleto
+                await _userManager.AddClaimAsync(user, new System.Security.Claims.Claim("NombreCompleto", user.NombreCompleto));
+                _logger.LogInformation("Claim NombreCompleto agregado para {Email}", model.Email);
 
                 _logger.LogInformation("Usuario {Email} registrado exitosamente, iniciando sesión...", model.Email);
 
