@@ -1,0 +1,182 @@
+@model QuizCraft.Application.ViewModels.ImportarQuizViewModel
+@{
+    ViewData["Title"] = "Importar Quiz";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-download me-2"></i>
+                        Importar Quiz Compartido
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (Model.InfoQuiz != null)
+                    {
+                        <!-- Información del Quiz a Importar -->
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Quiz Encontrado
+                            </h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Título:</strong> @Model.InfoQuiz.TituloQuiz
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Materia Original:</strong> @Model.InfoQuiz.NombreMateria
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Dificultad:</strong> @Model.InfoQuiz.Dificultad
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Preguntas:</strong> @Model.InfoQuiz.NumeroPreguntas
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Creado por:</strong> @Model.InfoQuiz.NombrePropietario
+                                    </p>
+                                    @if (Model.InfoQuiz.FechaExpiracion.HasValue)
+                                    {
+                                        <p class="mb-2">
+                                            <strong>Expira:</strong> @Model.InfoQuiz.FechaExpiracion.Value.ToString("dd/MM/yyyy HH:mm")
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+                            @if (Model.InfoQuiz.UsosRestantes.HasValue)
+                            {
+                                <div class="mt-2">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-users me-1"></i>
+                                        Usos restantes: @Model.InfoQuiz.UsosRestantes
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Formulario de Importación -->
+                        <form asp-action="Importar" method="post">
+                            <input type="hidden" asp-for="CodigoCompartido" />
+                            
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                            <!-- Selección de Materia -->
+                            <div class="mb-4">
+                                <label asp-for="MateriaId" class="form-label">
+                                    <i class="fas fa-book me-1"></i>
+                                    Asignar a Materia
+                                </label>
+                                <select asp-for="MateriaId" class="form-select" asp-items="@ViewBag.Materias">
+                                    <option value="">-- Selecciona una materia --</option>
+                                </select>
+                                <div class="form-text">
+                                    El quiz se importará a la materia que selecciones. Puedes elegir una diferente a la original.
+                                </div>
+                                <span asp-validation-for="MateriaId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Información adicional -->
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    ¿Qué sucederá al importar?
+                                </h6>
+                                <ul class="mb-0">
+                                    <li>Se creará una copia completa del quiz en tu cuenta.</li>
+                                    <li>Todas las preguntas y respuestas se copiarán exactamente.</li>
+                                    <li>Podrás usar el quiz de forma independiente.</li>
+                                    @if (Model.InfoQuiz.PermiteModificaciones)
+                                    {
+                                        <li class="text-success"><strong>Podrás editar el quiz después de importarlo.</strong></li>
+                                    }
+                                    else
+                                    {
+                                        <li class="text-warning"><strong>El quiz será de solo lectura (no podrás modificarlo).</strong></li>
+                                    }
+                                </ul>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-download me-1"></i>
+                                    Importar Quiz
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <!-- Formulario para Ingresar Código -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Ingresa el código de 8 caracteres que te compartieron para importar un quiz.
+                        </div>
+
+                        <form asp-action="Importar" method="get">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                            <div class="mb-4">
+                                <label asp-for="CodigoCompartido" class="form-label">
+                                    <i class="fas fa-key me-1"></i>
+                                    Código de Compartición
+                                </label>
+                                <input asp-for="CodigoCompartido" class="form-control form-control-lg text-center font-monospace" 
+                                       placeholder="ABCD1234" maxlength="8" style="letter-spacing: 0.3em;" 
+                                       onkeyup="this.value = this.value.toUpperCase()" />
+                                <div class="form-text">
+                                    Ingresa el código exactamente como te lo compartieron (8 caracteres).
+                                </div>
+                                <span asp-validation-for="CodigoCompartido" class="text-danger"></span>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>
+                                    Volver
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>
+                                    Buscar Quiz
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Ayuda -->
+                        <div class="mt-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-question-circle me-1"></i>
+                                        ¿Cómo obtener un código?
+                                    </h6>
+                                    <p class="card-text mb-0">
+                                        Los códigos de compartición son generados por otros usuarios cuando comparten sus quizzes. 
+                                        Solicita el código a la persona que desea compartir el quiz contigo. El código tiene 8 caracteres 
+                                        y puede incluir letras y números.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

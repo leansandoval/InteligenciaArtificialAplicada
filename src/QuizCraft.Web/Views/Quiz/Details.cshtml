@@ -3,8 +3,8 @@
     ViewData["Title"] = Model.Titulo;
 }
 
-<div class="container">
-    <div class="row">
+<div class="container my-5">
+    <div class="row justify-content-center">
         <!-- Información Principal del Quiz -->
         <div class="col-lg-8">
             <div class="card shadow-sm mb-4">
@@ -20,6 +20,10 @@
                                 <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-light btn-sm">
                                     <i class="fas fa-edit me-1"></i>
                                     Editar
+                                </a>
+                                <a asp-controller="QuizCompartido" asp-action="Compartir" asp-route-quizId="@Model.Id" class="btn btn-info btn-sm">
+                                    <i class="fas fa-share-alt me-1"></i>
+                                    Compartir
                                 </a>
                             }
                             @if (Model.PuedeEliminar)
@@ -86,7 +90,20 @@
                         </div>
                         <div class="col-6 col-md-3 mb-3">
                             <div class="bg-light rounded p-3">
-                                <h4 class="text-warning mb-1">@Model.NivelDificultad</h4>
+                                <h4 class="text-warning mb-1">
+                                    @{
+                                        var dificultadTexto = Model.NivelDificultad.ToString() switch
+                                        {
+                                            "MuyFacil" => "Muy Fácil",
+                                            "Facil" => "Fácil",
+                                            "Intermedio" => "Intermedio",
+                                            "Dificil" => "Difícil",
+                                            "MuyDificil" => "Muy Difícil",
+                                            _ => Model.NivelDificultad.ToString()
+                                        };
+                                    }
+                                    @dificultadTexto
+                                </h4>
                                 <small class="text-muted">Dificultad</small>
                             </div>
                         </div>
@@ -157,11 +174,14 @@
                                             
                                             @if (!string.IsNullOrEmpty(pregunta.Explicacion))
                                             {
-                                                <div class="mt-3 p-2 bg-light rounded">
-                                                    <small>
-                                                        <i class="fas fa-lightbulb text-warning me-1"></i>
-                                                        <strong>Explicación:</strong> @pregunta.Explicacion
-                                                    </small>
+                                                <div class="mt-3 p-3 border rounded" style="background-color: var(--bg-secondary);">
+                                                    <div>
+                                                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                                                        <strong>Explicación:</strong>
+                                                    </div>
+                                                    <div class="mt-2">
+                                                        @pregunta.Explicacion
+                                                    </div>
                                                 </div>
                                             }
                                         </div>
@@ -379,7 +399,6 @@
             }
         });
 
-        let allExpanded = false;
         function toggleAllQuestions() {
             const accordion = document.getElementById('accordionPreguntas');
             const toggleText = document.getElementById('toggleText');
@@ -390,7 +409,7 @@
                 return;
             }
             
-            // Obtener todos los elementos collapse
+            // Obtener todos los elementos collapse y botones
             const collapseElements = accordion.querySelectorAll('.accordion-collapse');
             const buttonElements = accordion.querySelectorAll('.accordion-button');
             
@@ -399,32 +418,29 @@
                 return;
             }
             
-            // Cambiar el estado de cada elemento
-            collapseElements.forEach((collapse, index) => {
-                const button = buttonElements[index];
-                
-                if (allExpanded) {
-                    // Colapsar: agregar clase 'collapsed' al botón y quitar 'show' del collapse
-                    if (button) button.classList.add('collapsed');
-                    if (button) button.setAttribute('aria-expanded', 'false');
-                    collapse.classList.remove('show');
+            // Verificar el estado actual: si todos están expandidos o no
+            const allCurrentlyExpanded = Array.from(collapseElements).every(el => el.classList.contains('show'));
+            
+            // Expandir o colapsar todos usando la API de Bootstrap
+            collapseElements.forEach((collapseEl) => {
+                if (allCurrentlyExpanded) {
+                    // Si todos están expandidos, colapsar todos
+                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+                    bsCollapse.hide();
                 } else {
-                    // Expandir: quitar clase 'collapsed' del botón y agregar 'show' al collapse
-                    if (button) button.classList.remove('collapsed');
-                    if (button) button.setAttribute('aria-expanded', 'true');
-                    collapse.classList.add('show');
+                    // Si no todos están expandidos, expandir todos
+                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+                    bsCollapse.show();
                 }
             });
             
-            allExpanded = !allExpanded;
-            
-            // Actualizar el texto y el icono del botón
+            // Actualizar el texto y el icono del botón según el nuevo estado
             if (toggleText) {
-                toggleText.textContent = allExpanded ? 'Colapsar Todo' : 'Expandir Todo';
+                toggleText.textContent = allCurrentlyExpanded ? 'Expandir Todo' : 'Colapsar Todo';
             }
             
             if (toggleIcon) {
-                toggleIcon.className = allExpanded ? 'fas fa-compress-arrows-alt me-1' : 'fas fa-expand-arrows-alt me-1';
+                toggleIcon.className = allCurrentlyExpanded ? 'fas fa-expand-arrows-alt me-1' : 'fas fa-compress-arrows-alt me-1';
             }
         }
     </script>
@@ -432,16 +448,6 @@
 
 @section Styles {
     <style>
-        .accordion-button:not(.collapsed) {
-            background-color: rgba(13, 110, 253, 0.1);
-            border-color: rgba(13, 110, 253, 0.25);
-        }
-        
-        .accordion-button:focus {
-            border-color: #86b7fe;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-        }
-        
         .bg-opacity-10 {
             background-color: rgba(25, 135, 84, 0.1) !important;
         }

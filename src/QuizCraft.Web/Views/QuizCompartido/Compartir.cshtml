@@ -1,0 +1,119 @@
+@model QuizCraft.Application.ViewModels.CompartirQuizViewModel
+@{
+    ViewData["Title"] = "Compartir Quiz";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-share-alt me-2"></i>
+                        Compartir Quiz
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Vas a compartir el quiz: <strong>@Model.TituloQuiz</strong>
+                    </div>
+
+                    <form asp-action="Compartir" method="post">
+                        <input type="hidden" asp-for="QuizId" />
+                        <input type="hidden" asp-for="TituloQuiz" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- Fecha de Expiración -->
+                        <div class="mb-4">
+                            <label asp-for="FechaExpiracion" class="form-label">
+                                <i class="fas fa-clock me-1"></i>
+                                Fecha de Expiración (Opcional)
+                            </label>
+                            <input asp-for="FechaExpiracion" class="form-control" type="datetime-local" />
+                            <div class="form-text">
+                                Si no especificas una fecha, el enlace no expirará nunca.
+                            </div>
+                            <span asp-validation-for="FechaExpiracion" class="text-danger"></span>
+                        </div>
+
+                        <!-- Máximo de Usos -->
+                        <div class="mb-4">
+                            <label asp-for="MaximoUsos" class="form-label">
+                                <i class="fas fa-users me-1"></i>
+                                Número Máximo de Usos (Opcional)
+                            </label>
+                            <input asp-for="MaximoUsos" class="form-control" type="number" min="1" placeholder="Déjalo vacío para usos ilimitados" />
+                            <div class="form-text">
+                                Limita cuántas veces puede importarse el quiz. Si no especificas un número, podrá importarse ilimitadamente.
+                            </div>
+                            <span asp-validation-for="MaximoUsos" class="text-danger"></span>
+                        </div>
+
+                        <!-- Permite Modificaciones -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input asp-for="PermiteModificaciones" class="form-check-input" type="checkbox" />
+                                <label asp-for="PermiteModificaciones" class="form-check-label">
+                                    <i class="fas fa-edit me-1"></i>
+                                    Permitir que los usuarios modifiquen el quiz después de importarlo
+                                </label>
+                            </div>
+                            <div class="form-text ms-4">
+                                Si está activado, los usuarios podrán editar el quiz importado. Si está desactivado, solo podrán visualizarlo y jugarlo.
+                            </div>
+                            <span asp-validation-for="PermiteModificaciones" class="text-danger"></span>
+                        </div>
+
+                        <!-- Información adicional -->
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Información de Seguridad
+                            </h6>
+                            <ul class="mb-0">
+                                <li>Se generará un código único de 8 caracteres para compartir.</li>
+                                <li>Los usuarios necesitarán este código para importar tu quiz.</li>
+                                <li>Puedes revocar el acceso en cualquier momento desde "Quizzes Compartidos".</li>
+                                <li>El quiz original no se verá afectado por las importaciones.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-share me-1"></i>
+                                Generar Código de Compartición
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Establecer fecha mínima como hoy
+        document.addEventListener('DOMContentLoaded', function() {
+            var fechaInput = document.getElementById('FechaExpiracion');
+            if (fechaInput) {
+                // Obtener fecha y hora actual en formato local
+                var ahora = new Date();
+                // Ajustar para la zona horaria local
+                var offset = ahora.getTimezoneOffset() * 60000;
+                var fechaLocal = new Date(ahora - offset);
+                var fechaMinima = fechaLocal.toISOString().slice(0, 16);
+                
+                fechaInput.setAttribute('min', fechaMinima);
+            }
+        });
+    </script>
+}

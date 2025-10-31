@@ -9,6 +9,7 @@ public interface IUnitOfWork : IDisposable
     IMateriaRepository MateriaRepository { get; }
     IFlashcardRepository FlashcardRepository { get; }
     IQuizRepository QuizRepository { get; }
+    IQuizCompartidoRepository QuizCompartidoRepository { get; }
 
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

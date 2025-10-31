@@ -1426,26 +1426,48 @@ h4, h5, h6 {
   color: var(--text-primary) !important;
 }
 
-/* Acordeones */
+/* Acordeones - Estilos que no interfieren con funcionalidad de Bootstrap */
 .accordion-item {
   background-color: var(--card-bg) !important;
-  border-color: var(--border-color) !important;
+  border: 1px solid var(--border-color) !important;
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
 }
 
-.accordion-header .accordion-button {
+.accordion-button {
   background-color: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
-  border-bottom-color: var(--border-color) !important;
+  font-weight: 500;
+  cursor: pointer;
+  /* NO sobreescribir propiedades de funcionalidad como pointer-events, position, etc */
+}
+
+.accordion-button:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 .accordion-button:not(.collapsed) {
-  background-color: var(--navbar-bg) !important;
+  background-color: #0d6efd !important;
   color: #ffffff !important;
+}
+
+.accordion-button:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.accordion-button::after {
+  filter: brightness(0) invert(1);
+}
+
+.accordion-button:not(.collapsed)::after {
+  filter: brightness(1) invert(0);
 }
 
 .accordion-body {
   background-color: var(--card-bg) !important;
   color: var(--text-primary) !important;
+  border-top: 1px solid var(--border-color);
+  padding: 1.25rem;
 }
 
 /* ===== ELEMENTOS DE TEXTO MEJORADOS ===== */

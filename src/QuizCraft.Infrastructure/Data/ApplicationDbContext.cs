@@ -24,6 +24,8 @@ namespace QuizCraft.Infrastructure.Data
         public DbSet<ArchivoAdjunto> ArchivosAdjuntos { get; set; }
         public DbSet<EstadisticaEstudio> EstadisticasEstudio { get; set; }
         public DbSet<RepasoProgramado> RepasosProgramados { get; set; }
+        public DbSet<QuizCompartido> QuizzesCompartidos { get; set; }
+        public DbSet<QuizImportado> QuizzesImportados { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -322,6 +324,62 @@ namespace QuizCraft.Infrastructure.Data
             builder.Entity<RepasoProgramado>()
                 .HasIndex(r => new { r.UsuarioId, r.Completado, r.EstaActivo })
                 .HasDatabaseName("IX_RepasosProgramados_Usuario_Estado");
+
+            // Configuración de QuizCompartido
+            builder.Entity<QuizCompartido>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasOne(e => e.Quiz)
+                    .WithMany()
+                    .HasForeignKey(e => e.QuizId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(e => e.Propietario)
+                    .WithMany()
+                    .HasForeignKey(e => e.PropietarioId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.HasIndex(e => e.CodigoCompartido)
+                    .IsUnique()
+                    .HasDatabaseName("IX_QuizzesCompartidos_Codigo");
+                
+                entity.Property(e => e.CodigoCompartido)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.PropietarioId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+            });
+            
+            // Configuración de QuizImportado
+            builder.Entity<QuizImportado>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasOne(e => e.QuizCompartido)
+                    .WithMany(qc => qc.Importaciones)
+                    .HasForeignKey(e => e.QuizCompartidoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(e => e.Quiz)
+                    .WithMany()
+                    .HasForeignKey(e => e.QuizId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.HasOne(e => e.Usuario)
+                    .WithMany()
+                    .HasForeignKey(e => e.UsuarioId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.Property(e => e.UsuarioId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+                
+                entity.HasIndex(e => new { e.QuizCompartidoId, e.UsuarioId })
+                    .HasDatabaseName("IX_QuizzesImportados_Compartido_Usuario");
+            });
         }
     }
 }

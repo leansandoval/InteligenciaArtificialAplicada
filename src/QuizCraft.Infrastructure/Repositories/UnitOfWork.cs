@@ -17,11 +17,14 @@ namespace QuizCraft.Infrastructure.Repositories
         private IMateriaRepository? _materiaRepository;
         private IFlashcardRepository? _flashcardRepository;
         private IQuizRepository? _quizRepository;
+        private IQuizCompartidoRepository? _quizCompartidoRepository;
 
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
         }
+
+        public ApplicationDbContext Context => _context;
 
         public IMateriaRepository MateriaRepository
         {
@@ -47,6 +50,15 @@ namespace QuizCraft.Infrastructure.Repositories
             {
                 _quizRepository ??= new QuizRepository(_context);
                 return _quizRepository;
+            }
+        }
+
+        public IQuizCompartidoRepository QuizCompartidoRepository
+        {
+            get
+            {
+                _quizCompartidoRepository ??= new QuizCompartidoRepository(_context);
+                return _quizCompartidoRepository;
             }
         }
 

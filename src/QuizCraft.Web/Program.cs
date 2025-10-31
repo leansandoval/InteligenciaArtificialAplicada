@@ -61,9 +61,13 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IFlashcardRepository, FlashcardRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IQuizCompartidoRepository, QuizCompartidoRepository>();
 
 // FUNC_ConfigurarServicios: Inyección de dependencias para servicios de aplicación
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFileUploadService, QuizCraft.Infrastructure.Services.FileUploadService>();
+
+// FUNC_ConfigurarServiciosCompartir: Servicio para compartir e importar quizzes
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IQuizCompartidoService, QuizCraft.Infrastructure.Services.QuizCompartidoService>();
 
 // FUNC_ConfigurarGeneracionFlashcards: Servicios para generación automática de flashcards
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IFlashcardGenerationService, QuizCraft.Infrastructure.Services.DocumentProcessing.FlashcardGenerationService>();

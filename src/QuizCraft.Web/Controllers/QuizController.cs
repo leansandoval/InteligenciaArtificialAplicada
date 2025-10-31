@@ -429,7 +429,7 @@ namespace QuizCraft.Web.Controllers
                 Titulo = quiz.Titulo,
                 Descripcion = quiz.Descripcion,
                 MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
-                CreadorNombre = quiz.Creador?.UserName ?? "Usuario",
+                CreadorNombre = quiz.Creador?.NombreCompleto ?? quiz.Creador?.UserName ?? "Usuario",
                 FechaCreacion = quiz.FechaCreacion,
                 EsPublico = quiz.EsPublico,
                 NumeroPreguntas = quiz.NumeroPreguntas,
@@ -484,7 +484,7 @@ namespace QuizCraft.Web.Controllers
                 Titulo = quiz.Titulo,
                 Descripcion = quiz.Descripcion,
                 MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
-                CreadorNombre = quiz.Creador?.UserName ?? "Usuario",
+                CreadorNombre = quiz.Creador?.NombreCompleto ?? quiz.Creador?.UserName ?? "Usuario",
                 FechaCreacion = quiz.FechaCreacion,
                 EsPublico = quiz.EsPublico,
                 NumeroPreguntas = quiz.NumeroPreguntas
