@@ -4,7 +4,10 @@
 
 param(
     [switch]$SkipBuild,
-    [switch]$SkipMigrations,
+    # Nota: por defecto NO se aplicarán migraciones desde el script.
+    # La aplicación ya ejecuta las migraciones al iniciarse (ver Program.cs -> context.Database.MigrateAsync()).
+    # Usa --ApplyMigrations para forzar la ejecución de `dotnet ef database update` antes del despliegue.
+    [switch]$ApplyMigrations,
     [switch]$SkipRestart,
     [switch]$Verbose
 )
@@ -79,17 +82,21 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "✅ Publicación exitosa en: $PublishPath" -ForegroundColor Green
 Write-Host ""
 
-# Paso 4: Aplicar migraciones
-if (-not $SkipMigrations) {
-    Write-Host "🗄️  Aplicando migraciones de base de datos..." -ForegroundColor Yellow
+# Paso 4: Aplicar migraciones (OPCIONAL)
+# Por diseño la aplicación ejecuta las migraciones automáticamente en el arranque
+# gracias a: await context.Database.MigrateAsync(); en Program.cs.
+# Para entornos controlados o cuando necesites forzar la migración antes de arrancar
+# puedes usar --ApplyMigrations al invocar este script.
+if ($ApplyMigrations) {
+    Write-Host "🗄️  Aplicando migraciones de base de datos (solicitado con --ApplyMigrations)..." -ForegroundColor Yellow
     Set-Location $ProjectPath
-    
+
     if ($Verbose) {
         dotnet ef database update --configuration Production --no-build --verbose
     } else {
         dotnet ef database update --configuration Production --no-build
     }
-    
+
     if ($LASTEXITCODE -ne 0) {
         Write-Host "⚠️  Advertencia: Error al aplicar migraciones" -ForegroundColor Yellow
         $continue = Read-Host "¿Deseas continuar con el despliegue? (s/n)"
@@ -102,7 +109,8 @@ if (-not $SkipMigrations) {
     }
     Write-Host ""
 } else {
-    Write-Host "⏭️  Migraciones omitidas (--SkipMigrations)" -ForegroundColor Gray
+    Write-Host "⏭️  Migraciones omitidas por defecto. La aplicación aplicará migraciones al iniciarse (Program.cs)." -ForegroundColor Gray
+    Write-Host "Si necesitas forzar migraciones antes del despliegue usa: .\deploy-production.ps1 --ApplyMigrations" -ForegroundColor Gray
     Write-Host ""
 }
 

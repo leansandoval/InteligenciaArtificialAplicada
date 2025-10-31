@@ -53,6 +53,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders()
+.AddErrorDescriber<QuizCraft.Web.Services.SpanishIdentityErrorDescriber>()
 .AddSignInManager<SignInManager<ApplicationUser>>();
 
 // FUNC_ConfigurarRepositorios: Inyección de dependencias para repositorios

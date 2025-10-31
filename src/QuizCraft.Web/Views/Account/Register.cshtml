@@ -5,8 +5,8 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
+<div class="container" style="min-height: 80vh; display: flex; align-items: center;">
+    <div class="row justify-content-center w-100">
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white text-center">
@@ -69,8 +69,6 @@
                             <select asp-for="PreferenciaIdioma" class="form-select">
                                 <option value="es">Español</option>
                                 <option value="en">English</option>
-                                <option value="fr">Français</option>
-                                <option value="de">Deutsch</option>
                             </select>
                             <span asp-validation-for="PreferenciaIdioma" class="text-danger"></span>
                         </div>
@@ -89,10 +87,10 @@
                         </div>
                     </form>
                 </div>
-                <div class="card-footer text-center bg-light">
-                    <p class="mb-0">
+                <div class="card-footer text-center bg-dark">
+                    <p class="mb-0 text-light">
                         ¿Ya tienes cuenta?
-                        <a asp-action="Login" class="text-decoration-none">
+                        <a asp-action="Login" class="text-decoration-none text-white fw-bold">
                             <i class="fas fa-sign-in-alt me-1"></i>Iniciar Sesión
                         </a>
                     </p>

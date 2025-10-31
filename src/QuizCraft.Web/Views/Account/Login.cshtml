@@ -5,8 +5,8 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
+<div class="container" style="min-height: 80vh; display: flex; align-items: center;">
+    <div class="row justify-content-center w-100">
         <div class="col-md-5">
             <div class="card shadow">
                 <div class="card-header bg-success text-white text-center">
@@ -54,37 +54,21 @@
                         </div>
                     </form>
                 </div>
-                <div class="card-footer bg-light">
+                <div class="card-footer bg-dark">
                     <div class="text-center">
                         <p class="mb-2">
-                            <a href="#" class="text-decoration-none">
+                            <a href="#" class="text-decoration-none text-light">
                                 <i class="fas fa-key me-1"></i>¿Olvidaste tu contraseña?
                             </a>
                         </p>
-                        <hr class="my-2">
-                        <p class="mb-0">
+                        <hr class="my-2 border-secondary">
+                        <p class="mb-0 text-light">
                             ¿No tienes cuenta?
-                            <a asp-action="Register" class="text-decoration-none">
+                            <a asp-action="Register" class="text-decoration-none text-white fw-bold">
                                 <i class="fas fa-user-plus me-1"></i>Regístrate aquí
                             </a>
                         </p>
                     </div>
-                </div>
-            </div>
-
-            <!-- Demo Credentials Card -->
-            <div class="card mt-3 bg-light border-info">
-                <div class="card-body text-center">
-                    <h6 class="card-title text-info">
-                        <i class="fas fa-info-circle me-1"></i>Cuenta de Demostración
-                    </h6>
-                    <p class="card-text small mb-2">
-                        <strong>Usuario:</strong> admin@quizcraft.com<br>
-                        <strong>Contraseña:</strong> Admin123!
-                    </p>
-                    <button type="button" class="btn btn-sm btn-outline-info" onclick="fillDemoCredentials()">
-                        <i class="fas fa-magic me-1"></i>Usar Credenciales Demo
-                    </button>
                 </div>
             </div>
         </div>
@@ -114,11 +98,5 @@
                 });
             }
         });
-        
-        // Fill demo credentials
-        function fillDemoCredentials() {
-            document.getElementById('Email').value = 'admin@quizcraft.com';
-            document.getElementById('passwordInput').value = 'Admin123!';
-        }
     </script>
 }

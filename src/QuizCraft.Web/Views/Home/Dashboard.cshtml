@@ -109,46 +109,46 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a asp-controller="Materia" asp-action="Create" class="btn btn-outline-primary btn-lg">
+                                        <a asp-controller="Materia" asp-action="Create" class="btn btn-primary btn-lg text-white">
                                             <i class="fas fa-plus me-2"></i>
                                             <div class="fw-bold">Crear Materia</div>
-                                            <small class="text-muted">Organiza tu nuevo tema de estudio</small>
+                                            <small class="d-block text-white">Organiza tu nuevo tema de estudio</small>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a asp-controller="Flashcard" asp-action="Create" class="btn btn-outline-success btn-lg">
+                                        <a asp-controller="Flashcard" asp-action="Create" class="btn btn-success btn-lg text-white">
                                             <i class="fas fa-file me-2"></i>
                                             <div class="fw-bold">Crear Flashcard</div>
-                                            <small class="text-muted">Nueva tarjeta de estudio</small>
+                                            <small class="d-block text-white">Nueva tarjeta de estudio</small>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a asp-controller="Generacion" asp-action="Index" class="btn btn-outline-info btn-lg border-2">
+                                        <a asp-controller="Generacion" asp-action="Index" class="btn btn-info btn-lg text-white">
                                             <i class="fas fa-magic me-2"></i>
                                             <div class="fw-bold">Generar Automáticamente</div>
-                                            <small class="text-muted">Flashcards desde documentos</small>
+                                            <small class="d-block text-white">Flashcards desde documentos</small>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a asp-controller="Quiz" asp-action="Create" class="btn btn-outline-warning btn-lg">
+                                        <a asp-controller="Quiz" asp-action="Create" class="btn btn-warning btn-lg text-dark">
                                             <i class="fas fa-question-circle me-2"></i>
                                             <div class="fw-bold">Crear Quiz</div>
-                                            <small class="text-muted">Nuevo cuestionario de práctica</small>
+                                            <small class="d-block text-dark">Nuevo cuestionario de práctica</small>
                                         </a>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="d-grid">
-                                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-secondary btn-lg text-white">
                                             <i class="fas fa-play me-2"></i>
                                             <div class="fw-bold">Sesión de Estudio</div>
-                                            <small class="text-muted">Practica con flashcards</small>
+                                            <small class="d-block text-white">Practica con flashcards</small>
                                         </a>
                                     </div>
                                 </div>
@@ -256,7 +256,7 @@
                     <h5 class="mb-0">
                         <i class="fas fa-question-circle me-2 text-warning"></i>Mis Quizzes
                     </h5>
-                    <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-outline-warning">
+                    <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-warning text-dark">
                         Ver todos <i class="fas fa-arrow-right ms-1"></i>
                     </a>
                 </div>
@@ -282,7 +282,7 @@
                                             </small>
                                         </div>
                                         <div class="text-end">
-                                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.Id" class="btn btn-sm btn-outline-warning">
+                                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.Id" class="btn btn-sm btn-warning text-dark">
                                                 <i class="fas fa-play me-1"></i>Realizar
                                             </a>
                                         </div>
@@ -291,7 +291,7 @@
                             }
                         </div>
                         <div class="text-center mt-3">
-                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-primary text-white">
                                 <i class="fas fa-eye me-1"></i>Ver Todos los Quizzes
                             </a>
                         </div>
