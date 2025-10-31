@@ -67,7 +67,7 @@ namespace QuizCraft.Web.Services
             };
         }
 
-        public override IdentityError InvalidEmail(string email)
+        public override IdentityError InvalidEmail(string? email)
         {
             return new IdentityError
             {
@@ -76,7 +76,7 @@ namespace QuizCraft.Web.Services
             };
         }
 
-        public override IdentityError InvalidUserName(string userName)
+        public override IdentityError InvalidUserName(string? userName)
         {
             return new IdentityError
             {
