@@ -413,3 +413,5 @@ tests/reports/
 tests/test-results/
 tests/test-results.json/
 tests/playwright-report/
+
+uploads/

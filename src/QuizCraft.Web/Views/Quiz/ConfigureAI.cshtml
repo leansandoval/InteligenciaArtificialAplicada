@@ -44,7 +44,8 @@
                                     <label asp-for="NumberOfQuestions" class="form-label">
                                         <i class="fas fa-hashtag"></i> Número de Preguntas
                                     </label>
-                                    <input asp-for="NumberOfQuestions" class="form-control" type="number" min="5" max="50" required />
+                                    <input asp-for="NumberOfQuestions" class="form-control" type="number" min="5" max="20" required />
+                                    <div class="form-text">Límite: 20 preguntas por quiz</div>
                                     <span asp-validation-for="NumberOfQuestions" class="text-danger"></span>
                                 </div>
                             </div>

@@ -660,9 +660,11 @@
                 
                 if (response.ok) {
                     const result = await response.json();
+                    console.log('Respuesta de creación:', result);
                     
                     if (result.success && result.flashcardId) {
                         // Si hay archivos temporales, subirlos ahora
+                        console.log('Archivos temporales a subir:', archivosTemporales.length);
                         if (archivosTemporales.length > 0) {
                             mostrarMensaje('Flashcard creada. Subiendo archivos...', 'info');
                             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Subiendo archivos...';
@@ -673,18 +675,24 @@
                             
                             for (const archivoTemporal of archivosTemporales) {
                                 try {
+                                    console.log('Subiendo archivo:', archivoTemporal.nombre);
                                     const archivoFormData = new FormData();
-                                    archivoFormData.append('file', archivoTemporal.archivo);
                                     archivoFormData.append('flashcardId', result.flashcardId);
+                                    archivoFormData.append('file', archivoTemporal.archivo);
                                     archivoFormData.append('descripcion', archivoTemporal.descripcion || '');
-                                    archivoFormData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
                                     
+                                    // Obtener y agregar el token antiforgery
+                                    const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+                                    archivoFormData.append('__RequestVerificationToken', token);
+                                    
+                                    console.log('Enviando request a /Archivos/SubirArchivo con flashcardId:', result.flashcardId);
                                     const uploadResponse = await fetch('/Archivos/SubirArchivo', {
                                         method: 'POST',
                                         body: archivoFormData
                                     });
                                     
                                     const uploadResult = await uploadResponse.json();
+                                    console.log('Resultado de subida:', uploadResult);
                                     
                                     if (uploadResult.success) {
                                         archivosSubidos++;

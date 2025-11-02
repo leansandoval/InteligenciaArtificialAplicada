@@ -15,62 +15,36 @@
         </div>
     </div>
 
-    <!-- Selección de Modo -->
-    <div class="row mb-5">
-        <div class="col-md-6">
-            <div class="card h-100 border-primary mode-card" data-mode="traditional">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4><i class="fas fa-file-text"></i> Procesamiento Tradicional</h4>
-                    <span class="badge bg-success fs-6">GRATIS</span>
-                </div>
+    <!-- Características de IA -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning">
                 <div class="card-body">
-                    <h5>Características:</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-check text-success"></i> Sin límites de uso</li>
-                        <li><i class="fas fa-check text-success"></i> Procesamiento instantáneo</li>
-                        <li><i class="fas fa-check text-success"></i> Privacidad total</li>
-                        <li><i class="fas fa-cog text-info"></i> División por estructura</li>
-                        <li><i class="fas fa-cog text-info"></i> Patrones configurables</li>
-                    </ul>
-                    <div class="text-center">
-                        <button class="btn btn-primary btn-lg w-100 mode-btn" data-mode="traditional">
-                            <i class="fas fa-play"></i> Usar Procesamiento Tradicional
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card h-100 border-warning mode-card" data-mode="ai">
-                <div class="card-header bg-warning text-dark text-center">
-                    <h4><i class="fas fa-robot"></i> Inteligencia Artificial</h4>
-                    <span class="badge bg-info fs-6">PREMIUM</span>
-                </div>
-                <div class="card-body">
-                    <h5>Características:</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-brain text-warning"></i> Comprensión contextual</li>
-                        <li><i class="fas fa-target text-warning"></i> Preguntas inteligentes</li>
-                        <li><i class="fas fa-edit text-warning"></i> Respuestas elaboradas</li>
-                        <li><i class="fas fa-bolt text-warning"></i> Calidad superior</li>
-                        <li><i class="fas fa-coins text-danger"></i> Requiere tokens</li>
-                    </ul>
-                    <div class="text-center">
-                        <button class="btn btn-warning btn-lg w-100 mode-btn" data-mode="ai" id="btnModoIA">
-                            <i class="fas fa-robot"></i> Usar Inteligencia Artificial
-                        </button>
-                        <small class="text-muted d-block mt-2">
-                            <span id="estadoIA">Verificando disponibilidad...</span>
-                        </small>
+                    <h5 class="mb-3">
+                        <i class="fas fa-robot text-warning"></i> Características:
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-brain text-warning me-2"></i> Comprensión contextual</li>
+                                <li class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i> Preguntas inteligentes</li>
+                                <li class="mb-2"><i class="fas fa-edit text-warning me-2"></i> Respuestas elaboradas</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><i class="fas fa-bolt text-warning me-2"></i> Calidad superior</li>
+                                <li class="mb-2"><i class="fas fa-coins text-danger me-2"></i> Requiere tokens</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Formulario de Generación (inicialmente oculto) -->
-    <div id="formularioGeneracion" class="row" style="display: none;">
+    <!-- Formulario de Generación -->
+    <div id="formularioGeneracion" class="row">
         <div class="col-12">
             <div class="card border-info">
                 <div class="card-header bg-info text-white">
@@ -108,83 +82,36 @@
 
                             <!-- Configuración -->
                             <div class="col-md-6">
-                                <div id="configuracionTraditional" class="configuracion-panel">
-                                    <h6><i class="fas fa-cogs"></i> Configuración Tradicional</h6>
-                                    
-                                    <div class="mb-2">
-                                        <label class="form-label">Máximo de flashcards</label>
-                                        <input type="number" class="form-control form-control-sm" 
-                                               name="maxCards" value="50" min="1" max="200">
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="splitByParagraph" checked>
-                                                <label class="form-check-label">Dividir por párrafos</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="detectQuestions" checked>
-                                                <label class="form-check-label">Detectar preguntas</label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mt-2">
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="useStructural" checked>
-                                                <label class="form-check-label">Usar estructura</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="filterShort" checked>
-                                                <label class="form-check-label">Filtrar cortos</label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-2">
-                                        <label class="form-label">Separador personalizado (opcional)</label>
-                                        <input type="text" class="form-control form-control-sm" 
-                                               name="customSeparator" placeholder="Ej: ---">
-                                    </div>
-                                </div>
-
-                                <div id="configuracionAI" class="configuracion-panel" style="display: none;">
+                                <div id="configuracionAI" class="configuracion-panel">
                                     <h6><i class="fas fa-robot"></i> Configuración IA</h6>
                                     
-                                    <div class="mb-2">
+                                    <div class="mb-3">
                                         <label class="form-label">Máximo de flashcards</label>
-                                        <input type="number" class="form-control form-control-sm" 
-                                               name="maxCards" value="20" min="1" max="50">
+                                        <input type="number" class="form-control" 
+                                               name="maxCards" value="10" min="1" max="20">
+                                        <div class="form-text">Límite: 20 flashcards por generación</div>
                                     </div>
 
-                                    <div class="mb-2">
+                                    <div class="mb-3">
                                         <label class="form-label">Dificultad</label>
-                                        <select class="form-select form-select-sm" name="difficulty">
+                                        <select class="form-select" name="difficulty">
                                             <option value="Easy">Fácil</option>
                                             <option value="Medium" selected>Medio</option>
                                             <option value="Hard">Difícil</option>
                                         </select>
                                     </div>
 
-                                    <div class="form-check">
+                                    <div class="form-check mb-3">
                                         <input class="form-check-input" type="checkbox" 
-                                               name="includeExplanations" checked>
-                                        <label class="form-check-label">Incluir explicaciones</label>
+                                               name="includeExplanations" checked id="includeExplanations">
+                                        <label class="form-check-label" for="includeExplanations">
+                                            Incluir explicaciones
+                                        </label>
                                     </div>
 
-                                    <div class="mt-2">
+                                    <div class="mb-3">
                                         <label class="form-label">Área de enfoque (opcional)</label>
-                                        <input type="text" class="form-control form-control-sm" 
+                                        <input type="text" class="form-control" 
                                                name="focusArea" placeholder="Ej: Matemáticas, Historia">
                                     </div>
                                 </div>
@@ -259,47 +186,15 @@
         }
         
         $(document).ready(function() {
-            let modoSeleccionado = '';
+            const modoSeleccionado = 'ai'; // Siempre usar modo IA
 
             // Verificar disponibilidad de IA al cargar
             verificarDisponibilidadIA();
 
-            // Selección de modo
-            $('.mode-btn').on('click', function(e) {
-                if ($(this).prop('disabled')) return;
-                
-                modoSeleccionado = $(this).data('mode');
-                
-                // Destacar carta seleccionada
-                $('.mode-card').removeClass('border-primary border-warning').addClass('border-secondary');
-                $(this).closest('.mode-card').removeClass('border-secondary').addClass(
-                    modoSeleccionado === 'traditional' ? 'border-primary' : 'border-warning'
-                );
-
-                // Mostrar formulario y configuración apropiada
-                $('#formularioGeneracion').show();
-                $('.configuracion-panel').hide();
-                $(`#configuracion${modoSeleccionado === 'traditional' ? 'Traditional' : 'AI'}`).show();
-
-                // Ajustar valores por defecto según el modo
-                if (modoSeleccionado === 'traditional') {
-                    $('input[name="maxCards"]').val(50).attr('max', 200);
-                } else {
-                    $('input[name="maxCards"]').val(20).attr('max', 50);
-                }
-
-                // Scroll al formulario
-                $('html, body').animate({
-                    scrollTop: $('#formularioGeneracion').offset().top - 20
-                }, 500);
-            });
-
             // Cancelar
             $('#btnCancelar').on('click', function(e) {
-                $('#formularioGeneracion').hide();
                 $('#areaResultados').hide();
-                $('.mode-card').removeClass('border-primary border-warning border-secondary');
-                modoSeleccionado = '';
+                $('#formGeneracion')[0].reset();
             });
 
             // Vista previa
@@ -365,24 +260,14 @@
                 // Datos básicos
                 formData.append('documento', $('#documento')[0].files[0]);
                 formData.append('materiaId', $('#materiaId').val());
-                formData.append('modo', modoSeleccionado);
+                formData.append('modo', 'ai');
 
-                // Configuraciones específicas del modo
-                if (modoSeleccionado === 'traditional') {
-                    const config = $('#configuracionTraditional');
-                    formData.append('config.MaxCards', config.find('input[name="maxCards"]').val());
-                    formData.append('config.SplitByParagraph', config.find('input[name="splitByParagraph"]').is(':checked'));
-                    formData.append('config.DetectQuestions', config.find('input[name="detectQuestions"]').is(':checked'));
-                    formData.append('config.UseStructural', config.find('input[name="useStructural"]').is(':checked'));
-                    formData.append('config.FilterShort', config.find('input[name="filterShort"]').is(':checked'));
-                    formData.append('config.CustomSeparator', config.find('input[name="customSeparator"]').val() || '');
-                } else {
-                    const config = $('#configuracionAI');
-                    formData.append('config.MaxCards', config.find('input[name="maxCards"]').val());
-                    formData.append('config.Difficulty', config.find('select[name="difficulty"]').val());
-                    formData.append('config.IncludeExplanations', config.find('input[name="includeExplanations"]').is(':checked'));
-                    formData.append('config.FocusArea', config.find('input[name="focusArea"]').val() || '');
-                }
+                // Configuración IA
+                const config = $('#configuracionAI');
+                formData.append('config.MaxCards', config.find('input[name="maxCards"]').val());
+                formData.append('config.Difficulty', config.find('select[name="difficulty"]').val());
+                formData.append('config.IncludeExplanations', config.find('input[name="includeExplanations"]').is(':checked'));
+                formData.append('config.FocusArea', config.find('input[name="focusArea"]').val() || '');
 
                 mostrarCargando('Generando flashcards...');
 
@@ -620,28 +505,28 @@
 }
 
 <style>
-    .mode-card {
+    .card {
         transition: all 0.3s ease;
-        cursor: pointer;
     }
 
-    .mode-card:hover {
+    .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
 
     .configuracion-panel {
         background-color: #f8f9fa;
-        padding: 1rem;
+        padding: 1.5rem;
         border-radius: 0.5rem;
         border: 1px solid #dee2e6;
     }
 
-    .form-control-sm, .form-select-sm {
-        font-size: 0.875rem;
-    }
-
     .card-body ul li {
         margin-bottom: 0.5rem;
+    }
+    
+    #btnModoIA:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
     }
 </style>

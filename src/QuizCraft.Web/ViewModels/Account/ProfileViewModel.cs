@@ -31,4 +31,13 @@ public class ProfileViewModel
 
     [Display(Name = "Tema preferido")]
     public string? TemaPreferido { get; set; } = "light";
+
+    [Display(Name = "Notificaciones habilitadas")]
+    public bool NotificacionesHabilitadas { get; set; } = true;
+
+    [Display(Name = "Fecha de registro")]
+    public DateTime FechaRegistro { get; set; }
+
+    [Display(Name = "Último acceso")]
+    public DateTime? UltimoAcceso { get; set; }
 }

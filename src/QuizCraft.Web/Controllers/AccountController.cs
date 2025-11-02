@@ -300,6 +300,14 @@ public class AccountController : Controller
                 // Refrescar el signin para incluir los claims actualizados
                 await _signInManager.RefreshSignInAsync(user);
                 
+                // Recargar el usuario actualizado desde la base de datos para obtener UltimoAcceso actualizado
+                user = await _userManager.GetUserAsync(User);
+                
+                // Actualizar el modelo con los datos más recientes
+                model.FechaRegistro = user!.FechaRegistro;
+                model.UltimoAcceso = user.UltimoAcceso;
+                model.Email = user.Email ?? string.Empty;
+                
                 TempData["SuccessMessage"] = "Perfil actualizado correctamente";
                 return RedirectToAction(nameof(Profile));
             }
