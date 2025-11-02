@@ -85,14 +85,17 @@ namespace QuizCraft.Infrastructure.Services
                 var prompt = BuildQuizPrompt(content, settings);
                 
                 // Estimar tokens antes de enviar para controlar costos
-                var estimatedTokens = EstimateTokens(prompt + content);
-                if (estimatedTokens > 3000) // Límite de seguridad
+                // El prompt ya incluye el content, no duplicar
+                var estimatedTokens = EstimateTokens(prompt);
+                _logger.LogInformation("Estimated tokens for quiz generation: {Tokens}", estimatedTokens);
+                
+                if (estimatedTokens > 12000) // Límite aumentado para documentos extensos
                 {
                     _logger.LogWarning("Content too large. Estimated tokens: {Tokens}", estimatedTokens);
                     return new AIResponse
                     {
                         Success = false,
-                        Content = "El contenido es demasiado largo. Intenta con un texto más corto.",
+                        Content = "El contenido es demasiado largo. El documento debe tener menos de 10,000 caracteres.",
                         TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                     };
                 }
@@ -100,7 +103,7 @@ namespace QuizCraft.Infrastructure.Services
                 // Configuración personalizada para quiz con más tokens
                 var quizSettings = new AISettings
                 {
-                    MaxTokens = 2500, // Balanceado: suficiente para respuestas completas pero sin exceso
+                    MaxTokens = 8000, // Aumentado significativamente para respuestas completas de quiz
                     Temperature = 0.7f // Mantener creatividad controlada
                 };
                 
@@ -361,35 +364,67 @@ namespace QuizCraft.Infrastructure.Services
                 _ => "Intermedio"
             };
 
-            var explanations = settings.IncludeExplanations ? "con explicaciones" : "sin explicaciones";
+            var explanations = settings.IncludeExplanations ? "con explicaciones detalladas" : "sin explicaciones";
             var subject = !string.IsNullOrEmpty(settings.Subject) ? $"Materia: {settings.Subject}. " : "";
-            var instructions = !string.IsNullOrEmpty(settings.CustomInstructions) ? $"Instrucciones: {settings.CustomInstructions}. " : "";
+            var instructions = !string.IsNullOrEmpty(settings.CustomInstructions) ? $"Instrucciones adicionales: {settings.CustomInstructions}. " : "";
 
-            var prompt = $"Crea {settings.NumberOfQuestions} preguntas de quiz {explanations} basadas en este contenido:\n\n" +
+            var prompt = $"Crea {settings.NumberOfQuestions} preguntas de quiz {explanations} basadas en el siguiente contenido:\n\n" +
                         content + "\n\n" +
-                        $"Configuración: Nivel {difficultyText}, tipos: {questionTypes}, idioma: {settings.Language}. " +
+                        $"Configuración del Quiz:\n" +
+                        $"- Nivel de dificultad: {difficultyText}\n" +
+                        $"- Tipos de pregunta: {questionTypes}\n" +
+                        $"- Idioma: {settings.Language}\n" +
                         subject + instructions + "\n" +
                         "Formato JSON requerido:\n" +
                         "{\n" +
                         "  \"questions\": [\n" +
                         "    {\n" +
-                        "      \"questionText\": \"Pregunta\",\n" +
+                        "      \"questionText\": \"Pregunta clara y específica sobre un concepto clave\",\n" +
                         "      \"questionType\": \"MultipleChoice\",\n" +
-                        "      \"difficultyLevel\": \"Facil\",\n" +
+                        "      \"difficultyLevel\": \"Intermedio\",\n" +
                         "      \"answerOptions\": [\n" +
-                        "        {\"text\": \"Opción A\", \"isCorrect\": true, \"explanation\": \"Razón\"},\n" +
-                        "        {\"text\": \"Opción B\", \"isCorrect\": false, \"explanation\": \"Razón\"}\n" +
+                        "        {\"text\": \"Respuesta correcta basada directamente en el contenido\", \"isCorrect\": true, \"explanation\": \"Explicación de por qué es correcta\"},\n" +
+                        "        {\"text\": \"Distractor plausible: concepto relacionado pero incorrecto\", \"isCorrect\": false, \"explanation\": \"Explicación de por qué es incorrecta\"},\n" +
+                        "        {\"text\": \"Otro distractor convincente: definición parcialmente correcta\", \"isCorrect\": false, \"explanation\": \"Explicación de por qué es incorrecta\"},\n" +
+                        "        {\"text\": \"Distractor final: término similar del mismo tema\", \"isCorrect\": false, \"explanation\": \"Explicación de por qué es incorrecta\"}\n" +
                         "      ],\n" +
-                        "      \"explanation\": \"Explicación\",\n" +
+                        "      \"explanation\": \"Explicación completa de la respuesta correcta con contexto del contenido\",\n" +
                         "      \"points\": 1,\n" +
-                        "      \"tags\": [\"tag1\"],\n" +
-                        "      \"sourceReference\": \"Referencia\",\n" +
+                        "      \"tags\": [\"concepto-clave\"],\n" +
+                        "      \"sourceReference\": \"Referencia específica al contenido fuente\",\n" +
                         "      \"confidenceScore\": 0.9\n" +
                         "    }\n" +
                         "  ]\n" +
                         "}\n\n" +
-                        "Reglas: MultipleChoice=4 opciones (1 correcta), TrueFalse=2 opciones, " +
-                        "opciones incorrectas plausibles, conceptos importantes. Solo JSON válido.";
+                        "REGLAS CRÍTICAS PARA DISTRACTORES (Opciones Incorrectas):\n" +
+                        "1. NUNCA uses frases genéricas como 'Opción incorrecta A/B/C' o 'Respuesta falsa'\n" +
+                        "2. Los distractores DEBEN ser:\n" +
+                        "   - Plausibles: que parezcan correctos a primera vista\n" +
+                        "   - Relacionados: conceptos del mismo tema pero incorrectos en este contexto\n" +
+                        "   - Específicos: usa términos y definiciones reales del contenido\n" +
+                        "   - Educativos: que ayuden a reforzar el aprendizaje al identificar por qué son incorrectos\n" +
+                        "3. Ejemplos de BUENOS distractores:\n" +
+                        "   - Fechas cercanas pero incorrectas (1492 vs 1498)\n" +
+                        "   - Conceptos relacionados del mismo campo (mitosis vs meiosis)\n" +
+                        "   - Definiciones parcialmente correctas pero incompletas\n" +
+                        "   - Términos similares del mismo dominio (Java vs JavaScript)\n" +
+                        "4. Usa variaciones apropiadas como:\n" +
+                        "   - 'Ninguna de las anteriores' (cuando otras opciones cubren bien el tema)\n" +
+                        "   - 'Todas las anteriores' (cuando tiene sentido lógico)\n" +
+                        "   - 'Depende del contexto' (en casos con matices)\n" +
+                        "5. Los distractores deben ser similares en:\n" +
+                        "   - Longitud (ni muy cortos ni muy largos comparados con la correcta)\n" +
+                        "   - Complejidad del lenguaje\n" +
+                        "   - Nivel de detalle\n\n" +
+                        "REGLAS GENERALES:\n" +
+                        "- Para MultipleChoice: SIEMPRE incluye exactamente 4 opciones (1 correcta, 3 incorrectas)\n" +
+                        "- Para TrueFalse: SIEMPRE incluye exactamente 2 opciones (Verdadero/Falso)\n" +
+                        "- SOLO UNA opción debe tener isCorrect: true\n" +
+                        "- Cada opción debe tener una explicación clara\n" +
+                        "- NO uses numeración (A), B), etc.) en el texto de las opciones\n" +
+                        "- Las preguntas deben enfocarse en conceptos importantes, no trivialidades\n" +
+                        "- Devuelve SOLO JSON válido, sin texto adicional ni formato markdown\n" +
+                        "- Asegúrate de que el JSON sea parseable y siga exactamente la estructura especificada";
 
             return prompt;
         }
@@ -435,6 +470,61 @@ namespace QuizCraft.Infrastructure.Services
 
             _logger.LogDebug("Cleaned response: {CleanedResponse}", cleaned);
             return cleaned.Trim();
+        }
+
+        private string TryFixIncompleteJson(string json)
+        {
+            try
+            {
+                // Si el JSON está incompleto, intentar cerrarlo
+                var trimmed = json.Trim();
+                
+                // Contar llaves y corchetes
+                int openBraces = trimmed.Count(c => c == '{');
+                int closeBraces = trimmed.Count(c => c == '}');
+                int openBrackets = trimmed.Count(c => c == '[');
+                int closeBrackets = trimmed.Count(c => c == ']');
+                
+                _logger.LogInformation("JSON balance check - Braces: {OpenBraces}/{CloseBraces}, Brackets: {OpenBrackets}/{CloseBrackets}", 
+                    openBraces, closeBraces, openBrackets, closeBrackets);
+                
+                // Si está incompleto, intentar cerrarlo
+                if (openBraces > closeBraces || openBrackets > closeBrackets)
+                {
+                    _logger.LogWarning("JSON appears incomplete, attempting to fix");
+                    
+                    // Cerrar strings abiertas primero
+                    int quoteCount = trimmed.Count(c => c == '"');
+                    if (quoteCount % 2 != 0)
+                    {
+                        trimmed += "\"";
+                        _logger.LogInformation("Added closing quote");
+                    }
+                    
+                    // Cerrar arrays abiertos
+                    while (openBrackets > closeBrackets)
+                    {
+                        trimmed += "\n]";
+                        closeBrackets++;
+                        _logger.LogInformation("Added closing bracket");
+                    }
+                    
+                    // Cerrar objetos abiertos
+                    while (openBraces > closeBraces)
+                    {
+                        trimmed += "\n}";
+                        closeBraces++;
+                        _logger.LogInformation("Added closing brace");
+                    }
+                }
+                
+                return trimmed;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error attempting to fix incomplete JSON, returning original");
+                return json;
+            }
         }
 
         private QuizCraft.Application.Models.FlashcardGenerationResult ParseFlashcardResponse(string jsonResponse, QuizCraft.Application.Interfaces.AIGenerationSettings settings)
@@ -529,6 +619,10 @@ namespace QuizCraft.Infrastructure.Services
                 _logger.LogInformation("Parsing Gemini quiz response");
 
                 var cleanedResponse = CleanMarkdownCodeBlocks(jsonResponse);
+                
+                // Intentar reparar JSON incompleto
+                cleanedResponse = TryFixIncompleteJson(cleanedResponse);
+                
                 var document = JsonDocument.Parse(cleanedResponse);
 
                 if (!document.RootElement.TryGetProperty("questions", out var questionsArray))

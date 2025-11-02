@@ -240,7 +240,7 @@
                                        id="opcion_${preguntaId}_${i}"
                                        ${isSelected ? 'checked' : ''}>
                                 <label class="form-check-label w-100" for="opcion_${preguntaId}_${i}">
-                                    <div class="border rounded p-3 opcion-label ${isSelected ? 'bg-light border-primary' : ''}">
+                                    <div class="border rounded p-3 opcion-label">
                                         <strong>${letra})</strong> ${opcionTexto}
                                     </div>
                                 </label>
@@ -269,7 +269,7 @@
                                        id="opcion_${preguntaId}_${i}"
                                        ${isSelected ? 'checked' : ''}>
                                 <label class="form-check-label w-100" for="opcion_${preguntaId}_${i}">
-                                    <div class="border rounded p-3 opcion-label ${isSelected ? 'bg-light border-primary' : ''}">
+                                    <div class="border rounded p-3 opcion-label">
                                         <strong>${opcion.letra})</strong> ${opcion.texto}
                                     </div>
                                 </label>
@@ -290,9 +290,8 @@
                 // Guardar respuesta
                 respuestasUsuario[preguntaId] = respuestaSeleccionada;
                 
-                // Actualizar UI
-                $('.opcion-label').removeClass('bg-light border-primary');
-                $(this).closest('.form-check').find('.opcion-label').addClass('bg-light border-primary');
+                // Actualizar UI - el estilo se aplica automáticamente con el CSS :checked
+                // No necesitamos agregar/quitar clases manualmente
                 
                 // Habilitar botón siguiente
                 $('#btnSiguiente').prop('disabled', false);
@@ -493,17 +492,36 @@
         .opcion-label {
             cursor: pointer;
             transition: all 0.2s ease;
+            background-color: #ffffff;
+            border: 2px solid #495057 !important;
+            color: #212529;
         }
         
         .opcion-label:hover {
             background-color: #f8f9fa !important;
             border-color: #6c757d !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         
         .form-check-input:checked + .form-check-label .opcion-label {
-            background-color: #e3f2fd !important;
-            border-color: #2196f3 !important;
-            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+            background-color: #0d6efd !important;
+            border-color: #0d6efd !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            font-weight: 500;
+        }
+        
+        .form-check-input:checked + .form-check-label .opcion-label strong {
+            color: #ffffff !important;
+        }
+        
+        .opcion-label strong {
+            color: #212529;
+        }
+        
+        .form-check-input:checked + .form-check-label .opcion-label:hover {
+            transform: none;
         }
         
         .progress {

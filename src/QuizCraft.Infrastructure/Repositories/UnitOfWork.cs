@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Infrastructure.Data;
 using QuizCraft.Infrastructure.Repositories;
@@ -99,6 +100,16 @@ namespace QuizCraft.Infrastructure.Repositories
                 await _context.Database.CurrentTransaction.RollbackAsync();
                 await _context.Database.CurrentTransaction.DisposeAsync();
             }
+        }
+
+        public async Task<int> ExecuteSqlRawAsync(string sql, params object[] parameters)
+        {
+            return await _context.Database.ExecuteSqlRawAsync(sql, parameters);
+        }
+
+        public ApplicationDbContext GetContext()
+        {
+            return _context;
         }
 
         public void Dispose()

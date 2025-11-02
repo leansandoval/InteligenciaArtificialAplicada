@@ -20,8 +20,11 @@
                     <h5 class="mb-0"><i class="fas fa-cog"></i> Configuración del Quiz</h5>
                 </div>
                 <div class="card-body">
-                    <form asp-action="GenerateFromText" method="post" id="quiz-generation-form">
+                    <form asp-action="GenerateFromText" method="post" enctype="multipart/form-data" id="quiz-generation-form">
                         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                        
+                        <!-- Campo oculto para tipo de pregunta (siempre MultipleChoice) -->
+                        <input type="hidden" name="SelectedQuestionTypes[0]" value="0" />
                         
                         <!-- Selección de Materia -->
                         <div class="form-group mb-3">
@@ -89,19 +92,16 @@
                             <small class="form-text text-muted">Especifica un tema para enfocar las preguntas</small>
                         </div>
 
-                        <!-- Contenido de Texto -->
+                        <!-- Archivo Adjunto -->
                         <div class="form-group mb-4">
-                            <label asp-for="TextContent" class="form-label">
-                                <i class="fas fa-file-text"></i> Contenido del Texto
-                                <span class="text-danger">*</span>
+                            <label class="form-label">
+                                <i class="fas fa-file-upload"></i> Adjuntar Documento
                             </label>
-                            <textarea asp-for="TextContent" class="form-control" rows="10" 
-                                     placeholder="Pegue aquí el contenido del texto desde el cual desea generar el quiz..." 
-                                     required></textarea>
-                            <span asp-validation-for="TextContent" class="text-danger"></span>
+                            <input type="file" name="ArchivoAdjunto" id="ArchivoAdjunto" class="form-control" 
+                                   accept=".txt,.pdf,.docx,.pptx" required />
                             <small class="form-text text-muted">
-                                <i class="fas fa-info-circle"></i> 
-                                Se recomienda al menos 200 caracteres para mejores resultados (mínimo 100)
+                                <i class="fas fa-paperclip"></i> 
+                                Sube un archivo de texto (.txt), PDF (.pdf), Word (.docx) o PowerPoint (.pptx)
                             </small>
                         </div>
 
@@ -139,11 +139,11 @@
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-check-circle text-success"></i>
-                            <strong>Texto claro:</strong> Use contenido bien estructurado y sin errores
+                            <strong>Formatos aceptados:</strong> TXT, PDF, DOCX, PPTX
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check-circle text-success"></i>
-                            <strong>Longitud adecuada:</strong> Se recomienda 200+ caracteres (mínimo 100)
+                            <strong>Contenido estructurado:</strong> Use documentos con información bien organizada
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-check-circle text-success"></i>
@@ -179,25 +179,12 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Contador de caracteres
-            $('#TextContent').on('input', function() {
-                const length = $(this).val().length;
-                const minLength = 200; // Cambiado de 500 a 200
-                const color = length >= minLength ? 'text-success' : (length >= 100 ? 'text-warning' : 'text-danger');
-                
-                if (!$('#char-counter').length) {
-                    $(this).after(`<small id="char-counter" class="${color}">Caracteres: ${length}</small>`);
-                } else {
-                    $('#char-counter').removeClass('text-success text-warning text-danger').addClass(color).text(`Caracteres: ${length}`);
-                }
-            });
-
             // Validación antes de enviar
             $('#quiz-generation-form').on('submit', function(e) {
-                const textLength = $('#TextContent').val().length;
-                if (textLength < 100) {
+                const archivo = $('#ArchivoAdjunto')[0].files[0];
+                if (!archivo) {
                     e.preventDefault();
-                    alert('El contenido del texto debe tener al menos 100 caracteres.');
+                    alert('Debes adjuntar un documento para generar el quiz.');
                     return false;
                 }
 

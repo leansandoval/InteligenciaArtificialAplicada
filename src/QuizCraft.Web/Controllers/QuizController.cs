@@ -23,41 +23,44 @@ namespace QuizCraft.Web.Controllers
         private readonly ILogger<QuizController> _logger;
         private readonly IQuizGenerationService _quizGenerationService;
         private readonly AIService _aiService;
+        private readonly IDocumentTextExtractor _textExtractor;
 
         public QuizController(
-            IUnitOfWork unitOfWork, 
-            UserManager<ApplicationUser> userManager, 
+            IUnitOfWork unitOfWork,
+            UserManager<ApplicationUser> userManager,
             ILogger<QuizController> logger,
             IQuizGenerationService quizGenerationService,
-            AIService aiService)
+            AIService aiService,
+            IDocumentTextExtractor textExtractor)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
             _logger = logger;
             _quizGenerationService = quizGenerationService;
             _aiService = aiService;
+            _textExtractor = textExtractor;
         }
 
         // GET: Quiz
         public async Task<IActionResult> Index(int? materiaId, NivelDificultad? dificultad)
         {
             var usuarioId = _userManager.GetUserId(User);
-            
+
             if (string.IsNullOrEmpty(usuarioId))
             {
                 return RedirectToAction("Login", "Account");
             }
-            
+
             // Obtener datos de forma secuencial para evitar problemas de concurrencia
             var todosLosQuizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(usuarioId);
             var quizzesPublicos = await _unitOfWork.QuizRepository.GetQuizzesPublicosAsync();
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
-            
+
             // Aplicar filtros a mis quizzes
             var misQuizzesFiltrados = todosLosQuizzes
                 .Where(q => !materiaId.HasValue || q.MateriaId == materiaId)
                 .Where(q => !dificultad.HasValue || q.NivelDificultad == (int)dificultad);
-            
+
             // Debug: Log para verificar los datos
             _logger.LogInformation($"Usuario: {usuarioId}, Mis Quizzes: {todosLosQuizzes.Count()}, Quizzes Públicos: {quizzesPublicos.Count()}, Materias: {materias.Count()}");
 
@@ -82,7 +85,7 @@ namespace QuizCraft.Web.Controllers
                         .OrderByDescending(r => r.FechaRealizacion)
                         .FirstOrDefault()?.PorcentajeAcierto
                 }).ToList(),
-                
+
                 QuizzesCreados = misQuizzesFiltrados.Select(q => new QuizListItemViewModel
                 {
                     Id = q.Id,
@@ -102,7 +105,7 @@ namespace QuizCraft.Web.Controllers
                         .OrderByDescending(r => r.FechaRealizacion)
                         .FirstOrDefault()?.PorcentajeAcierto)
                 }).ToList(),
-                
+
                 QuizzesPublicos = quizzesPublicos
                     .Where(q => q.CreadorId != usuarioId)
                     .Where(q => !materiaId.HasValue || q.MateriaId == materiaId)
@@ -126,7 +129,7 @@ namespace QuizCraft.Web.Controllers
                             .OrderByDescending(r => r.FechaRealizacion)
                             .FirstOrDefault()?.PorcentajeAcierto
                     }).ToList(),
-                
+
                 MateriaSeleccionada = materiaId,
                 DificultadSeleccionada = dificultad,
                 TotalQuizzes = misQuizzesFiltrados.Count(),
@@ -146,24 +149,24 @@ namespace QuizCraft.Web.Controllers
         public async Task<IActionResult> Create(int? materiaId = null)
         {
             var usuarioId = _userManager.GetUserId(User);
-            
+
             if (string.IsNullOrEmpty(usuarioId))
             {
                 return RedirectToAction("Login", "Account");
             }
-            
+
             var viewModel = new CreateQuizViewModel();
 
             // Cargar materias del usuario autenticado
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
-            
+
             var materiasConFlashcards = new List<MateriaSelectViewModel>();
-            
+
             foreach (var materia in materias)
             {
                 // Obtener el conteo real de flashcards por materia
                 var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materia.Id);
-                
+
                 materiasConFlashcards.Add(new MateriaSelectViewModel
                 {
                     Id = materia.Id,
@@ -171,9 +174,9 @@ namespace QuizCraft.Web.Controllers
                     TotalFlashcards = flashcards.Count()
                 });
             }
-            
+
             viewModel.MateriasDisponibles = materiasConFlashcards;
-            
+
             // Preseleccionar materia si se especifica
             if (materiaId.HasValue)
             {
@@ -202,32 +205,32 @@ namespace QuizCraft.Web.Controllers
             }
 
             var usuarioId = _userManager.GetUserId(User);
-            
+
             if (string.IsNullOrEmpty(usuarioId))
             {
                 return RedirectToAction("Login", "Account");
             }
-            
+
             // Obtener flashcards filtradas por dificultad si se especifica
             IEnumerable<Flashcard> flashcards;
-            
+
             if (model.Dificultad != 0) // Si se seleccionó una dificultad específica
             {
                 flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByDificultadAsync(model.MateriaId, model.Dificultad);
-                
+
                 // Si no hay suficientes flashcards de la dificultad seleccionada, completar con flashcards de todas las dificultades
                 if (flashcards.Count() < model.NumeroPreguntas)
                 {
                     var todasLasFlashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
-                    
+
                     // Priorizar las de la dificultad seleccionada y completar con otras
                     var flashcardsOrdenadas = todasLasFlashcards
                         .OrderBy(f => f.Dificultad == model.Dificultad ? 0 : 1) // Prioridad a la dificultad seleccionada
                         .ThenBy(f => Math.Abs((int)f.Dificultad - (int)model.Dificultad)) // Luego por proximidad de dificultad
                         .ThenBy(x => Guid.NewGuid()); // Aleatorio dentro de cada grupo
-                        
+
                     flashcards = flashcardsOrdenadas.Take(Math.Max(model.NumeroPreguntas, todasLasFlashcards.Count()));
-                    
+
                     _logger.LogInformation($"Se encontraron solo {flashcards.Count()} flashcards de dificultad {model.Dificultad}. Completando con flashcards de otras dificultades.");
                 }
             }
@@ -236,26 +239,26 @@ namespace QuizCraft.Web.Controllers
                 // Si no se especifica dificultad, obtener todas las flashcards de la materia
                 flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
             }
-            
+
             if (!flashcards.Any())
             {
                 ModelState.AddModelError("", $"No hay flashcards disponibles en la materia seleccionada{(model.Dificultad != 0 ? $" para el nivel de dificultad {model.Dificultad}" : "")}.");
-                
+
                 // Recargar datos para la vista
                 var usuarioIdForReload = _userManager.GetUserId(User);
                 if (usuarioIdForReload == null)
                 {
                     return RedirectToAction("Login", "Account");
                 }
-                
+
                 var materiasForReload = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioIdForReload);
-                
+
                 var materiasConFlashcardsForReload = new List<MateriaSelectViewModel>();
-                
+
                 foreach (var materia in materiasForReload)
                 {
                     var flashcardsCount = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materia.Id);
-                    
+
                     materiasConFlashcardsForReload.Add(new MateriaSelectViewModel
                     {
                         Id = materia.Id,
@@ -263,7 +266,7 @@ namespace QuizCraft.Web.Controllers
                         TotalFlashcards = flashcardsCount.Count()
                     });
                 }
-                
+
                 model.MateriasDisponibles = materiasConFlashcardsForReload;
                 return View(model);
             }
@@ -288,44 +291,52 @@ namespace QuizCraft.Web.Controllers
             // Seleccionar flashcards usando algoritmo inteligente
             var flashcardsSeleccionadas = SeleccionarFlashcardsInteligente(flashcards, model.NumeroPreguntas, model.Dificultad);
 
-            // Crear preguntas basadas en las flashcards
+            // Obtener el nombre de la materia para contexto en la generación
+            var materiaQuiz = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId);
+            var materiaNombre = materiaQuiz?.Nombre ?? "General";
+
+            // Crear preguntas basadas en las flashcards con distractores mejorados
             var preguntas = new List<PreguntaQuiz>();
             for (int i = 0; i < flashcardsSeleccionadas.Count; i++)
             {
                 var flashcard = flashcardsSeleccionadas[i];
-                var pregunta = new PreguntaQuiz
+                
+                // Generar 3 opciones incorrectas inteligentes con IA
+                var distractor1 = await GenerarDistractorInteligente(flashcard, flashcardsSeleccionadas.ToList(), materiaNombre);
+                var distractor2 = await GenerarDistractorInteligente(flashcard, flashcardsSeleccionadas.ToList(), materiaNombre);
+                var distractor3 = await GenerarDistractorInteligente(flashcard, flashcardsSeleccionadas.ToList(), materiaNombre);                var pregunta = new PreguntaQuiz
                 {
                     TextoPregunta = flashcard.Pregunta,
                     RespuestaCorrecta = flashcard.Respuesta,
                     OpcionA = flashcard.Respuesta,
-                    OpcionB = GenerarOpcionIncorrecta(),
-                    OpcionC = GenerarOpcionIncorrecta(),
-                    OpcionD = GenerarOpcionIncorrecta(),
+                    OpcionB = distractor1,
+                    OpcionC = distractor2,
+                    OpcionD = distractor3,
                     Explicacion = flashcard.Pista ?? "",
                     Orden = i + 1,
                     Puntos = 1,
                     TipoPregunta = 1,
                     FlashcardId = flashcard.Id
                 };
-                
-                // Mezclar las opciones
+
+                // Mezclar las opciones para que la correcta no siempre sea la A
                 var opciones = new List<string> { pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD }
                     .Where(o => !string.IsNullOrEmpty(o))
                     .OrderBy(x => Guid.NewGuid())
                     .ToList();
-                
+
                 if (opciones.Count >= 4)
                 {
                     pregunta.OpcionA = opciones[0];
                     pregunta.OpcionB = opciones[1];
                     pregunta.OpcionC = opciones[2];
                     pregunta.OpcionD = opciones[3];
-                    
+
                     // Determinar cuál opción es la correcta después del mezclado
                     var indiceCorrecta = opciones.IndexOf(flashcard.Respuesta);
                     pregunta.RespuestaCorrecta = ((char)('A' + indiceCorrecta)).ToString();
                 }
-                
+
                 preguntas.Add(pregunta);
             }
 
@@ -357,7 +368,7 @@ namespace QuizCraft.Web.Controllers
 
             // Verificar que hay preguntas disponibles
             var preguntasActivas = quiz.Preguntas.Where(p => p.EstaActivo).OrderBy(p => p.Orden).ToList();
-            
+
             if (!preguntasActivas.Any())
             {
                 TempData["Error"] = "Este quiz no tiene preguntas disponibles.";
@@ -454,7 +465,7 @@ namespace QuizCraft.Web.Controllers
                     Puntos = p.Puntos,
                     Orden = p.Orden
                 }).ToList() ?? new List<PreguntaQuizViewModel>(),
-                MensajeNoDisponible = quiz.EsPublico || quiz.CreadorId == usuarioId 
+                MensajeNoDisponible = quiz.EsPublico || quiz.CreadorId == usuarioId
                     ? "" : "Este quiz no está disponible públicamente."
             };
 
@@ -498,25 +509,68 @@ namespace QuizCraft.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var usuarioId = _userManager.GetUserId(User);
-            var quiz = await _unitOfWork.QuizRepository.GetByIdAsync(id);
-
-            if (quiz == null)
+            try
             {
-                return NotFound();
-            }
+                var usuarioId = _userManager.GetUserId(User);
+                
+                // Obtener quiz completo con todas sus relaciones
+                var quiz = await _unitOfWork.QuizRepository.GetQuizCompletoAsync(id);
 
-            // Solo el creador puede eliminar
-            if (quiz.CreadorId != usuarioId)
+                if (quiz == null)
+                {
+                    TempData["Error"] = "Quiz no encontrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                // Solo el creador puede eliminar
+                if (quiz.CreadorId != usuarioId)
+                {
+                    TempData["Error"] = "No tienes permiso para eliminar este quiz.";
+                    return Forbid();
+                }
+
+                var tituloQuiz = quiz.Titulo;
+                var cantidadPreguntas = quiz.Preguntas?.Count ?? 0;
+                var cantidadResultados = quiz.Resultados?.Count ?? 0;
+
+                _logger.LogInformation("Eliminando quiz {QuizId} - '{Titulo}' con {Preguntas} preguntas y {Resultados} resultados",
+                    quiz.Id, tituloQuiz, cantidadPreguntas, cantidadResultados);
+
+                // Obtener contexto para trabajar directamente con las entidades
+                var context = ((QuizCraft.Infrastructure.Repositories.UnitOfWork)_unitOfWork).GetContext();
+
+                // 1. Eliminar manualmente los resultados (tienen DeleteBehavior.Restrict)
+                if (quiz.Resultados != null && quiz.Resultados.Any())
+                {
+                    foreach (var resultado in quiz.Resultados.ToList())
+                    {
+                        context.ResultadosQuiz.Remove(resultado);
+                    }
+                    _logger.LogInformation("Marcados {Count} resultados para eliminación", cantidadResultados);
+                }
+
+                // 2. Eliminar el quiz (las PreguntasQuiz se eliminarán en cascada)
+                _unitOfWork.QuizRepository.Remove(quiz);
+                
+                // 3. Guardar todos los cambios en una sola transacción
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Quiz {QuizId} - '{Titulo}' eliminado exitosamente", id, tituloQuiz);
+                TempData["Success"] = $"Quiz '{tituloQuiz}' eliminado exitosamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException ex)
             {
-                return Forbid();
+                _logger.LogError(ex, "Error de base de datos al eliminar quiz {QuizId}", id);
+                TempData["Error"] = "No se puede eliminar el quiz. Puede haber datos relacionados que lo impiden.";
+                return RedirectToAction(nameof(Delete), new { id });
             }
-
-            _unitOfWork.QuizRepository.Remove(quiz);
-            await _unitOfWork.SaveChangesAsync();
-
-            TempData["Success"] = "Quiz eliminado exitosamente.";
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar quiz {QuizId}", id);
+                TempData["Error"] = "Ocurrió un error al eliminar el quiz. Por favor, intenta nuevamente.";
+                return RedirectToAction(nameof(Delete), new { id });
+            }
         }
 
         // POST: Quiz/SubmitQuiz
@@ -527,7 +581,7 @@ namespace QuizCraft.Web.Controllers
             try
             {
                 var usuarioId = _userManager.GetUserId(User);
-                
+
                 if (string.IsNullOrEmpty(usuarioId))
                 {
                     return RedirectToAction("Login", "Account");
@@ -544,7 +598,7 @@ namespace QuizCraft.Web.Controllers
                 // Procesar las respuestas del usuario
                 var respuestas = ProcesarRespuestas(RespuestasUsuario);
                 var preguntas = quiz.Preguntas.OrderBy(p => p.Orden).ToList();
-                
+
                 int respuestasCorrectas = 0;
                 int puntajeTotal = 0;
                 var respuestasDetalle = new List<RespuestaUsuario>();
@@ -580,16 +634,16 @@ namespace QuizCraft.Web.Controllers
                 foreach (var pregunta in preguntas)
                 {
                     var respuestaUsuario = "";
-                    
+
                     // Buscar la respuesta por ID de pregunta
                     if (respuestasDict.ContainsKey(pregunta.Id.ToString()))
                     {
                         respuestaUsuario = respuestasDict[pregunta.Id.ToString()];
                     }
-                    
-                    bool esCorrecta = !string.IsNullOrEmpty(respuestaUsuario) && 
+
+                    bool esCorrecta = !string.IsNullOrEmpty(respuestaUsuario) &&
                                     respuestaUsuario.Equals(pregunta.RespuestaCorrecta, StringComparison.OrdinalIgnoreCase);
-                    
+
                     if (esCorrecta)
                     {
                         respuestasCorrectas++;
@@ -606,7 +660,7 @@ namespace QuizCraft.Web.Controllers
                         PuntosObtenidos = esCorrecta ? pregunta.Puntos : 0,
                         FechaRespuesta = DateTime.UtcNow
                     };
-                    
+
                     respuestasDetalle.Add(respuestaDetalle);
                 }
 
@@ -624,7 +678,7 @@ namespace QuizCraft.Web.Controllers
                 var context = (QuizCraft.Infrastructure.Data.ApplicationDbContext)_unitOfWork.GetType()
                     .GetField("_context", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                     ?.GetValue(_unitOfWork)!;
-                
+
                 // Primero guardar el resultado para obtener el ID
                 await context.Set<ResultadoQuiz>().AddAsync(resultado);
                 await _unitOfWork.SaveChangesAsync();
@@ -673,13 +727,13 @@ namespace QuizCraft.Web.Controllers
                             .ToList();
                     }
                 }
-                
+
                 // Intentar parsear como JSON array
                 if (respuestasUsuario.StartsWith("[") && respuestasUsuario.EndsWith("]"))
                 {
                     return System.Text.Json.JsonSerializer.Deserialize<List<string>>(respuestasUsuario) ?? new List<string>();
                 }
-                
+
                 // Si es una cadena simple separada por comas
                 return respuestasUsuario.Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(r => r.Trim())
@@ -698,7 +752,7 @@ namespace QuizCraft.Web.Controllers
         private List<Flashcard> SeleccionarFlashcardsInteligente(IEnumerable<Flashcard> flashcards, int cantidadRequerida, NivelDificultad dificultadPreferida)
         {
             var flashcardsList = flashcards.ToList();
-            
+
             if (flashcardsList.Count <= cantidadRequerida)
             {
                 return flashcardsList;
@@ -706,13 +760,13 @@ namespace QuizCraft.Web.Controllers
 
             // Algoritmo de selección inteligente
             var flashcardsSeleccionadas = new List<Flashcard>();
-            
+
             // 1. Priorizar flashcards de la dificultad preferida (70%)
             var flashcardsDificultadPreferida = flashcardsList
                 .Where(f => f.Dificultad == dificultadPreferida)
                 .OrderBy(x => Guid.NewGuid())
                 .ToList();
-            
+
             int cantidadPreferida = Math.Min((int)(cantidadRequerida * 0.7), flashcardsDificultadPreferida.Count);
             flashcardsSeleccionadas.AddRange(flashcardsDificultadPreferida.Take(cantidadPreferida));
 
@@ -739,7 +793,7 @@ namespace QuizCraft.Web.Controllers
             try
             {
                 var estadisticas = await _unitOfWork.FlashcardRepository.GetEstadisticasDificultadAsync(materiaId);
-                
+
                 var resultado = new
                 {
                     success = true,
@@ -751,7 +805,7 @@ namespace QuizCraft.Web.Controllers
                         descripcion = GetDescripcionDificultad(e.Key)
                     }).OrderBy(e => e.dificultadValue)
                 };
-                
+
                 return Json(resultado);
             }
             catch (Exception ex)
@@ -851,7 +905,7 @@ namespace QuizCraft.Web.Controllers
                 foreach (var pregunta in preguntasOrdenadas)
                 {
                     var respuestaUsuario = resultado.RespuestasUsuario.FirstOrDefault(r => r.PreguntaQuizId == pregunta.Id);
-                    
+
                     var detalleRespuesta = new RespuestaDetalleViewModel
                     {
                         Orden = pregunta.Orden,
@@ -868,7 +922,7 @@ namespace QuizCraft.Web.Controllers
                             new OpcionRespuestaViewModel { Texto = pregunta.OpcionD ?? "", Valor = "D", EsCorrecta = pregunta.RespuestaCorrecta == "D" }
                         }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList()
                     };
-                    
+
                     viewModel.DetalleRespuestas.Add(detalleRespuesta);
                 }
 
@@ -915,8 +969,8 @@ namespace QuizCraft.Web.Controllers
                 var repasoTitulo = TempData["RepasoTitulo"] as string;
 
                 // Redirigir al completar repaso con los resultados
-                return RedirectToAction("CompletarConResultados", "Repaso", new 
-                { 
+                return RedirectToAction("CompletarConResultados", "Repaso", new
+                {
                     repasoId = repasoId,
                     puntaje = Math.Round(resultado.PorcentajeAcierto, 1),
                     resultado = $"Quiz '{resultado.Quiz.Titulo}' completado - {resultado.RespuestasUsuario.Count(r => r.EsCorrecta)}/{resultado.Quiz.Preguntas.Count} respuestas correctas"
@@ -938,7 +992,7 @@ namespace QuizCraft.Web.Controllers
             var usuarioId = _userManager.GetUserId(User);
             if (string.IsNullOrEmpty(usuarioId))
                 return RedirectToAction("Login", "Account");
-                
+
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
 
             var viewModel = new QuizGenerationConfigViewModel
@@ -965,14 +1019,19 @@ namespace QuizCraft.Web.Controllers
         // POST: Quiz/GenerateFromText
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerateFromText(QuizGenerationConfigViewModel model)
+        public async Task<IActionResult> GenerateFromText(QuizGenerationConfigViewModel model, IFormFile? ArchivoAdjunto)
         {
             try
             {
                 _logger.LogInformation("=== Iniciando GenerateFromText ===");
                 _logger.LogInformation("Model.MateriaId: {MateriaId}", model.MateriaId);
                 _logger.LogInformation("Model.TextContent: {TextContent}", model.TextContent?.Length);
+                _logger.LogInformation("ArchivoAdjunto: {FileName}", ArchivoAdjunto?.FileName ?? "ninguno");
                 _logger.LogInformation("ModelState.IsValid: {IsValid}", ModelState.IsValid);
+
+                var usuarioId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(usuarioId))
+                    return RedirectToAction("Login", "Account");
 
                 if (!ModelState.IsValid)
                 {
@@ -981,11 +1040,7 @@ namespace QuizCraft.Web.Controllers
                     {
                         _logger.LogWarning("Error en {Key}: {Errors}", error.Key, string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage)));
                     }
-                    
-                    var usuarioId = _userManager.GetUserId(User);
-                    if (string.IsNullOrEmpty(usuarioId))
-                        return RedirectToAction("Login", "Account");
-                        
+
                     var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
                     ViewBag.Materias = materias.Select(m => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem
                     {
@@ -996,23 +1051,71 @@ namespace QuizCraft.Web.Controllers
                     return View("ConfigureAI", model);
                 }
 
-                // Validar que el contenido no sea nulo o vacío
-                if (string.IsNullOrWhiteSpace(model.TextContent))
+                // Validar que se haya adjuntado un archivo
+                if (ArchivoAdjunto == null || ArchivoAdjunto.Length == 0)
                 {
-                    ModelState.AddModelError("TextContent", "El contenido de texto no puede estar vacío.");
-                    TempData["Error"] = "Debes proporcionar contenido de texto para generar el quiz.";
+                    _logger.LogWarning("No se adjuntó archivo");
+                    TempData["Error"] = "Debes adjuntar un archivo (TXT, PDF, DOCX o PPTX) para generar el quiz.";
                     return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
                 }
 
+                _logger.LogInformation("Procesando archivo: {FileName}, Tamaño: {Size} bytes", ArchivoAdjunto.FileName, ArchivoAdjunto.Length);
+                
+                var extension = Path.GetExtension(ArchivoAdjunto.FileName).ToLowerInvariant();
+                var allowedExtensions = new[] { ".txt", ".pdf", ".docx", ".pptx" };
+                
+                if (!allowedExtensions.Contains(extension))
+                {
+                    _logger.LogWarning("Formato no permitido: {Extension}", extension);
+                    TempData["Error"] = $"Solo se permiten archivos TXT, PDF, DOCX o PPTX. Formato recibido: {extension}";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                string contenido;
+                try
+                {
+                    // Extraer texto del documento usando el servicio de extracción
+                    _logger.LogInformation("Extrayendo texto del archivo {FileName}...", ArchivoAdjunto.FileName);
+                    var documentContent = await _textExtractor.ExtractTextAsync(ArchivoAdjunto.OpenReadStream(), ArchivoAdjunto.FileName);
+                    contenido = documentContent?.RawText ?? string.Empty;
+                    
+                    _logger.LogInformation("Contenido extraído: {Length} caracteres", contenido.Length);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al extraer texto del archivo {FileName}", ArchivoAdjunto.FileName);
+                    TempData["Error"] = $"Error al procesar el archivo. Verifique que el archivo sea válido y contenga texto extraíble.";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                // Validar que el archivo tenga contenido
+                if (string.IsNullOrWhiteSpace(contenido))
+                {
+                    _logger.LogWarning("El archivo no contiene texto extraíble");
+                    TempData["Error"] = "El archivo está vacío o no contiene texto extraíble. Asegúrese de que el documento contenga texto válido.";
+                    return RedirectToAction("ConfigureAI", new { materiaId = model.MateriaId });
+                }
+
+                // Limitar el texto si es muy largo (para evitar costos excesivos y límites de la API)
+                var longitudOriginal = contenido.Length;
+                if (contenido.Length > 10000)
+                {
+                    contenido = contenido.Substring(0, 10000);
+                    _logger.LogInformation("Texto truncado de {Original} a 10,000 caracteres para gestionar costos", longitudOriginal);
+                    TempData["Warning"] = $"El documento es muy extenso ({longitudOriginal:N0} caracteres). Se procesarán los primeros 10,000 caracteres.";
+                }
+
+                _logger.LogInformation("Procesando {Length} caracteres para generación de quiz", contenido.Length);
+
                 // Convertir ViewModel a configuración de generación
                 var settings = model.ToQuizGenerationSettings();
-                _logger.LogInformation("Settings creadas - NumberOfQuestions: {Count}, DifficultyLevel: {Difficulty}", 
+                _logger.LogInformation("Settings creadas - NumberOfQuestions: {Count}, DifficultyLevel: {Difficulty}",
                     settings.NumberOfQuestions, settings.DifficultyLevel);
 
                 // Generar quiz usando IA
-                _logger.LogInformation("Llamando a GenerateFromTextAsync...");
-                var result = await _quizGenerationService.GenerateFromTextAsync(model.TextContent, settings);
-                _logger.LogInformation("Resultado de IA - Success: {Success}, Questions Count: {Count}, Error: {Error}", 
+                _logger.LogInformation("Llamando a GenerateFromTextAsync con {Length} caracteres...", contenido.Length);
+                var result = await _quizGenerationService.GenerateFromTextAsync(contenido, settings);
+                _logger.LogInformation("Resultado de IA - Success: {Success}, Questions Count: {Count}, Error: {Error}",
                     result.Success, result.Questions?.Count ?? 0, result.ErrorMessage);
 
                 if (!result.Success)
@@ -1039,13 +1142,13 @@ namespace QuizCraft.Web.Controllers
 
                 // Redirigir a la vista de revisión y nombrar quiz
                 _logger.LogInformation("Redirigiendo a ReviewAndName con {Count} preguntas", result.Questions.Count);
-                
+
                 // Crear el ViewModel para la vista de revisión
                 var reviewModel = new ReviewAndNameQuizViewModel
                 {
                     MateriaId = model.MateriaId.Value,
                     QuestionCount = result.Questions.Count,
-                    PreviewQuestions = result.Questions.Take(3).ToList(),
+                    PreviewQuestions = result.Questions.ToList(), // Mostrar TODAS las preguntas
                     OriginalSettings = settings,
                     GeneratedQuestions = System.Text.Json.JsonSerializer.Serialize(result.Questions),
                     QuizTitle = $"Quiz IA - {DateTime.Now:dd/MM/yyyy HH:mm}"
@@ -1120,10 +1223,10 @@ namespace QuizCraft.Web.Controllers
 
                 // Guardar usando el método personalizado
                 var quiz = await SaveQuizWithCustomTitle(result, model.MateriaId, settings, model.QuizTitle, model.QuizDescription, model.IsPublic);
-                
+
                 if (quiz != null)
                 {
-                    _logger.LogInformation("Quiz nombrado guardado exitosamente con ID: {QuizId}, Título: {Titulo}", 
+                    _logger.LogInformation("Quiz nombrado guardado exitosamente con ID: {QuizId}, Título: {Titulo}",
                         quiz.Id, quiz.Titulo);
                     TempData["Success"] = $"Quiz '{quiz.Titulo}' creado exitosamente con {quiz.Preguntas.Count} preguntas usando IA.";
                     return RedirectToAction("Details", new { id = quiz.Id });
@@ -1168,7 +1271,7 @@ namespace QuizCraft.Web.Controllers
             {
                 var usuarioId = _userManager.GetUserId(User);
                 var materiaId = TempData["MateriaId"] as int?;
-                
+
                 if (!materiaId.HasValue)
                 {
                     TempData["Error"] = "Sesión expirada. Intente generar el quiz nuevamente.";
@@ -1233,9 +1336,9 @@ namespace QuizCraft.Web.Controllers
             try
             {
                 var usuarioId = _userManager.GetUserId(User);
-                _logger.LogInformation("Guardando quiz con título personalizado para usuario {UserId}, materia {MateriaId}, preguntas {Count}", 
+                _logger.LogInformation("Guardando quiz con título personalizado para usuario {UserId}, materia {MateriaId}, preguntas {Count}",
                     usuarioId, materiaId, result.Questions?.Count ?? 0);
-                
+
                 // Validar que hay preguntas
                 if (result.Questions == null || result.Questions.Count == 0)
                 {
@@ -1270,7 +1373,7 @@ namespace QuizCraft.Web.Controllers
                 foreach (var generatedQuestion in result.Questions)
                 {
                     _logger.LogInformation("Procesando pregunta {Orden}: {Texto}", orden, generatedQuestion.QuestionText);
-                    
+
                     var pregunta = new PreguntaQuiz
                     {
                         TextoPregunta = generatedQuestion.QuestionText,
@@ -1285,12 +1388,12 @@ namespace QuizCraft.Web.Controllers
                     if (generatedQuestion.AnswerOptions != null && generatedQuestion.AnswerOptions.Any())
                     {
                         var opciones = generatedQuestion.AnswerOptions.Take(4).ToList();
-                        
+
                         pregunta.OpcionA = opciones.Count > 0 ? opciones[0].Text : "";
                         pregunta.OpcionB = opciones.Count > 1 ? opciones[1].Text : "";
                         pregunta.OpcionC = opciones.Count > 2 ? opciones[2].Text : "";
                         pregunta.OpcionD = opciones.Count > 3 ? opciones[3].Text : "";
-                        
+
                         // Encontrar la respuesta correcta
                         var correctIndex = -1;
                         for (int i = 0; i < opciones.Count; i++)
@@ -1301,17 +1404,17 @@ namespace QuizCraft.Web.Controllers
                                 break;
                             }
                         }
-                        
+
                         if (correctIndex == -1)
                         {
                             _logger.LogWarning("No se encontró opción marcada como correcta, usando la primera");
                             correctIndex = 0;
                         }
-                        
+
                         // Asignar la letra correspondiente
-                        char[] letras = {'A', 'B', 'C', 'D'};
+                        char[] letras = { 'A', 'B', 'C', 'D' };
                         pregunta.RespuestaCorrecta = letras[correctIndex].ToString();
-                        
+
                         _logger.LogInformation("Respuesta correcta asignada: {RespuestaCorrecta}", pregunta.RespuestaCorrecta);
                     }
                     else
@@ -1330,10 +1433,10 @@ namespace QuizCraft.Web.Controllers
                 // Guardar en base de datos
                 _logger.LogInformation("Agregando quiz personalizado a la base de datos: {QuizTitulo}", quiz.Titulo);
                 await _unitOfWork.QuizRepository.AddAsync(quiz);
-                
+
                 _logger.LogInformation("Guardando cambios en la base de datos...");
                 await _unitOfWork.SaveChangesAsync();
-                
+
                 _logger.LogInformation("Quiz personalizado guardado exitosamente con ID: {QuizId}", quiz.Id);
                 return quiz;
             }
@@ -1349,9 +1452,9 @@ namespace QuizCraft.Web.Controllers
             try
             {
                 var usuarioId = _userManager.GetUserId(User);
-                _logger.LogInformation("Guardando quiz directamente para usuario {UserId}, materia {MateriaId}, preguntas {Count}", 
+                _logger.LogInformation("Guardando quiz directamente para usuario {UserId}, materia {MateriaId}, preguntas {Count}",
                     usuarioId, materiaId, result.Questions?.Count ?? 0);
-                
+
                 // Validar que hay preguntas
                 if (result.Questions == null || result.Questions.Count == 0)
                 {
@@ -1387,7 +1490,7 @@ namespace QuizCraft.Web.Controllers
                 {
                     _logger.LogInformation("Procesando pregunta {Orden}: {Texto}", orden, generatedQuestion.QuestionText);
                     _logger.LogInformation("AnswerOptions count: {Count}", generatedQuestion.AnswerOptions?.Count ?? 0);
-                    
+
                     var pregunta = new PreguntaQuiz
                     {
                         TextoPregunta = generatedQuestion.QuestionText,
@@ -1404,15 +1507,15 @@ namespace QuizCraft.Web.Controllers
                         _logger.LogInformation("Tiene opciones de respuesta, mapeando...");
                         var opciones = generatedQuestion.AnswerOptions.Take(4).ToList();
                         _logger.LogInformation("Opciones disponibles: {Count}", opciones.Count);
-                        
+
                         pregunta.OpcionA = opciones.Count > 0 ? opciones[0].Text : "";
                         pregunta.OpcionB = opciones.Count > 1 ? opciones[1].Text : "";
                         pregunta.OpcionC = opciones.Count > 2 ? opciones[2].Text : "";
                         pregunta.OpcionD = opciones.Count > 3 ? opciones[3].Text : "";
-                        
-                        _logger.LogInformation("Opciones asignadas - A: {A}, B: {B}, C: {C}, D: {D}", 
+
+                        _logger.LogInformation("Opciones asignadas - A: {A}, B: {B}, C: {C}, D: {D}",
                             pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD);
-                        
+
                         // Encontrar qué opción es la correcta y asignar la letra correspondiente
                         var correctIndex = -1;
                         for (int i = 0; i < opciones.Count; i++)
@@ -1423,19 +1526,19 @@ namespace QuizCraft.Web.Controllers
                                 break;
                             }
                         }
-                        
+
                         // Si no se encontró por IsCorrect, usar la primera opción por defecto
                         if (correctIndex == -1)
                         {
                             _logger.LogWarning("No se encontró opción marcada como correcta, usando la primera");
                             correctIndex = 0;
                         }
-                        
+
                         // Asignar la letra correspondiente (A, B, C, D)
-                        char[] letras = {'A', 'B', 'C', 'D'};
+                        char[] letras = { 'A', 'B', 'C', 'D' };
                         pregunta.RespuestaCorrecta = letras[correctIndex].ToString();
-                        
-                        _logger.LogInformation("Respuesta correcta asignada: {RespuestaCorrecta} (opción {Index}: {Texto})", 
+
+                        _logger.LogInformation("Respuesta correcta asignada: {RespuestaCorrecta} (opción {Index}: {Texto})",
                             pregunta.RespuestaCorrecta, correctIndex + 1, opciones[correctIndex].Text);
                     }
                     else
@@ -1449,7 +1552,7 @@ namespace QuizCraft.Web.Controllers
                     }
 
                     quiz.Preguntas.Add(pregunta);
-                    _logger.LogDebug("Agregada pregunta {Orden}: {Texto} con opciones: A={OpcionA}, B={OpcionB}, C={OpcionC}, D={OpcionD}", 
+                    _logger.LogDebug("Agregada pregunta {Orden}: {Texto} con opciones: A={OpcionA}, B={OpcionB}, C={OpcionC}, D={OpcionD}",
                         orden, generatedQuestion.QuestionText, pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD);
                     orden++;
                 }
@@ -1457,10 +1560,10 @@ namespace QuizCraft.Web.Controllers
                 // Guardar en base de datos
                 _logger.LogInformation("Agregando quiz a la base de datos: {QuizTitulo}", quiz.Titulo);
                 await _unitOfWork.QuizRepository.AddAsync(quiz);
-                
+
                 _logger.LogInformation("Guardando cambios en la base de datos...");
                 await _unitOfWork.SaveChangesAsync();
-                
+
                 _logger.LogInformation("Quiz guardado exitosamente con ID: {QuizId}", quiz.Id);
                 return quiz;
             }
@@ -1543,7 +1646,7 @@ namespace QuizCraft.Web.Controllers
                     var usuarioId = _userManager.GetUserId(User);
                     if (string.IsNullOrEmpty(usuarioId))
                         return RedirectToAction("Login", "Account");
-                        
+
                     var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
                     ViewBag.Materias = materias.Select(m => new SelectListItem
                     {
@@ -1596,7 +1699,7 @@ namespace QuizCraft.Web.Controllers
 
         #endregion
         #region Generación con IA
-        
+
         // GET: Quiz/GenerateWithAI
         [HttpGet]
         public async Task<IActionResult> GenerateWithAI(int? materiaId)
@@ -1699,7 +1802,7 @@ namespace QuizCraft.Web.Controllers
 
                     // Intentar obtener array de preguntas
                     JsonElement preguntasElement;
-                    if (root.TryGetProperty("preguntas", out preguntasElement) || 
+                    if (root.TryGetProperty("preguntas", out preguntasElement) ||
                         root.TryGetProperty("questions", out preguntasElement) ||
                         root.TryGetProperty("quiz", out preguntasElement))
                     {
@@ -1838,19 +1941,187 @@ namespace QuizCraft.Web.Controllers
 
 
 
-        // Método auxiliar para generar opciones incorrectas
-        private string GenerarOpcionIncorrecta()
+        // Método auxiliar mejorado para generar opciones incorrectas más convincentes usando IA
+        private async Task<string> GenerarOpcionIncorrectaConIA(string pregunta, string respuestaCorrecta, string materiaNombre)
         {
-            var opciones = new[]
+            try
             {
-                "Opción incorrecta A",
-                "Opción incorrecta B", 
-                "Opción incorrecta C",
-                "Respuesta falsa",
-                "Alternativa incorrecta"
-            };
+                // Intentar usar Gemini para generar un distractor convincente
+                var prompt = $@"Genera UNA ÚNICA opción incorrecta pero plausible para esta pregunta de {materiaNombre}:
+
+Pregunta: {pregunta}
+Respuesta correcta: {respuestaCorrecta}
+
+IMPORTANTE - La opción incorrecta debe:
+- Ser ESPECÍFICA del tema de {materiaNombre}
+- Ser relacionada con el concepto pero incorrecta
+- Ser convincente y parecer correcta a primera vista
+- NO usar frases genéricas como 'Depende del contexto', 'Ninguna de las anteriores', 'Es relativo', etc.
+- NO usar frases como 'Opción incorrecta' o 'Respuesta falsa'
+- Ser similar en longitud y complejidad a la respuesta correcta
+- Debe ser un concepto, término, definición o dato específico pero incorrecto
+
+Ejemplos de BUENAS opciones incorrectas:
+- Si la pregunta es sobre fechas: usar fechas cercanas pero incorrectas
+- Si es sobre definiciones: usar definiciones de conceptos similares
+- Si es sobre personas: usar nombres de otras personas del mismo campo
+- Si es sobre lugares: usar nombres de otros lugares relacionados
+
+Responde SOLO con la opción incorrecta específica, sin explicaciones ni formato adicional.";
+
+                var settings = new AISettings
+                {
+                    MaxTokens = 150,
+                    Temperature = 0.8f
+                };
+
+                var response = await _aiService.GenerateTextAsync(prompt, settings);
+
+                if (response.Success && !string.IsNullOrWhiteSpace(response.Content))
+                {
+                    // Limpiar la respuesta de posibles caracteres extra
+                    var distractor = response.Content.Trim()
+                        .Replace("\"", "")
+                        .Replace("```", "")
+                        .Replace("json", "")
+                        .Trim();
+                    
+                    // Validar que no sea una respuesta genérica
+                    var respuestasProhibidas = new[] 
+                    { 
+                        "depende del contexto", 
+                        "ninguna de las anteriores", 
+                        "todas las anteriores",
+                        "es un concepto relativo",
+                        "no se puede determinar",
+                        "respuesta alternativa",
+                        "requiere información",
+                        "no aplica"
+                    };
+                    
+                    var esGenerica = respuestasProhibidas.Any(prohibida => 
+                        distractor.ToLower().Contains(prohibida));
+                    
+                    if (!esGenerica)
+                    {
+                        return distractor;
+                    }
+                    
+                    _logger.LogWarning("IA generó una respuesta genérica, reintentando con prompt más estricto");
+                }
+                
+                // Reintentar con un prompt más estricto
+                var promptEstricto = $@"Genera UNA opción incorrecta ESPECÍFICA sobre {materiaNombre} para:
+Pregunta: {pregunta}
+Respuesta correcta: {respuestaCorrecta}
+
+DEBE ser un término, concepto o dato CONCRETO relacionado con {materiaNombre}.
+NO uses frases genéricas.
+Solo responde con el dato incorrecto específico.";
+                
+                var retryResponse = await _aiService.GenerateTextAsync(promptEstricto, new AISettings { MaxTokens = 100, Temperature = 0.9f });
+                
+                if (retryResponse.Success && !string.IsNullOrWhiteSpace(retryResponse.Content))
+                {
+                    var distractor = retryResponse.Content.Trim().Replace("\"", "").Replace("```", "").Trim();
+                    
+                    // Si aún es genérica, usar una variación de la respuesta correcta
+                    var respuestasProhibidas = new[] { "depende", "ninguna", "todas", "relativo", "determinar", "alternativa", "requiere", "aplica" };
+                    var esGenerica = respuestasProhibidas.Any(prohibida => distractor.ToLower().Contains(prohibida));
+                    
+                    if (!esGenerica)
+                    {
+                        return distractor;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error generando distractor con IA");
+            }
+
+            // Último recurso: modificar la respuesta correcta para crear un distractor
+            if (!string.IsNullOrEmpty(respuestaCorrecta))
+            {
+                // Intentar crear una variación de la respuesta correcta
+                if (respuestaCorrecta.Contains(" "))
+                {
+                    var palabras = respuestaCorrecta.Split(' ');
+                    if (palabras.Length > 2)
+                    {
+                        // Mezclar las palabras para crear algo incorrecto pero similar
+                        return string.Join(" ", palabras.Take(palabras.Length - 1)) + " (variante incorrecta)";
+                    }
+                }
+                return $"Variante incorrecta de {respuestaCorrecta.Split(' ').First()}";
+            }
             
-            return opciones[new Random().Next(opciones.Length)];
+            return $"Concepto incorrecto relacionado con {materiaNombre}";
+        }
+
+        // Método para generar distractores inteligentes usando respuestas de otras flashcards
+        private async Task<string> GenerarDistractorInteligente(Flashcard flashcardActual, List<Flashcard> todasFlashcards, string materiaNombre)
+        {
+            var respuestaCorrecta = flashcardActual.Respuesta;
+            var longitudReferencia = respuestaCorrecta?.Length ?? 100;
+            
+            // Lista de respuestas ya usadas para evitar duplicados
+            var respuestasDisponibles = todasFlashcards
+                .Where(f => f.Id != flashcardActual.Id && !string.IsNullOrEmpty(f.Respuesta))
+                .ToList();
+            
+            if (respuestasDisponibles.Any())
+            {
+                // Intentar primero con respuestas de longitud similar (±50%)
+                var longitudMin = (int)(longitudReferencia * 0.5);
+                var longitudMax = (int)(longitudReferencia * 1.5);
+                
+                var respuestasSimilares = respuestasDisponibles
+                    .Where(f => f.Respuesta.Length >= longitudMin && f.Respuesta.Length <= longitudMax)
+                    .Select(f => f.Respuesta)
+                    .OrderBy(x => Guid.NewGuid())
+                    .FirstOrDefault();
+                
+                if (respuestasSimilares != null)
+                {
+                    return respuestasSimilares;
+                }
+                
+                // Si no hay respuestas similares, intentar con cualquier respuesta ajustando la longitud
+                var cualquierRespuesta = respuestasDisponibles
+                    .Select(f => f.Respuesta)
+                    .OrderBy(x => Guid.NewGuid())
+                    .FirstOrDefault();
+                
+                if (cualquierRespuesta != null)
+                {
+                    // Ajustar longitud si es necesario
+                    if (cualquierRespuesta.Length > longitudMax)
+                    {
+                        // Truncar manteniendo palabras completas
+                        var palabras = cualquierRespuesta.Split(' ');
+                        var resultado = "";
+                        foreach (var palabra in palabras)
+                        {
+                            if ((resultado + " " + palabra).Length <= longitudMax - 3)
+                            {
+                                resultado += (resultado.Length > 0 ? " " : "") + palabra;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        return resultado + "...";
+                    }
+                    
+                    return cualquierRespuesta;
+                }
+            }
+            
+            // Si no hay otras flashcards disponibles, SIEMPRE usar IA para generar un distractor específico
+            _logger.LogInformation("No hay otras flashcards disponibles, generando distractor con IA para: {Pregunta}", flashcardActual.Pregunta);
+            return await GenerarOpcionIncorrectaConIA(flashcardActual.Pregunta, flashcardActual.Respuesta, materiaNombre);
         }
     }
 }
