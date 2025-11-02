@@ -287,7 +287,12 @@
                 
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(texto + ' - ' + window.location.href).then(function() {
-                        alert('¡Resultado copiado al portapapeles!');
+                        mostrarModalAlerta({
+                            titulo: '¡Éxito!',
+                            mensaje: 'Resultado copiado al portapapeles.',
+                            tipo: 'success',
+                            icono: 'fas fa-check-circle'
+                        });
                     });
                 } else {
                     // Fallback manual
@@ -297,7 +302,12 @@
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    alert('¡Resultado copiado al portapapeles!');
+                    mostrarModalAlerta({
+                        titulo: '¡Éxito!',
+                        mensaje: 'Resultado copiado al portapapeles.',
+                        tipo: 'success',
+                        icono: 'fas fa-check-circle'
+                    });
                 }
             }
         }

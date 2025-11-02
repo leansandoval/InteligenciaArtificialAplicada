@@ -212,20 +212,35 @@
                 
                 if (fechaProgramada <= ahora) {
                     e.preventDefault();
-                    alert('La fecha programada debe ser futura.');
+                    mostrarModalAlerta({
+                        titulo: 'Fecha inválida',
+                        mensaje: 'La fecha programada debe ser futura.',
+                        tipo: 'warning',
+                        icono: 'fas fa-calendar-times'
+                    });
                     return false;
                 }
                 
                 // Validar que se haya seleccionado contenido específico
                 if (tipoContenido === 'quiz' && !quizId) {
                     e.preventDefault();
-                    alert('Por favor selecciona un quiz específico.');
+                    mostrarModalAlerta({
+                        titulo: 'Quiz requerido',
+                        mensaje: 'Por favor selecciona un quiz específico.',
+                        tipo: 'warning',
+                        icono: 'fas fa-exclamation-triangle'
+                    });
                     return false;
                 }
                 
                 if (tipoContenido === 'flashcard' && !materiaId) {
                     e.preventDefault();
-                    alert('Por favor selecciona una materia para las flashcards.');
+                    mostrarModalAlerta({
+                        titulo: 'Materia requerida',
+                        mensaje: 'Por favor selecciona una materia para las flashcards.',
+                        tipo: 'warning',
+                        icono: 'fas fa-exclamation-triangle'
+                    });
                     return false;
                 }
                 

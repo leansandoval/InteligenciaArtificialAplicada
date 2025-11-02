@@ -363,7 +363,12 @@
             tempLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    alert('Esta funcionalidad estará disponible pronto. Por ahora puedes gestionar tus materias.');
+                    mostrarModalAlerta({
+                        titulo: 'Próximamente',
+                        mensaje: 'Esta funcionalidad estará disponible pronto. Por ahora puedes gestionar tus materias.',
+                        tipo: 'info',
+                        icono: 'fas fa-clock'
+                    });
                 });
             });
             

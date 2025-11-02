@@ -164,7 +164,7 @@
 
 <!-- Modal de confirmación para salir -->
 <div class="modal fade" id="modalSalir" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Confirmar Salida</h5>
@@ -271,7 +271,12 @@
                     }
                 },
                 error: function() {
-                    alert('Error al evaluar la flashcard. Inténtalo de nuevo.');
+                    mostrarModalAlerta({
+                        titulo: 'Error',
+                        mensaje: 'Error al evaluar la flashcard. Inténtalo de nuevo.',
+                        tipo: 'danger',
+                        icono: 'fas fa-exclamation-circle'
+                    });
                 }
             });
         }
@@ -297,7 +302,12 @@
                     }
                 },
                 error: function() {
-                    alert('Error al cargar la siguiente flashcard.');
+                    mostrarModalAlerta({
+                        titulo: 'Error',
+                        mensaje: 'Error al cargar la siguiente flashcard.',
+                        tipo: 'danger',
+                        icono: 'fas fa-exclamation-circle'
+                    });
                 }
             });
         }

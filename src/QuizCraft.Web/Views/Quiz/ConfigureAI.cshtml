@@ -184,7 +184,12 @@
                 const archivo = $('#ArchivoAdjunto')[0].files[0];
                 if (!archivo) {
                     e.preventDefault();
-                    alert('Debes adjuntar un documento para generar el quiz.');
+                    mostrarModalAlerta({
+                        titulo: 'Documento requerido',
+                        mensaje: 'Debes adjuntar un documento para generar el quiz.',
+                        tipo: 'warning',
+                        icono: 'fas fa-file-upload'
+                    });
                     return false;
                 }
 

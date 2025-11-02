@@ -178,7 +178,12 @@
                 const title = $('#QuizTitle').val().trim();
                 if (title.length < 3) {
                     e.preventDefault();
-                    alert('El título del quiz debe tener al menos 3 caracteres.');
+                    mostrarModalAlerta({
+                        titulo: 'Título inválido',
+                        mensaje: 'El título del quiz debe tener al menos 3 caracteres.',
+                        tipo: 'warning',
+                        icono: 'fas fa-exclamation-triangle'
+                    });
                     $('#QuizTitle').focus();
                     return false;
                 }

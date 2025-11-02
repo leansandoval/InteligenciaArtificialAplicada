@@ -238,15 +238,30 @@
             
             if (puntaje && (puntaje < 0 || puntaje > 100)) {
                 e.preventDefault();
-                alert('El puntaje debe estar entre 0 y 100.');
+                mostrarModalAlerta({
+                    titulo: 'Puntaje inválido',
+                    mensaje: 'El puntaje debe estar entre 0 y 100.',
+                    tipo: 'warning',
+                    icono: 'fas fa-exclamation-triangle'
+                });
                 return false;
             }
             
             // Confirmar completar repaso
-            if (!confirm('¿Estás seguro de que quieres marcar este repaso como completado?')) {
-                e.preventDefault();
-                return false;
-            }
+            e.preventDefault();
+            mostrarModalConfirmacion({
+                titulo: 'Completar repaso',
+                mensaje: '¿Estás seguro de que quieres marcar este repaso como completado?',
+                icono: 'fas fa-check-circle',
+                colorHeader: '#198754',
+                textoBoton: 'Sí, completar',
+                colorBoton: 'success',
+                onConfirm: function() {
+                    // Reenviar el formulario sin validación
+                    $('form').off('submit').submit();
+                }
+            });
+            return false;
         });
     </script>
 }

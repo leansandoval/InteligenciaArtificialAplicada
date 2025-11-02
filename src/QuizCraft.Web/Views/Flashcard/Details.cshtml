@@ -57,21 +57,31 @@
                             NivelDificultad.MuyDificil => "danger",
                             _ => "secondary"
                         };
+                        
+                        var difficultyStyle = Model.Dificultad switch
+                        {
+                            NivelDificultad.MuyFacil => "background-color: #198754; color: white;",
+                            NivelDificultad.Facil => "background-color: #0dcaf0; color: #000;", 
+                            NivelDificultad.Intermedio => "background-color: #ffc107; color: #000;",
+                            NivelDificultad.Dificil => "background-color: #fd7e14; color: white;",
+                            NivelDificultad.MuyDificil => "background-color: #dc3545; color: white;",
+                            _ => "background-color: #6c757d; color: white;"
+                        };
                     }
-                    <span class="badge bg-@difficultyClass fs-6 px-3 py-2">
+                    <span class="badge fs-6 px-3 py-2" style="@difficultyStyle">
                         <i class="fas fa-signal me-1"></i>
                         @Model.DificultadTexto
                     </span>
                     @if (Model.EstaActiva)
                     {
-                        <span class="badge bg-success fs-6 px-3 py-2">
+                        <span class="badge fs-6 px-3 py-2" style="background-color: #198754; color: white;">
                             <i class="fas fa-check-circle me-1"></i>
                             Activa
                         </span>
                     }
                     else
                     {
-                        <span class="badge bg-secondary fs-6 px-3 py-2">
+                        <span class="badge fs-6 px-3 py-2" style="background-color: #6c757d; color: white;">
                             <i class="fas fa-pause-circle me-1"></i>
                             Inactiva
                         </span>
@@ -323,35 +333,6 @@
             </div>
         </div>
         
-        <!-- Información de la materia -->
-        <div class="card mb-4">
-            <div class="card-header" style="background-color: @Model.MateriaColor; opacity: 0.1;">
-                <h6 class="mb-0" style="color: @Model.MateriaColor;">
-                    <i class="@Model.MateriaIcono me-2"></i>
-                    Información de Materia
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3" 
-                         style="width: 50px; height: 50px; background-color: @Model.MateriaColor; opacity: 0.2;">
-                        <i class="@Model.MateriaIcono fa-lg" style="color: @Model.MateriaColor;"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-1">@Model.MateriaNombre</h6>
-                        <small class="text-muted">Materia Principal</small>
-                    </div>
-                </div>
-                
-                <div class="d-grid">
-                    <a href="#" class="btn btn-outline-primary btn-sm" onclick="verOtrasFlashcards()">
-                        <i class="fas fa-layer-group me-1"></i>
-                        Ver otras flashcards
-                    </a>
-                </div>
-            </div>
-        </div>
-        
         <!-- Información temporal -->
         <div class="card">
             <div class="card-header">
@@ -370,20 +351,13 @@
                 
                 @if (Model.FechaModificacion.HasValue)
                 {
-                    <div class="mb-3">
+                    <div>
                         <small class="text-muted d-block">Última Modificación</small>
                         <strong>@Model.FechaModificacion.Value.ToString("dd 'de' MMMM 'de' yyyy")</strong>
                         <br>
                         <small class="text-muted">@Model.FechaModificacion.Value.ToString("HH:mm")</small>
                     </div>
                 }
-                
-                <div class="text-center">
-                    <span class="badge bg-@(Model.EstaActiva ? "success" : "secondary")">
-                        <i class="fas fa-@(Model.EstaActiva ? "check" : "pause")-circle me-1"></i>
-                        @(Model.EstaActiva ? "Flashcard Activa" : "Flashcard Inactiva")
-                    </span>
-                </div>
             </div>
         </div>
     </div>
@@ -428,19 +402,37 @@
                 '¡Excelente! Has respondido correctamente.' : 
                 'No te preocupes, la práctica hace al maestro.';
             
-            alert(mensaje + ' La respuesta ha sido registrada.');
+            mostrarModalAlerta({
+                titulo: correcta ? '¡Correcto!' : 'Sigue practicando',
+                mensaje: mensaje + ' La respuesta ha sido registrada.',
+                tipo: correcta ? 'success' : 'info',
+                icono: correcta ? 'fas fa-check-circle' : 'fas fa-info-circle'
+            });
             
             // Aquí podrías hacer una llamada AJAX para registrar la respuesta
             // fetch('/Flashcard/RegistrarRespuesta', { ... });
         }
         
         function marcarDificil() {
-            if (confirm('¿Deseas marcar esta flashcard como difícil para revisarla más frecuentemente?')) {
-                alert('Flashcard marcada como difícil. Aparecerá más frecuentemente en los repasos.');
-                
-                // Aquí podrías hacer una llamada AJAX para marcar como difícil
-                // fetch('/Flashcard/MarcarDificil', { ... });
-            }
+            mostrarModalConfirmacion({
+                titulo: 'Marcar como difícil',
+                mensaje: '¿Deseas marcar esta flashcard como difícil para revisarla más frecuentemente?',
+                icono: 'fas fa-exclamation-triangle',
+                colorHeader: '#ffc107',
+                textoBoton: 'Sí, marcar',
+                colorBoton: 'warning',
+                onConfirm: function() {
+                    mostrarModalAlerta({
+                        titulo: '¡Marcada!',
+                        mensaje: 'Flashcard marcada como difícil. Aparecerá más frecuentemente en los repasos.',
+                        tipo: 'success',
+                        icono: 'fas fa-check-circle'
+                    });
+                    
+                    // Aquí podrías hacer una llamada AJAX para marcar como difícil
+                    // fetch('/Flashcard/MarcarDificil', { ... });
+                }
+            });
         }
         
         function iniciarRepaso() {
@@ -449,9 +441,17 @@
         }
         
         function duplicarFlashcard() {
-            if (confirm('¿Deseas crear una copia de esta flashcard que puedas modificar?')) {
-                window.location.href = '@Url.Action("Create", new { duplicarDe = Model.Id })';
-            }
+            mostrarModalConfirmacion({
+                titulo: 'Duplicar flashcard',
+                mensaje: '¿Deseas crear una copia de esta flashcard que puedas modificar?',
+                icono: 'fas fa-copy',
+                colorHeader: '#0d6efd',
+                textoBoton: 'Sí, duplicar',
+                colorBoton: 'primary',
+                onConfirm: function() {
+                    window.location.href = '@Url.Action("Create", new { duplicarDe = Model.Id })';
+                }
+            });
         }
         
         function verOtrasFlashcards() {
@@ -459,31 +459,36 @@
         }
         
         function confirmarEliminacion() {
-            const mensaje = `¿Estás seguro de que deseas eliminar esta flashcard?\n\n` +
-                           `Pregunta: "@Model.Pregunta"\n\n` +
-                           `Esta acción no se puede deshacer.`;
-            
-            if (confirm(mensaje)) {
-                // Crear formulario para enviar DELETE
-                const form = document.createElement('form');
-                form.method = 'post';
-                form.action = '@Url.Action("Delete", new { id = Model.Id })';
-                
-                const methodField = document.createElement('input');
-                methodField.type = 'hidden';
-                methodField.name = '_method';
-                methodField.value = 'delete';
-                form.appendChild(methodField);
-                
-                const tokenField = document.createElement('input');
-                tokenField.type = 'hidden';
-                tokenField.name = '__RequestVerificationToken';
-                tokenField.value = $('input[name="__RequestVerificationToken"]').val();
-                form.appendChild(tokenField);
-                
-                document.body.appendChild(form);
-                form.submit();
-            }
+            const pregunta = "@Model.Pregunta";
+            mostrarModalConfirmacion({
+                titulo: 'Confirmar eliminación',
+                mensaje: `¿Estás seguro de que deseas eliminar esta flashcard?\n\nPregunta: "${pregunta}"\n\nEsta acción no se puede deshacer.`,
+                icono: 'fas fa-trash-alt',
+                colorHeader: '#dc3545',
+                textoBoton: 'Sí, eliminar',
+                colorBoton: 'danger',
+                onConfirm: function() {
+                    // Crear formulario para enviar DELETE
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = '@Url.Action("Delete", new { id = Model.Id })';
+                    
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'delete';
+                    form.appendChild(methodField);
+                    
+                    const tokenField = document.createElement('input');
+                    tokenField.type = 'hidden';
+                    tokenField.name = '__RequestVerificationToken';
+                    tokenField.value = $('input[name="__RequestVerificationToken"]').val();
+                    form.appendChild(tokenField);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
         
         function abrirVisorImagen(rutaArchivo, nombreArchivo) {

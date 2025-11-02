@@ -420,17 +420,25 @@
 
             // Restaurar formulario
             window.resetForm = function() {
-                if (confirm('¿Estás seguro de que deseas restaurar todos los campos a su estado original?')) {
-                    preguntaInput.value = valoresOriginales.pregunta;
-                    respuestaInput.value = valoresOriginales.respuesta;
-                    pistaInput.value = valoresOriginales.pista;
-                    etiquetasInput.value = valoresOriginales.etiquetas;
-                    
-                    updateCounter(preguntaInput, preguntaCounter, 1000);
-                    updateCounter(respuestaInput, respuestaCounter, 2000);
-                    updateCounter(pistaInput, pistaCounter, 500);
-                    updatePreview();
-                }
+                mostrarModalConfirmacion({
+                    titulo: 'Restaurar formulario',
+                    mensaje: '¿Estás seguro de que deseas restaurar todos los campos a su estado original?',
+                    icono: 'fas fa-undo',
+                    colorHeader: '#ffc107',
+                    textoBoton: 'Sí, restaurar',
+                    colorBoton: 'warning',
+                    onConfirm: function() {
+                        preguntaInput.value = valoresOriginales.pregunta;
+                        respuestaInput.value = valoresOriginales.respuesta;
+                        pistaInput.value = valoresOriginales.pista;
+                        etiquetasInput.value = valoresOriginales.etiquetas;
+                        
+                        updateCounter(preguntaInput, preguntaCounter, 1000);
+                        updateCounter(respuestaInput, respuestaCounter, 2000);
+                        updateCounter(pistaInput, pistaCounter, 500);
+                        updatePreview();
+                    }
+                });
             };
 
             // Función para actualizar contadores
@@ -677,30 +685,36 @@
         }
 
         function eliminarArchivo(archivoId) {
-            if (!confirm('¿Estás seguro de que deseas eliminar este archivo?')) {
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('archivoId', archivoId);
-            formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
-            
-            fetch('/Archivos/EliminarArchivo', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarMensaje('Archivo eliminado exitosamente', 'success');
-                    cargarArchivosExistentes();
-                } else {
-                    mostrarMensaje(data.message || 'Error al eliminar el archivo', 'danger');
+            mostrarModalConfirmacion({
+                titulo: 'Eliminar archivo',
+                mensaje: '¿Estás seguro de que deseas eliminar este archivo?',
+                icono: 'fas fa-trash-alt',
+                colorHeader: '#dc3545',
+                textoBoton: 'Sí, eliminar',
+                colorBoton: 'danger',
+                onConfirm: function() {
+                    const formData = new FormData();
+                    formData.append('archivoId', archivoId);
+                    formData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                    
+                    fetch('/Archivos/EliminarArchivo', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            mostrarMensaje('Archivo eliminado exitosamente', 'success');
+                            cargarArchivosExistentes();
+                        } else {
+                            mostrarMensaje(data.message || 'Error al eliminar el archivo', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        mostrarMensaje('Error al eliminar el archivo', 'danger');
+                    });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                mostrarMensaje('Error al eliminar el archivo', 'danger');
             });
         }
 

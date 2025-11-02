@@ -235,9 +235,15 @@
 
             // Confirmación adicional al enviar formulario
             deleteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
                 if (!confirmCheckbox.checked) {
-                    e.preventDefault();
-                    alert('Debes confirmar que entiendes que esta acción es irreversible.');
+                    mostrarModalAlerta({
+                        titulo: 'Confirmación requerida',
+                        mensaje: 'Debes confirmar que entiendes que esta acción es irreversible.',
+                        tipo: 'warning',
+                        icono: 'fas fa-exclamation-triangle'
+                    });
                     return false;
                 }
 
@@ -249,14 +255,22 @@
                     'Repasos registrados: @Model.VecesRepasada\n\n' +
                     'Esta acción NO SE PUEDE DESHACER.';
 
-                if (!confirm(confirmMessage)) {
-                    e.preventDefault();
-                    return false;
-                }
-
-                // Cambiar botón para mostrar loading
-                deleteButton.disabled = true;
-                deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+                mostrarModalConfirmacion({
+                    titulo: 'Última confirmación',
+                    mensaje: confirmMessage,
+                    icono: 'fas fa-trash-alt',
+                    colorHeader: '#dc3545',
+                    textoBoton: 'Eliminar definitivamente',
+                    colorBoton: 'danger',
+                    onConfirm: function() {
+                        // Cambiar botón para mostrar loading
+                        deleteButton.disabled = true;
+                        deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+                        
+                        deleteForm.removeEventListener('submit', arguments.callee);
+                        deleteForm.submit();
+                    }
+                });
             });
         });
     </script>

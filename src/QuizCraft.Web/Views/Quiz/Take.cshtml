@@ -449,8 +449,15 @@
                 console.error('Error al crear formulario:', error);
                 
                 // FALLBACK: Redirección simple si falla el formulario
-                alert('Ocurrió un error al procesar el quiz. Serás redirigido a la página principal.');
-                window.location.href = '@Url.Action("Details", "Quiz")/' + quizId;
+                mostrarModalAlerta({
+                    titulo: 'Error',
+                    mensaje: 'Ocurrió un error al procesar el quiz. Serás redirigido a los detalles.',
+                    tipo: 'danger',
+                    icono: 'fas fa-exclamation-triangle'
+                });
+                setTimeout(() => {
+                    window.location.href = '@Url.Action("Details", "Quiz")/' + quizId;
+                }, 2000);
             }
         }
 
@@ -479,8 +486,15 @@
                 // Tiempo agotado
                 if (tiempoRestante <= 0) {
                     clearInterval(cronometroInterval);
-                    alert('¡Tiempo agotado! El quiz se finalizará automáticamente.');
-                    finalizarQuiz();
+                    mostrarModalAlerta({
+                        titulo: '¡Tiempo agotado!',
+                        mensaje: 'El quiz se finalizará automáticamente.',
+                        tipo: 'warning',
+                        icono: 'fas fa-clock'
+                    });
+                    setTimeout(() => {
+                        finalizarQuiz();
+                    }, 2000);
                 }
             }, 1000);
         }

@@ -409,7 +409,12 @@
 
                 if (!materiaSeleccionada || !pregunta || !respuesta) {
                     e.preventDefault();
-                    alert('Por favor, completa todos los campos obligatorios.');
+                    mostrarModalAlerta({
+                        titulo: 'Campos incompletos',
+                        mensaje: 'Por favor, completa todos los campos obligatorios.',
+                        tipo: 'warning',
+                        icono: 'fas fa-exclamation-triangle'
+                    });
                     return false;
                 }
 

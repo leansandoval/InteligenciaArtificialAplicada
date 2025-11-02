@@ -8,6 +8,7 @@
     ViewBag.PageSubtitle = "Gestiona y estudia tus tarjetas de estudio personalizadas";
 }
 
+<div class="container py-4 mt-4">
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="mb-1">
@@ -319,31 +320,40 @@ else
         </div>
     </div>
 }
+</div>
 
 @section Scripts {
     <script>
         function confirmarEliminacion(id, pregunta) {
-            if (confirm(`¿Estás seguro de que deseas eliminar la flashcard: "${pregunta}"?\n\nEsta acción no se puede deshacer.`)) {
-                // Crear formulario dinámico para enviar DELETE
-                const form = document.createElement('form');
-                form.method = 'post';
-                form.action = '@Url.Action("Delete")/' + id;
-                
-                const methodField = document.createElement('input');
-                methodField.type = 'hidden';
-                methodField.name = '_method';
-                methodField.value = 'delete';
-                form.appendChild(methodField);
-                
-                const tokenField = document.createElement('input');
-                tokenField.type = 'hidden';
-                tokenField.name = '__RequestVerificationToken';
-                tokenField.value = $('input[name="__RequestVerificationToken"]').val();
-                form.appendChild(tokenField);
-                
-                document.body.appendChild(form);
-                form.submit();
-            }
+            mostrarModalConfirmacion({
+                titulo: 'Eliminar flashcard',
+                mensaje: `¿Estás seguro de que deseas eliminar la flashcard: "${pregunta}"?\n\nEsta acción no se puede deshacer.`,
+                icono: 'fas fa-trash-alt',
+                colorHeader: '#dc3545',
+                textoBoton: 'Sí, eliminar',
+                colorBoton: 'danger',
+                onConfirm: function() {
+                    // Crear formulario dinámico para enviar DELETE
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = '@Url.Action("Delete")/' + id;
+                    
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'delete';
+                    form.appendChild(methodField);
+                    
+                    const tokenField = document.createElement('input');
+                    tokenField.type = 'hidden';
+                    tokenField.name = '__RequestVerificationToken';
+                    tokenField.value = $('input[name="__RequestVerificationToken"]').val();
+                    form.appendChild(tokenField);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
         }
 
         // Animaciones y efectos visuales

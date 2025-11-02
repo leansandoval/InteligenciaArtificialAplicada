@@ -480,10 +480,20 @@
             const input = document.getElementById('codigoGenerado');
             input.select();
             navigator.clipboard.writeText(input.value).then(function() {
-                alert('¡Código copiado al portapapeles!');
+                mostrarModalAlerta({
+                    titulo: '¡Éxito!',
+                    mensaje: 'Código copiado al portapapeles.',
+                    tipo: 'success',
+                    icono: 'fas fa-check-circle'
+                });
             }).catch(function(err) {
                 console.error('Error al copiar:', err);
-                alert('Error al copiar el código');
+                mostrarModalAlerta({
+                    titulo: 'Error',
+                    mensaje: 'No se pudo copiar el código al portapapeles.',
+                    tipo: 'danger',
+                    icono: 'fas fa-times-circle'
+                });
             });
         }
 
@@ -491,10 +501,20 @@
             const input = document.getElementById('urlGenerada');
             input.select();
             navigator.clipboard.writeText(input.value).then(function() {
-                alert('¡URL copiada al portapapeles!');
+                mostrarModalAlerta({
+                    titulo: '¡Éxito!',
+                    mensaje: 'URL copiada al portapapeles.',
+                    tipo: 'success',
+                    icono: 'fas fa-check-circle'
+                });
             }).catch(function(err) {
                 console.error('Error al copiar:', err);
-                alert('Error al copiar la URL');
+                mostrarModalAlerta({
+                    titulo: 'Error',
+                    mensaje: 'No se pudo copiar la URL al portapapeles.',
+                    tipo: 'danger',
+                    icono: 'fas fa-times-circle'
+                });
             });
         }
     </script>

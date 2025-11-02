@@ -1,0 +1,155 @@
+@* Modal de Confirmación Genérico *@
+<div class="modal fade" id="modalConfirmacion" tabindex="-1" aria-labelledby="modalConfirmacionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalConfirmacionLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="modalConfirmacionTitulo">Confirmación</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3" id="modalConfirmacionIcono">
+                    <i class="fas fa-question-circle text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <p class="text-center mb-0" id="modalConfirmacionMensaje">
+                    ¿Estás seguro de que deseas realizar esta acción?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" id="btnConfirmarAccion">
+                    <i class="fas fa-check me-1"></i>Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal de Alerta/Información *@
+<div class="modal fade" id="modalAlerta" tabindex="-1" aria-labelledby="modalAlertaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" id="modalAlertaHeader">
+                <h5 class="modal-title" id="modalAlertaLabel">
+                    <i class="me-2" id="modalAlertaIconoTitulo"></i>
+                    <span id="modalAlertaTitulo">Información</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3" id="modalAlertaIconoCentro"></div>
+                <p class="text-center mb-0" id="modalAlertaMensaje"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-1"></i>Entendido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Función para mostrar modal de confirmación
+    function mostrarModalConfirmacion(opciones) {
+        const defaultOpciones = {
+            titulo: 'Confirmación',
+            mensaje: '¿Estás seguro de que deseas realizar esta acción?',
+            icono: 'fas fa-question-circle text-warning',
+            colorHeader: 'bg-warning text-dark',
+            textoBoton: 'Confirmar',
+            colorBoton: 'btn-warning',
+            onConfirm: null
+        };
+        
+        const config = { ...defaultOpciones, ...opciones };
+        
+        // Configurar el modal
+        document.getElementById('modalConfirmacionTitulo').textContent = config.titulo;
+        document.getElementById('modalConfirmacionMensaje').innerHTML = config.mensaje;
+        document.getElementById('modalConfirmacionIcono').innerHTML = 
+            `<i class="${config.icono}" style="font-size: 3rem;"></i>`;
+        
+        const header = document.querySelector('#modalConfirmacion .modal-header');
+        header.className = `modal-header ${config.colorHeader}`;
+        
+        const btnConfirmar = document.getElementById('btnConfirmarAccion');
+        btnConfirmar.className = `btn ${config.colorBoton}`;
+        btnConfirmar.innerHTML = `<i class="fas fa-check me-1"></i>${config.textoBoton}`;
+        
+        // Configurar evento de confirmación
+        btnConfirmar.onclick = function() {
+            if (config.onConfirm) {
+                config.onConfirm();
+            }
+            const modalElement = document.getElementById('modalConfirmacion');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        };
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
+        modal.show();
+    }
+    
+    // Función para mostrar modal de alerta
+    function mostrarModalAlerta(opciones) {
+        const defaultOpciones = {
+            titulo: 'Información',
+            mensaje: '',
+            tipo: 'info', // success, info, warning, danger
+            icono: null
+        };
+        
+        const config = { ...defaultOpciones, ...opciones };
+        
+        // Configurar colores y iconos según el tipo
+        let colorHeader, iconoClase, iconoCentro;
+        
+        switch(config.tipo) {
+            case 'success':
+                colorHeader = 'bg-success text-white';
+                iconoClase = 'fas fa-check-circle';
+                iconoCentro = `<i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>`;
+                break;
+            case 'warning':
+                colorHeader = 'bg-warning text-dark';
+                iconoClase = 'fas fa-exclamation-triangle';
+                iconoCentro = `<i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem;"></i>`;
+                break;
+            case 'danger':
+                colorHeader = 'bg-danger text-white';
+                iconoClase = 'fas fa-times-circle';
+                iconoCentro = `<i class="fas fa-times-circle text-danger" style="font-size: 3rem;"></i>`;
+                break;
+            default: // info
+                colorHeader = 'bg-info text-white';
+                iconoClase = 'fas fa-info-circle';
+                iconoCentro = `<i class="fas fa-info-circle text-info" style="font-size: 3rem;"></i>`;
+        }
+        
+        // Aplicar configuración personalizada si se proporciona
+        if (config.icono) {
+            iconoCentro = `<i class="${config.icono}" style="font-size: 3rem;"></i>`;
+        }
+        
+        // Configurar el modal
+        document.getElementById('modalAlertaTitulo').textContent = config.titulo;
+        document.getElementById('modalAlertaMensaje').innerHTML = config.mensaje;
+        document.getElementById('modalAlertaIconoTitulo').className = `me-2 ${iconoClase}`;
+        document.getElementById('modalAlertaIconoCentro').innerHTML = iconoCentro;
+        
+        const header = document.getElementById('modalAlertaHeader');
+        header.className = `modal-header ${colorHeader}`;
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalAlerta'));
+        modal.show();
+    }
+</script>

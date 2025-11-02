@@ -228,7 +228,12 @@ $(document).ready(function() {
     $('#btn-save-selected').on('click', function() {
         const selectedCount = $('.flashcard-checkbox:checked').length;
         if (selectedCount === 0) {
-            alert('Debes seleccionar al menos una flashcard para guardar.');
+            mostrarModalAlerta({
+                titulo: 'Selección requerida',
+                mensaje: 'Debes seleccionar al menos una flashcard para guardar.',
+                tipo: 'warning',
+                icono: 'fas fa-exclamation-triangle'
+            });
             return;
         }
         
@@ -270,12 +275,22 @@ $(document).ready(function() {
                     $('#confirmSaveModal').modal('hide');
                     window.location.href = '@Url.Action("Index", "Flashcard")';
                 } else {
-                    alert('Error: ' + (response.message || 'Error al guardar las flashcards'));
+                    mostrarModalAlerta({
+                        titulo: 'Error',
+                        mensaje: response.message || 'Error al guardar las flashcards',
+                        tipo: 'danger',
+                        icono: 'fas fa-exclamation-circle'
+                    });
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Error saving flashcards:', error);
-                alert('Error de conexión al guardar las flashcards');
+                mostrarModalAlerta({
+                    titulo: 'Error de conexión',
+                    mensaje: 'No se pudo conectar con el servidor al guardar las flashcards.',
+                    tipo: 'danger',
+                    icono: 'fas fa-exclamation-circle'
+                });
             },
             complete: function() {
                 btnConfirm.html('<i class="fas fa-save"></i> Guardar');

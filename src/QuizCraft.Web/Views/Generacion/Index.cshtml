@@ -580,8 +580,13 @@
             function mostrarError(mensaje) {
                 console.log('Mostrando error:', mensaje);
                 if (typeof Swal === 'undefined') {
-                    console.error('SweetAlert2 no está disponible para mostrar error');
-                    alert('Error: ' + mensaje);
+                    console.error('SweetAlert2 no está disponible, usando modal Bootstrap');
+                    mostrarModalAlerta({
+                        titulo: 'Error',
+                        mensaje: mensaje,
+                        tipo: 'danger',
+                        icono: 'fas fa-exclamation-circle'
+                    });
                     return;
                 }
                 Swal.fire({

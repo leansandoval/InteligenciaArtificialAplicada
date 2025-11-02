@@ -116,8 +116,7 @@
                         
                         <form asp-action="Delete" method="post" class="d-inline">
                             <input asp-for="Id" type="hidden" />
-                            <button type="submit" class="btn btn-danger btn-lg" 
-                                    onclick="return confirm('¿Estás completamente seguro? Esta acción no se puede deshacer.')">
+                            <button type="submit" class="btn btn-danger btn-lg">
                                 <i class="fas fa-trash me-2"></i>Sí, Eliminar
                             </button>
                         </form>
@@ -142,6 +141,7 @@
             const deleteForm = document.querySelector('form[asp-action="Delete"]');
             if (deleteForm) {
                 deleteForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     const hasContent = @(Model.TotalFlashcards > 0 || Model.TotalQuizzes > 0 ? "true" : "false");
                     
                     if (hasContent) {
@@ -158,16 +158,43 @@
                         
                         confirmMessage += '\n¿Proceder con la eliminación?';
                         
-                        if (!confirm(confirmMessage)) {
-                            e.preventDefault();
-                            return false;
-                        }
-                    }
-                    
-                    // Confirmación final
-                    if (!confirm('Última confirmación: ¿Eliminar "@Model.Nombre" definitivamente?')) {
-                        e.preventDefault();
-                        return false;
+                        mostrarModalConfirmacion({
+                            titulo: 'Eliminar materia con contenido',
+                            mensaje: confirmMessage,
+                            icono: 'fas fa-exclamation-triangle',
+                            colorHeader: '#dc3545',
+                            textoBoton: 'Sí, eliminar todo',
+                            colorBoton: 'danger',
+                            onConfirm: function() {
+                                // Segunda confirmación
+                                mostrarModalConfirmacion({
+                                    titulo: 'Última confirmación',
+                                    mensaje: '¿Eliminar "@Model.Nombre" definitivamente?',
+                                    icono: 'fas fa-trash-alt',
+                                    colorHeader: '#dc3545',
+                                    textoBoton: 'Eliminar',
+                                    colorBoton: 'danger',
+                                    onConfirm: function() {
+                                        deleteForm.removeEventListener('submit', arguments.callee);
+                                        deleteForm.submit();
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        // Sin contenido, solo una confirmación
+                        mostrarModalConfirmacion({
+                            titulo: 'Eliminar materia',
+                            mensaje: '¿Eliminar "@Model.Nombre" definitivamente?',
+                            icono: 'fas fa-trash-alt',
+                            colorHeader: '#dc3545',
+                            textoBoton: 'Sí, eliminar',
+                            colorBoton: 'danger',
+                            onConfirm: function() {
+                                deleteForm.removeEventListener('submit', arguments.callee);
+                                deleteForm.submit();
+                            }
+                        });
                     }
                 });
             }

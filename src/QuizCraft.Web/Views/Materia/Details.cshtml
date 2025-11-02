@@ -169,7 +169,12 @@
             tempLinks.forEach(link => {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    alert('Esta funcionalidad estará disponible cuando implementemos Flashcards y Quizzes.');
+                    mostrarModalAlerta({
+                        titulo: 'Próximamente',
+                        mensaje: 'Esta funcionalidad estará disponible cuando implementemos Flashcards y Quizzes.',
+                        tipo: 'info',
+                        icono: 'fas fa-clock'
+                    });
                 });
             });
         });
