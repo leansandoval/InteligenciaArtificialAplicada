@@ -98,7 +98,7 @@ public class FlashcardController : Controller
                 Pregunta = f.Pregunta,
                 Respuesta = f.Respuesta,
                 Pista = f.Pista,
-                DificultadTexto = f.Dificultad.ToString(),
+                DificultadTexto = FormatearDificultad(f.Dificultad),
                 MateriaNombre = f.Materia.Nombre,
                 MateriaColor = f.Materia.Color ?? "#007bff",
                 MateriaIcono = f.Materia.Icono ?? "fas fa-book",
@@ -216,6 +216,12 @@ public class FlashcardController : Controller
             await _unitOfWork.FlashcardRepository.AddAsync(flashcard);
             await _unitOfWork.SaveChangesAsync();
 
+            // Si es una petición AJAX, devolver JSON con el ID
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, flashcardId = flashcard.Id, message = "¡Flashcard creada exitosamente!" });
+            }
+
             TempData["Success"] = "¡Flashcard creada exitosamente!";
             return RedirectToAction(nameof(Index));
         }
@@ -259,13 +265,16 @@ public class FlashcardController : Controller
                 return RedirectToAction(nameof(Index));
             }
 
+            // Obtener archivos adjuntos de la flashcard
+            var archivosAdjuntos = await _fileUploadService.ObtenerArchivosPorFlashcardAsync(id);
+
             var viewModel = new FlashcardViewModel
             {
                 Id = flashcard.Id,
                 Pregunta = flashcard.Pregunta,
                 Respuesta = flashcard.Respuesta,
                 Pista = flashcard.Pista,
-                DificultadTexto = flashcard.Dificultad.ToString(),
+                DificultadTexto = FormatearDificultad(flashcard.Dificultad),
                 MateriaNombre = flashcard.Materia.Nombre,
                 MateriaColor = flashcard.Materia.Color ?? "#007bff",
                 MateriaIcono = flashcard.Materia.Icono ?? "fas fa-book",
@@ -275,7 +284,18 @@ public class FlashcardController : Controller
                 FechaCreacion = flashcard.FechaCreacion,
                 FechaModificacion = flashcard.FechaModificacion,
                 VecesRepasada = flashcard.VecesVista,
-                UltimaVezRepasada = flashcard.UltimaRevision
+                UltimaVezRepasada = flashcard.UltimaRevision,
+                ArchivosAdjuntos = archivosAdjuntos.Select(a => new ArchivoAdjuntoViewModel
+                {
+                    Id = a.Id,
+                    NombreOriginal = a.NombreOriginal,
+                    NombreArchivo = a.NombreArchivo,
+                    RutaArchivo = a.RutaArchivo,
+                    TipoMime = a.TipoMime,
+                    TamanoBytes = a.TamanoBytes,
+                    Descripcion = a.Descripcion,
+                    FechaCreacion = a.FechaCreacion
+                }).ToList()
             };
 
             return View(viewModel);
@@ -462,7 +482,7 @@ public class FlashcardController : Controller
                 Pregunta = flashcard.Pregunta,
                 Respuesta = flashcard.Respuesta,
                 Pista = flashcard.Pista,
-                DificultadTexto = flashcard.Dificultad.ToString(),
+                DificultadTexto = FormatearDificultad(flashcard.Dificultad),
                 MateriaNombre = flashcard.Materia.Nombre,
                 MateriaColor = flashcard.Materia.Color ?? "#007bff",
                 MateriaIcono = flashcard.Materia.Icono ?? "fas fa-book",
@@ -665,7 +685,7 @@ public class FlashcardController : Controller
                     Pregunta = flashcardActual.Pregunta,
                     Respuesta = flashcardActual.Respuesta,
                     Pista = configuracion.IncluirPistas ? flashcardActual.Pista : null,
-                    DificultadTexto = flashcardActual.Dificultad.ToString(),
+                    DificultadTexto = FormatearDificultad(flashcardActual.Dificultad),
                     MateriaNombre = flashcardActual.Materia.Nombre,
                     MateriaColor = flashcardActual.Materia.Color ?? "#007bff",
                     MateriaIcono = flashcardActual.Materia.Icono ?? "fas fa-book",
@@ -792,7 +812,7 @@ public class FlashcardController : Controller
                     Pregunta = flashcardActual.Pregunta,
                     Respuesta = flashcardActual.Respuesta,
                     Pista = flashcardActual.Pista, // Incluir pistas por defecto
-                    DificultadTexto = flashcardActual.Dificultad.ToString(),
+                    DificultadTexto = FormatearDificultad(flashcardActual.Dificultad),
                     MateriaNombre = flashcardActual.Materia.Nombre,
                     MateriaColor = flashcardActual.Materia.Color ?? "#007bff",
                     MateriaIcono = flashcardActual.Materia.Icono ?? "fas fa-book",
@@ -960,7 +980,7 @@ public class FlashcardController : Controller
                 Pregunta = flashcard.Pregunta,
                 Respuesta = flashcard.Respuesta,
                 Pista = incluirPistas ? flashcard.Pista : null,
-                DificultadTexto = flashcard.Dificultad.ToString(),
+                DificultadTexto = FormatearDificultad(flashcard.Dificultad),
                 MateriaNombre = flashcard.Materia.Nombre,
                 MateriaColor = flashcard.Materia.Color ?? "#007bff",
                 MateriaIcono = flashcard.Materia.Icono ?? "fas fa-book",
@@ -1304,6 +1324,26 @@ public class FlashcardController : Controller
         }
 
         return creadas;
+    }
+
+    #endregion
+
+    #region Métodos Auxiliares
+
+    /// <summary>
+    /// Formatea el texto de la dificultad para mostrar con espacios y tildes
+    /// </summary>
+    private string FormatearDificultad(NivelDificultad dificultad)
+    {
+        return dificultad switch
+        {
+            NivelDificultad.MuyFacil => "Muy Fácil",
+            NivelDificultad.Facil => "Fácil",
+            NivelDificultad.Intermedio => "Intermedio",
+            NivelDificultad.Dificil => "Difícil",
+            NivelDificultad.MuyDificil => "Muy Difícil",
+            _ => dificultad.ToString()
+        };
     }
 
     #endregion

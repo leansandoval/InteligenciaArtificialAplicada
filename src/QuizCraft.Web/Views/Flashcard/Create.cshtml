@@ -148,6 +148,16 @@
                                     _ => "secondary"
                                 };
                                 
+                                var nivelTexto = nivel switch
+                                {
+                                    NivelDificultad.MuyFacil => "Muy Fácil",
+                                    NivelDificultad.Facil => "Fácil",
+                                    NivelDificultad.Intermedio => "Intermedio",
+                                    NivelDificultad.Dificil => "Difícil",
+                                    NivelDificultad.MuyDificil => "Muy Difícil",
+                                    _ => nivel.ToString()
+                                };
+                                
                                 <div class="col-6 col-md-4">
                                     <input type="radio" 
                                            class="btn-check" 
@@ -159,7 +169,7 @@
                                            for="dificultad@((int)nivel)">
                                         <div class="d-flex flex-column align-items-center">
                                             <i class="fas fa-star mb-1"></i>
-                                            <small>@nivel.ToString()</small>
+                                            <small>@nivelTexto</small>
                                         </div>
                                     </label>
                                 </div>
@@ -637,23 +647,75 @@
                 // Crear la flashcard primero
                 const response = await fetch(form.action, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
                 });
                 
                 if (response.ok) {
-                    const result = await response.text();
+                    const result = await response.json();
                     
-                    // Si hay archivos temporales, necesitamos obtener el ID de la flashcard creada
-                    if (archivosTemporales.length > 0) {
-                        // Extraer el ID de la respuesta o redirigir a una página intermedia
-                        mostrarMensaje('Flashcard creada. Subiendo archivos...', 'info');
-                        
-                        // Por ahora, redirigir normalmente
-                        // En una implementación más robusta, se obtendría el ID de la flashcard creada
-                        window.location.href = '/Flashcard';
+                    if (result.success && result.flashcardId) {
+                        // Si hay archivos temporales, subirlos ahora
+                        if (archivosTemporales.length > 0) {
+                            mostrarMensaje('Flashcard creada. Subiendo archivos...', 'info');
+                            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Subiendo archivos...';
+                            
+                            // Subir cada archivo
+                            let archivosSubidos = 0;
+                            let errores = 0;
+                            
+                            for (const archivoTemporal of archivosTemporales) {
+                                try {
+                                    const archivoFormData = new FormData();
+                                    archivoFormData.append('file', archivoTemporal.archivo);
+                                    archivoFormData.append('flashcardId', result.flashcardId);
+                                    archivoFormData.append('descripcion', archivoTemporal.descripcion || '');
+                                    archivoFormData.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+                                    
+                                    const uploadResponse = await fetch('/Archivos/SubirArchivo', {
+                                        method: 'POST',
+                                        body: archivoFormData
+                                    });
+                                    
+                                    const uploadResult = await uploadResponse.json();
+                                    
+                                    if (uploadResult.success) {
+                                        archivosSubidos++;
+                                    } else {
+                                        errores++;
+                                        console.error('Error al subir archivo:', archivoTemporal.nombre, uploadResult.message);
+                                    }
+                                } catch (error) {
+                                    errores++;
+                                    console.error('Error al subir archivo:', archivoTemporal.nombre, error);
+                                }
+                            }
+                            
+                            // Mostrar resultado final
+                            if (errores === 0) {
+                                mostrarMensaje(`Flashcard creada con ${archivosSubidos} archivo(s) adjunto(s)`, 'success');
+                            } else {
+                                mostrarMensaje(`Flashcard creada. ${archivosSubidos} archivo(s) subido(s), ${errores} error(es)`, 'warning');
+                            }
+                            
+                            // Redirigir después de un breve delay
+                            setTimeout(() => {
+                                window.location.href = '/Flashcard';
+                            }, 1500);
+                        } else {
+                            // Redirigir normalmente si no hay archivos
+                            mostrarMensaje('Flashcard creada exitosamente', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/Flashcard';
+                            }, 1000);
+                        }
                     } else {
-                        // Redirigir normalmente si no hay archivos
-                        window.location.href = '/Flashcard';
+                        // Error en la respuesta
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                        mostrarMensaje(result.message || 'Error al crear la flashcard', 'danger');
                     }
                 } else {
                     // Restaurar botón y mostrar error

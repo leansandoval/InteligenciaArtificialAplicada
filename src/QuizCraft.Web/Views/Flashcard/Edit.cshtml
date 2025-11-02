@@ -140,6 +140,16 @@
                                             _ => "secondary"
                                         };
                                         
+                                        var nivelTexto = nivel switch
+                                        {
+                                            NivelDificultad.MuyFacil => "Muy Fácil",
+                                            NivelDificultad.Facil => "Fácil",
+                                            NivelDificultad.Intermedio => "Intermedio",
+                                            NivelDificultad.Dificil => "Difícil",
+                                            NivelDificultad.MuyDificil => "Muy Difícil",
+                                            _ => nivel.ToString()
+                                        };
+                                        
                                         <div class="col-6">
                                             <input type="radio" 
                                                    class="btn-check" 
@@ -151,7 +161,7 @@
                                                    for="dificultad@((int)nivel)">
                                                 <div class="d-flex flex-column align-items-center">
                                                     <i class="fas fa-star mb-1"></i>
-                                                    <small>@nivel.ToString()</small>
+                                                    <small>@nivelTexto</small>
                                                 </div>
                                             </label>
                                         </div>
