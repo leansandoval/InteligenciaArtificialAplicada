@@ -177,6 +177,11 @@ namespace QuizCraft.Application.ViewModels
         public DateTime FechaCreacion { get; set; }
         public DateTime? FechaActualizacion { get; set; }
         
+        // Propiedades para quizzes importados
+        public bool EsImportado { get; set; }
+        public string? CreadorOriginalNombre { get; set; }
+        public DateTime? FechaImportacion { get; set; }
+        
         // Propiedades del quiz
         public int CantidadPreguntas { get; set; }
         public int NumeroPreguntas { get; set; }

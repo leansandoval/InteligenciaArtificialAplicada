@@ -522,6 +522,9 @@ namespace QuizCraft.Web.Controllers
                 return Forbid();
             }
 
+            // Verificar si el quiz es importado
+            var importacion = await _unitOfWork.QuizCompartidoRepository.GetImportacionByQuizIdAsync(id);
+            
             var viewModel = new QuizDetailsViewModel
             {
                 Id = quiz.Id,
@@ -531,7 +534,29 @@ namespace QuizCraft.Web.Controllers
                 CreadorNombre = quiz.Creador?.NombreCompleto ?? quiz.Creador?.UserName ?? "Usuario",
                 FechaCreacion = quiz.FechaCreacion,
                 EsPublico = quiz.EsPublico,
-                NumeroPreguntas = quiz.NumeroPreguntas
+                NumeroPreguntas = quiz.NumeroPreguntas,
+                CantidadPreguntas = quiz.Preguntas?.Count ?? quiz.NumeroPreguntas,
+                CantidadIntentos = quiz.Resultados?.Count ?? 0,
+                MisResultados = quiz.Resultados?
+                    .Where(r => r.UsuarioId == usuarioId)
+                    .OrderByDescending(r => r.FechaRealizacion)
+                    .Select(r => new ResultadoQuizResumenViewModel
+                    {
+                        Id = r.Id,
+                        PorcentajeAcierto = r.PorcentajeAcierto,
+                        FechaRealizacion = r.FechaRealizacion,
+                        TiempoTotal = r.TiempoTotal,
+                        PuntajeObtenido = r.PuntajeObtenido,
+                        PuntajeMaximo = r.PuntajeMaximo
+                    }).ToList() ?? new List<ResultadoQuizResumenViewModel>(),
+                PromedioCalificacion = quiz.Resultados?.Any(r => r.UsuarioId == usuarioId) == true
+                    ? quiz.Resultados.Where(r => r.UsuarioId == usuarioId).Average(r => r.PorcentajeAcierto)
+                    : null,
+                // Información de importación
+                EsImportado = importacion != null,
+                CreadorOriginalNombre = importacion?.QuizCompartido?.Quiz?.Creador?.NombreCompleto 
+                    ?? importacion?.QuizCompartido?.Quiz?.Creador?.UserName,
+                FechaImportacion = importacion?.FechaCreacion
             };
 
             return View(viewModel);
@@ -571,6 +596,20 @@ namespace QuizCraft.Web.Controllers
 
                 // Obtener contexto para trabajar directamente con las entidades
                 var context = ((QuizCraft.Infrastructure.Repositories.UnitOfWork)_unitOfWork).GetContext();
+
+                // 0. Si es un quiz importado, eliminar primero el registro de QuizImportado
+                var importacion = await _unitOfWork.QuizCompartidoRepository.GetImportacionByQuizIdAsync(id);
+                if (importacion != null)
+                {
+                    _logger.LogInformation("Quiz importado - Eliminando registro de importación {ImportacionId} antes de eliminar quiz", importacion.Id);
+                    // Eliminar directamente del contexto
+                    var importacionEnContexto = await context.QuizzesImportados.FindAsync(importacion.Id);
+                    if (importacionEnContexto != null)
+                    {
+                        context.QuizzesImportados.Remove(importacionEnContexto);
+                        _logger.LogInformation("Registro de importación marcado para eliminación");
+                    }
+                }
 
                 // 1. Eliminar manualmente los resultados (tienen DeleteBehavior.Restrict)
                 if (quiz.Resultados != null && quiz.Resultados.Any())

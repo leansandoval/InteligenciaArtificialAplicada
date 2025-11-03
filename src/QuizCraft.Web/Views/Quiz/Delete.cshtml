@@ -23,15 +23,35 @@
                                 <h5 class="card-title text-primary">
                                     <i class="fas fa-quiz me-2"></i>
                                     @Model.Titulo
+                                    @if (Model.EsImportado)
+                                    {
+                                        <span class="badge bg-info ms-2">
+                                            <i class="fas fa-download me-1"></i>Importado
+                                        </span>
+                                    }
                                 </h5>
                                 <p class="card-text text-muted mb-2">
                                     <i class="fas fa-book me-1"></i>
                                     Materia: @Model.MateriaNombre
                                 </p>
-                                <p class="card-text text-muted mb-2">
-                                    <i class="fas fa-user me-1"></i>
-                                    Creado por: @Model.CreadorNombre
-                                </p>
+                                @if (Model.EsImportado && !string.IsNullOrEmpty(Model.CreadorOriginalNombre))
+                                {
+                                    <p class="card-text text-muted mb-2">
+                                        <i class="fas fa-user-circle me-1"></i>
+                                        Creador original: <strong>@Model.CreadorOriginalNombre</strong>
+                                    </p>
+                                    <p class="card-text text-muted mb-2">
+                                        <i class="fas fa-download me-1"></i>
+                                        Importado el: @Model.FechaImportacion?.ToString("dd/MM/yyyy HH:mm")
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="card-text text-muted mb-2">
+                                        <i class="fas fa-user me-1"></i>
+                                        Creado por: @Model.CreadorNombre
+                                    </p>
+                                }
                                 <p class="card-text text-muted">
                                     <i class="fas fa-calendar me-1"></i>
                                     Fecha de creación: @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
@@ -87,7 +107,15 @@
                         <ul class="mb-0">
                             <li>Se eliminará permanentemente el quiz y todas sus preguntas</li>
                             <li>Se eliminarán todos los resultados asociados (@Model.CantidadIntentos intentos)</li>
-                            <li>Los usuarios que hayan realizado este quiz perderán su historial</li>
+                            @if (Model.EsImportado)
+                            {
+                                <li>Este es un quiz <strong>importado</strong>. Solo eliminarás tu copia personal</li>
+                                <li>El quiz original del creador <strong>@Model.CreadorOriginalNombre</strong> no se verá afectado</li>
+                            }
+                            else
+                            {
+                                <li>Los usuarios que hayan realizado este quiz perderán su historial</li>
+                            }
                             <li>Esta acción no se puede deshacer</li>
                         </ul>
                     </div>
@@ -146,17 +174,6 @@
                         </div>
                     </div>
 
-                    <!-- Alternativas -->
-                    <div class="text-center mt-4">
-                        <small class="text-muted">
-                            ¿No estás seguro? Puedes 
-                            <a asp-action="Edit" asp-route-id="@Model.Id" class="text-decoration-none">editar el quiz</a>
-                            o hacerlo 
-                            <a href="#" onclick="togglePrivacy()" class="text-decoration-none">
-                                @(Model.EsPublico ? "privado" : "público")
-                            </a> en su lugar.
-                        </small>
-                    </div>
                 </div>
             </div>
 

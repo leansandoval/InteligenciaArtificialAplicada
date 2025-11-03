@@ -41,4 +41,9 @@ public interface IQuizCompartidoRepository : IGenericRepository<QuizCompartido>
     /// Agrega un registro de importación
     /// </summary>
     Task AddImportacionAsync(QuizImportado importacion);
+    
+    /// <summary>
+    /// Obtiene la información de importación de un quiz específico
+    /// </summary>
+    Task<QuizImportado?> GetImportacionByQuizIdAsync(int quizId);
 }

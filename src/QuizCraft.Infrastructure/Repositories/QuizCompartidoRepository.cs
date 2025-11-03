@@ -71,4 +71,13 @@ public class QuizCompartidoRepository : GenericRepository<QuizCompartido>, IQuiz
     {
         await _context.QuizzesImportados.AddAsync(importacion);
     }
+
+    public async Task<QuizImportado?> GetImportacionByQuizIdAsync(int quizId)
+    {
+        return await _context.QuizzesImportados
+            .Include(qi => qi.QuizCompartido)
+                .ThenInclude(qc => qc.Quiz)
+                    .ThenInclude(q => q.Creador)
+            .FirstOrDefaultAsync(qi => qi.QuizId == quizId);
+    }
 }

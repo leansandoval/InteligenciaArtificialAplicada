@@ -3,6 +3,21 @@
     ViewData["Title"] = "Mis Quizzes";
 }
 
+@functions {
+    string FormatearDificultad(QuizCraft.Core.Enums.NivelDificultad dificultad)
+    {
+        return dificultad switch
+        {
+            QuizCraft.Core.Enums.NivelDificultad.MuyFacil => "Muy Fácil",
+            QuizCraft.Core.Enums.NivelDificultad.Facil => "Fácil",
+            QuizCraft.Core.Enums.NivelDificultad.Intermedio => "Intermedio",
+            QuizCraft.Core.Enums.NivelDificultad.Dificil => "Difícil",
+            QuizCraft.Core.Enums.NivelDificultad.MuyDificil => "Muy Difícil",
+            _ => dificultad.ToString()
+        };
+    }
+}
+
 <div class="container-fluid my-5">
     <div class="row">
         <div class="col-12">
@@ -84,7 +99,7 @@
                                     <div class="card h-100 shadow-sm">
                                         <div class="card-header d-flex justify-content-between align-items-center">
                                             <span class="badge bg-primary">@quiz.MateriaNombre</span>
-                                            <span class="badge bg-secondary">@quiz.Dificultad</span>
+                                            <span class="badge bg-secondary">@FormatearDificultad(quiz.Dificultad)</span>
                                         </div>
                                         <div class="card-body">
                                             <h5 class="card-title">@quiz.Titulo</h5>
@@ -183,7 +198,7 @@
                                     <div class="card h-100 shadow-sm">
                                         <div class="card-header d-flex justify-content-between align-items-center">
                                             <span class="badge bg-info">@quiz.MateriaNombre</span>
-                                            <span class="badge bg-secondary">@quiz.Dificultad</span>
+                                            <span class="badge bg-secondary">@FormatearDificultad(quiz.Dificultad)</span>
                                         </div>
                                         <div class="card-body">
                                             <h5 class="card-title">@quiz.Titulo</h5>
