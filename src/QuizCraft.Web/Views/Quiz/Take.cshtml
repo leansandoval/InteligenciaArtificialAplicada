@@ -225,11 +225,14 @@
             
             if (opciones.length > 0) {
                 opciones.forEach((opcion, i) => {
-                    const letra = String.fromCharCode(65 + i); // A, B, C, D
                     const preguntaId = pregunta.id || pregunta.Id;
                     const opcionValor = opcion.valor || opcion.Valor;
                     const opcionTexto = opcion.texto || opcion.Texto;
                     const isSelected = respuestasUsuario[preguntaId] === opcionValor;
+                    
+                    // Usar el valor de la opción (que ya viene con la letra correcta: A, B, C, D)
+                    // No generar la letra desde el índice, porque las opciones ya vienen aleatorizadas
+                    const letra = opcionValor;
                     
                     html += `
                         <div class="col-md-6 mb-3">

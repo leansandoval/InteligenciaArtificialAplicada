@@ -253,6 +253,9 @@
                                             <p class="mb-1 text-muted small">
                                                 <i class="fas fa-folder me-1"></i>@(quiz.Materia?.Nombre ?? "Sin materia")
                                             </p>
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-question me-1"></i>@(quiz.Preguntas?.Count ?? quiz.NumeroPreguntas) preguntas
+                                            </small>
                                             <small class="text-muted">
                                                 <i class="fas fa-clock me-1"></i>@quiz.FechaCreacion.ToString("dd/MM/yyyy")
                                             </small>

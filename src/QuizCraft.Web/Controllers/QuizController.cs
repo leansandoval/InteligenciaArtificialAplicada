@@ -375,6 +375,58 @@ namespace QuizCraft.Web.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
+            // Crear ViewModels de las preguntas y aleatorizar sus opciones
+            var preguntasViewModel = new List<PreguntaQuizViewModel>();
+            var random = new Random(Guid.NewGuid().GetHashCode()); // Mejor semilla aleatoria
+
+            foreach (var p in preguntasActivas)
+            {
+                // Crear lista de opciones con sus valores originales
+                var opciones = new List<OpcionRespuestaViewModel>
+                {
+                    new OpcionRespuestaViewModel { Texto = p.OpcionA ?? "", Valor = "A", EsCorrecta = p.RespuestaCorrecta?.Trim().ToUpper() == "A" },
+                    new OpcionRespuestaViewModel { Texto = p.OpcionB ?? "", Valor = "B", EsCorrecta = p.RespuestaCorrecta?.Trim().ToUpper() == "B" },
+                    new OpcionRespuestaViewModel { Texto = p.OpcionC ?? "", Valor = "C", EsCorrecta = p.RespuestaCorrecta?.Trim().ToUpper() == "C" },
+                    new OpcionRespuestaViewModel { Texto = p.OpcionD ?? "", Valor = "D", EsCorrecta = p.RespuestaCorrecta?.Trim().ToUpper() == "D" }
+                }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
+
+                // Aleatorizar las opciones usando Fisher-Yates shuffle para mejor distribución
+                for (int i = opciones.Count - 1; i > 0; i--)
+                {
+                    int j = random.Next(i + 1);
+                    var temp = opciones[i];
+                    opciones[i] = opciones[j];
+                    opciones[j] = temp;
+                }
+
+                // Reasignar letras A, B, C, D según el nuevo orden
+                for (int i = 0; i < opciones.Count; i++)
+                {
+                    opciones[i].Valor = new[] { "A", "B", "C", "D" }[i];
+                }
+
+                // Determinar cuál es la nueva respuesta correcta
+                var opcionCorrecta = opciones.FirstOrDefault(o => o.EsCorrecta);
+                string nuevaRespuestaCorrecta = opcionCorrecta?.Valor ?? "A";
+
+                var preguntaViewModel = new PreguntaQuizViewModel
+                {
+                    Id = p.Id,
+                    TextoPregunta = p.TextoPregunta,
+                    OpcionA = opciones.Count > 0 ? opciones[0].Texto : "",
+                    OpcionB = opciones.Count > 1 ? opciones[1].Texto : "",
+                    OpcionC = opciones.Count > 2 ? opciones[2].Texto : "",
+                    OpcionD = opciones.Count > 3 ? opciones[3].Texto : "",
+                    Orden = p.Orden,
+                    Puntos = p.Puntos,
+                    RespuestaCorrecta = nuevaRespuestaCorrecta,
+                    Explicacion = p.Explicacion,
+                    Opciones = opciones
+                };
+
+                preguntasViewModel.Add(preguntaViewModel);
+            }
+
             var viewModel = new TakeQuizViewModel
             {
                 Id = quiz.Id,
@@ -389,26 +441,7 @@ namespace QuizCraft.Web.Controllers
                 MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
                 PreguntaActual = 1,
                 FechaInicio = DateTime.UtcNow,
-                Preguntas = preguntasActivas.Select(p => new PreguntaQuizViewModel
-                {
-                    Id = p.Id,
-                    TextoPregunta = p.TextoPregunta,
-                    OpcionA = p.OpcionA ?? "",
-                    OpcionB = p.OpcionB ?? "",
-                    OpcionC = p.OpcionC ?? "",
-                    OpcionD = p.OpcionD ?? "",
-                    Orden = p.Orden,
-                    Puntos = p.Puntos,
-                    RespuestaCorrecta = p.RespuestaCorrecta,
-                    Explicacion = p.Explicacion,
-                    Opciones = new List<OpcionRespuestaViewModel>
-                    {
-                        new OpcionRespuestaViewModel { Texto = p.OpcionA ?? "", Valor = "A", EsCorrecta = p.RespuestaCorrecta == "A" },
-                        new OpcionRespuestaViewModel { Texto = p.OpcionB ?? "", Valor = "B", EsCorrecta = p.RespuestaCorrecta == "B" },
-                        new OpcionRespuestaViewModel { Texto = p.OpcionC ?? "", Valor = "C", EsCorrecta = p.RespuestaCorrecta == "C" },
-                        new OpcionRespuestaViewModel { Texto = p.OpcionD ?? "", Valor = "D", EsCorrecta = p.RespuestaCorrecta == "D" }
-                    }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList()
-                }).ToList()
+                Preguntas = preguntasViewModel
             };
 
             // Log para debugging
@@ -902,25 +935,51 @@ namespace QuizCraft.Web.Controllers
 
                 // Crear detalle de respuestas
                 var preguntasOrdenadas = resultado.Quiz.Preguntas.OrderBy(p => p.Orden).ToList();
+                
+                // Usar el ID del resultado como semilla para mantener consistencia en la aleatorización
+                var random = new Random(resultado.Id);
+                
                 foreach (var pregunta in preguntasOrdenadas)
                 {
                     var respuestaUsuario = resultado.RespuestasUsuario.FirstOrDefault(r => r.PreguntaQuizId == pregunta.Id);
+
+                    // Crear lista de opciones con sus valores originales
+                    var opciones = new List<OpcionRespuestaViewModel>
+                    {
+                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionA ?? "", Valor = "A", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
+                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionB ?? "", Valor = "B", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
+                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionC ?? "", Valor = "C", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
+                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionD ?? "", Valor = "D", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
+                    }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
+
+                    // Aleatorizar las opciones usando Fisher-Yates shuffle (mismo algoritmo que en Take)
+                    for (int i = opciones.Count - 1; i > 0; i--)
+                    {
+                        int j = random.Next(i + 1);
+                        var temp = opciones[i];
+                        opciones[i] = opciones[j];
+                        opciones[j] = temp;
+                    }
+
+                    // Reasignar letras A, B, C, D según el nuevo orden
+                    for (int i = 0; i < opciones.Count; i++)
+                    {
+                        opciones[i].Valor = new[] { "A", "B", "C", "D" }[i];
+                    }
+
+                    // Determinar cuál es la nueva respuesta correcta después de aleatorizar
+                    var opcionCorrecta = opciones.FirstOrDefault(o => o.EsCorrecta);
+                    string nuevaRespuestaCorrecta = opcionCorrecta?.Valor ?? pregunta.RespuestaCorrecta ?? "A";
 
                     var detalleRespuesta = new RespuestaDetalleViewModel
                     {
                         Orden = pregunta.Orden,
                         Pregunta = pregunta.TextoPregunta,
                         RespuestaUsuario = respuestaUsuario?.RespuestaSeleccionada ?? "Sin respuesta",
-                        RespuestaCorrecta = pregunta.RespuestaCorrecta,
+                        RespuestaCorrecta = nuevaRespuestaCorrecta,
                         EsCorrecta = respuestaUsuario?.EsCorrecta ?? false,
                         Explicacion = pregunta.Explicacion,
-                        TodasLasOpciones = new List<OpcionRespuestaViewModel>
-                        {
-                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionA ?? "", Valor = "A", EsCorrecta = pregunta.RespuestaCorrecta == "A" },
-                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionB ?? "", Valor = "B", EsCorrecta = pregunta.RespuestaCorrecta == "B" },
-                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionC ?? "", Valor = "C", EsCorrecta = pregunta.RespuestaCorrecta == "C" },
-                            new OpcionRespuestaViewModel { Texto = pregunta.OpcionD ?? "", Valor = "D", EsCorrecta = pregunta.RespuestaCorrecta == "D" }
-                        }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList()
+                        TodasLasOpciones = opciones
                     };
 
                     viewModel.DetalleRespuestas.Add(detalleRespuesta);
@@ -1845,6 +1904,9 @@ namespace QuizCraft.Web.Controllers
                                 EstaActivo = true
                             };
 
+                            // Aleatorizar las opciones para que la respuesta correcta no siempre esté en la posición A
+                            AleatorizarOpciones(nuevaPregunta);
+
                             preguntas.Add(nuevaPregunta);
                         }
                     }
@@ -1890,6 +1952,62 @@ namespace QuizCraft.Web.Controllers
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Aleatoriza las opciones de una pregunta para que la respuesta correcta no siempre esté en la posición A
+        /// </summary>
+        private void AleatorizarOpciones(PreguntaQuiz pregunta)
+        {
+            // Crear lista de opciones con sus valores originales
+            var opciones = new List<(string letra, string texto)>
+            {
+                ("A", pregunta.OpcionA ?? "Opción A"),
+                ("B", pregunta.OpcionB ?? "Opción B"),
+                ("C", pregunta.OpcionC ?? "Opción C"),
+                ("D", pregunta.OpcionD ?? "Opción D")
+            };
+
+            // Encontrar cuál es la respuesta correcta original
+            string respuestaCorrectaOriginal = pregunta.RespuestaCorrecta.Trim().ToUpper();
+            
+            // Si la respuesta correcta es una letra (A, B, C, D), obtener el texto correspondiente
+            string textoRespuestaCorrecta = respuestaCorrectaOriginal;
+            if (respuestaCorrectaOriginal.Length == 1 && "ABCD".Contains(respuestaCorrectaOriginal))
+            {
+                textoRespuestaCorrecta = opciones.FirstOrDefault(o => o.letra == respuestaCorrectaOriginal).texto;
+            }
+            else
+            {
+                // La respuesta correcta es el texto completo, buscar en qué opción está
+                var opcionCorrecta = opciones.FirstOrDefault(o => 
+                    o.texto.Trim().Equals(respuestaCorrectaOriginal, StringComparison.OrdinalIgnoreCase));
+                if (opcionCorrecta != default)
+                {
+                    textoRespuestaCorrecta = opcionCorrecta.texto;
+                }
+            }
+
+            // Mezclar las opciones aleatoriamente usando Random
+            var random = new Random();
+            var opcionesAleatorias = opciones.OrderBy(x => random.Next()).ToList();
+
+            // Reasignar las opciones en el nuevo orden
+            pregunta.OpcionA = opcionesAleatorias[0].texto;
+            pregunta.OpcionB = opcionesAleatorias[1].texto;
+            pregunta.OpcionC = opcionesAleatorias[2].texto;
+            pregunta.OpcionD = opcionesAleatorias[3].texto;
+
+            // Encontrar en qué posición quedó la respuesta correcta y actualizar
+            for (int i = 0; i < opcionesAleatorias.Count; i++)
+            {
+                if (opcionesAleatorias[i].texto.Trim().Equals(textoRespuestaCorrecta.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    // Actualizar la respuesta correcta a la nueva letra
+                    pregunta.RespuestaCorrecta = new[] { "A", "B", "C", "D" }[i];
+                    break;
+                }
+            }
         }
 
         private async Task<(Quiz, int)> CrearQuizDeEjemplo(string contenido, Materia materia, GenerateQuizWithAIViewModel model, string usuarioId)

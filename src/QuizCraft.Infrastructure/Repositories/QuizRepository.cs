@@ -29,6 +29,7 @@ namespace QuizCraft.Infrastructure.Repositories
             return await _dbSet
                 .Include(q => q.Materia)
                 .Include(q => q.Creador)
+                .Include(q => q.Preguntas)
                 .Include(q => q.Resultados)
                 .Where(q => q.CreadorId == creadorId)
                 .OrderByDescending(q => q.FechaCreacion)
