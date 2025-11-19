@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using QuizCraft.Core.Entities;
+using QuizCraft.Core.Enums;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Web.Models;
 using QuizCraft.Web.ViewModels.Home;
@@ -133,6 +134,50 @@ public class HomeController : Controller
             ViewBag.TotalQuizzes = quizzes.Count();
             ViewBag.NombreUsuario = user.NombreCompleto;
 
+            // Obtener actividad reciente
+            var actividadesRecientes = new List<ActividadReciente>();
+            
+            // Agregar resultados de quizzes recientes
+            var resultadosQuizRecientes = await _unitOfWork.ResultadoQuizRepository.GetResultadosRecientesAsync(user.Id, 3);
+            foreach (var resultado in resultadosQuizRecientes)
+            {
+                actividadesRecientes.Add(new ActividadReciente
+                {
+                    TipoActividad = TipoActividad.Quiz,
+                    Titulo = $"Quiz completado: {resultado.Quiz?.Titulo}",
+                    Descripcion = $"Puntuación: {resultado.PorcentajeAcierto:F1}%",
+                    FechaActividad = resultado.FechaFinalizacion,
+                    MateriaNombre = resultado.Quiz?.Materia?.Nombre,
+                    MateriaColor = resultado.Quiz?.Materia?.Color,
+                    Puntuacion = resultado.PorcentajeAcierto
+                });
+            }
+            
+            // Agregar estadísticas de flashcards recientes
+            var estadisticasRecientes = await _unitOfWork.EstadisticaEstudioRepository.GetActividadRecienteAsync(user.Id, 7);
+            foreach (var estadistica in estadisticasRecientes.Where(e => e.FlashcardsRevisadas > 0))
+            {
+                actividadesRecientes.Add(new ActividadReciente
+                {
+                    TipoActividad = TipoActividad.Flashcard,
+                    Titulo = "Sesión de Flashcards",
+                    Descripcion = $"{estadistica.FlashcardsRevisadas} tarjetas revisadas",
+                    FechaActividad = estadistica.FechaCreacion,
+                    MateriaNombre = estadistica.Materia?.Nombre,
+                    MateriaColor = estadistica.Materia?.Color,
+                    FlashcardsRevisadas = estadistica.FlashcardsRevisadas
+                });
+            }
+            
+            // Ordenar por fecha más reciente y tomar las últimas 3
+            actividadesRecientes = actividadesRecientes
+                .OrderByDescending(a => a.FechaActividad)
+                .Take(3)
+                .ToList();
+
+            // Calcular progreso general
+            var progreso = CalcularProgreso(flashcards.ToList(), quizzes.ToList(), resultadosQuizRecientes.ToList());
+
             var model = new DashboardViewModel
             {
                 NombreUsuario = user.NombreCompleto,
@@ -143,7 +188,10 @@ public class HomeController : Controller
                 TotalQuizzes = quizzes.Count(),
                 FlashcardsParaRevisar = flashcards.Count(f => f.ProximaRevision <= DateTime.Now),
                 QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(5).ToList(),
-                MateriasRecientes = materias.OrderByDescending(m => m.FechaCreacion).Take(3).ToList()
+                MateriasRecientes = materias.OrderByDescending(m => m.FechaCreacion).Take(3).ToList(),
+                ActividadesRecientes = actividadesRecientes,
+                ProgresoPorcentaje = progreso.Porcentaje,
+                ProgresoDescripcion = progreso.Descripcion
             };
 
             return View(model);
@@ -168,7 +216,10 @@ public class HomeController : Controller
                 TotalQuizzes = 0,
                 FlashcardsParaRevisar = 0,
                 QuizzesRecientes = new List<Core.Entities.Quiz>(),
-                MateriasRecientes = new List<Core.Entities.Materia>()
+                MateriasRecientes = new List<Core.Entities.Materia>(),
+                ActividadesRecientes = new List<ActividadReciente>(),
+                ProgresoPorcentaje = 0.0,
+                ProgresoDescripcion = "Sin datos"
             });
         }
     }
@@ -234,5 +285,60 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+    
+    /// <summary>
+    /// FUNC_CalcularProgreso - Calcula el progreso general del usuario
+    /// </summary>
+    private (double Porcentaje, string Descripcion) CalcularProgreso(
+        List<Core.Entities.Flashcard> flashcards, 
+        List<Core.Entities.Quiz> quizzes, 
+        List<Core.Entities.ResultadoQuiz> resultados)
+    {
+        if (!flashcards.Any() && !quizzes.Any())
+        {
+            return (0.0, "Sin actividad de estudio");
+        }
+
+        double progresoTotal = 0.0;
+        var factores = new List<double>();
+
+        // Factor 1: Progreso de flashcards (40% del total)
+        if (flashcards.Any())
+        {
+            var flashcardsRevisadas = flashcards.Count(f => f.UltimaRevision.HasValue);
+            var porcentajeFlashcards = (double)flashcardsRevisadas / flashcards.Count * 100;
+            factores.Add(porcentajeFlashcards * 0.4);
+        }
+
+        // Factor 2: Progreso de quizzes completados (35% del total)
+        if (quizzes.Any())
+        {
+            var quizzesCompletados = resultados.Count(r => r.EstaCompletado);
+            var porcentajeQuizzes = Math.Min((double)quizzesCompletados / quizzes.Count * 100, 100);
+            factores.Add(porcentajeQuizzes * 0.35);
+        }
+
+        // Factor 3: Rendimiento en quizzes (25% del total)
+        if (resultados.Any())
+        {
+            var promedioRendimiento = resultados.Average(r => r.PorcentajeAcierto);
+            factores.Add(promedioRendimiento * 0.25);
+        }
+
+        // Calcular progreso total
+        progresoTotal = factores.Sum();
+
+        // Generar descripción
+        string descripcion = progresoTotal switch
+        {
+            >= 80 => "Excelente progreso",
+            >= 60 => "Buen progreso",
+            >= 40 => "Progreso moderado",
+            >= 20 => "Progreso inicial",
+            _ => "Comenzando"
+        };
+
+        return (Math.Round(progresoTotal, 1), descripcion);
     }
 }

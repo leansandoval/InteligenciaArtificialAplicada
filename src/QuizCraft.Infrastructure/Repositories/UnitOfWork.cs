@@ -19,6 +19,8 @@ namespace QuizCraft.Infrastructure.Repositories
         private IFlashcardRepository? _flashcardRepository;
         private IQuizRepository? _quizRepository;
         private IQuizCompartidoRepository? _quizCompartidoRepository;
+        private IEstadisticaEstudioRepository? _estadisticaEstudioRepository;
+        private IResultadoQuizRepository? _resultadoQuizRepository;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -60,6 +62,24 @@ namespace QuizCraft.Infrastructure.Repositories
             {
                 _quizCompartidoRepository ??= new QuizCompartidoRepository(_context);
                 return _quizCompartidoRepository;
+            }
+        }
+
+        public IEstadisticaEstudioRepository EstadisticaEstudioRepository
+        {
+            get
+            {
+                _estadisticaEstudioRepository ??= new EstadisticaEstudioRepository(_context);
+                return _estadisticaEstudioRepository;
+            }
+        }
+
+        public IResultadoQuizRepository ResultadoQuizRepository
+        {
+            get
+            {
+                _resultadoQuizRepository ??= new ResultadoQuizRepository(_context);
+                return _resultadoQuizRepository;
             }
         }
 
