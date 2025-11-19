@@ -160,7 +160,7 @@
                                                         }
                                                         else if (actividad.TipoActividad == QuizCraft.Core.Enums.TipoActividad.Flashcard)
                                                         {
-                                                            <a href="@Url.Action("Details", "Flashcard", new { id = actividad.ReferenciaId })" class="text-decoration-none" title="@actividad.Titulo">
+                                                            <a href="@Url.Action("Index", "Flashcard", new { materiaId = actividad.ReferenciaId })" class="text-decoration-none" title="@actividad.Titulo - Ver flashcards de @actividad.MateriaNombre">
                                                                 @actividad.Titulo
                                                             </a>
                                                         }
