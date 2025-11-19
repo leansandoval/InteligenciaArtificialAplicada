@@ -39,6 +39,7 @@ public class DashboardViewModel
 public class ActividadReciente
 {
     public TipoActividad TipoActividad { get; set; }
+    public int ReferenciaId { get; set; } // ID del Quiz o Flashcard
     public string Titulo { get; set; } = string.Empty;
     public string Descripcion { get; set; } = string.Empty;
     public DateTime FechaActividad { get; set; }

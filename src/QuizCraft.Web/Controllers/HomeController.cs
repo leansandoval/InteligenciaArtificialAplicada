@@ -144,6 +144,7 @@ public class HomeController : Controller
                 actividadesRecientes.Add(new ActividadReciente
                 {
                     TipoActividad = TipoActividad.Quiz,
+                    ReferenciaId = resultado.QuizId,
                     Titulo = $"Quiz completado: {resultado.Quiz?.Titulo}",
                     Descripcion = $"Puntuación: {resultado.PorcentajeAcierto:F1}%",
                     FechaActividad = resultado.FechaFinalizacion,
@@ -155,11 +156,12 @@ public class HomeController : Controller
             
             // Agregar estadísticas de flashcards recientes
             var estadisticasRecientes = await _unitOfWork.EstadisticaEstudioRepository.GetActividadRecienteAsync(user.Id, 7);
-            foreach (var estadistica in estadisticasRecientes.Where(e => e.FlashcardsRevisadas > 0))
+            foreach (var estadistica in estadisticasRecientes.Where(e => e.FlashcardsRevisadas > 0 && e.MateriaId.HasValue))
             {
                 actividadesRecientes.Add(new ActividadReciente
                 {
                     TipoActividad = TipoActividad.Flashcard,
+                    ReferenciaId = estadistica.MateriaId.Value,
                     Titulo = "Sesión de Flashcards",
                     Descripcion = $"{estadistica.FlashcardsRevisadas} tarjetas revisadas",
                     FechaActividad = estadistica.FechaCreacion,

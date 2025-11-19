@@ -150,12 +150,29 @@
                                                 <div class="flex-shrink-0 me-3">
                                                     <i class="@actividad.IconoActividad @actividad.ColorActividad"></i>
                                                 </div>
-                                                <div class="flex-grow-1 min-w-0">
-                                                    <h6 class="mb-1 text-truncate">@actividad.Titulo</h6>
-                                                    <p class="mb-1 small text-muted">@actividad.Descripcion</p>
+                                                <div class="flex-grow-1 min-w-0" style="overflow: hidden;">
+                                                    <h6 class="mb-1 text-truncate" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                        @if (actividad.TipoActividad == QuizCraft.Core.Enums.TipoActividad.Quiz)
+                                                        {
+                                                            <a href="@Url.Action("Details", "Quiz", new { id = actividad.ReferenciaId })" class="text-decoration-none" title="@actividad.Titulo">
+                                                                @actividad.Titulo
+                                                            </a>
+                                                        }
+                                                        else if (actividad.TipoActividad == QuizCraft.Core.Enums.TipoActividad.Flashcard)
+                                                        {
+                                                            <a href="@Url.Action("Details", "Flashcard", new { id = actividad.ReferenciaId })" class="text-decoration-none" title="@actividad.Titulo">
+                                                                @actividad.Titulo
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span title="@actividad.Titulo">@actividad.Titulo</span>
+                                                        }
+                                                    </h6>
+                                                    <p class="mb-1 small text-muted text-truncate" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@actividad.Descripcion">@actividad.Descripcion</p>
                                                     @if (!string.IsNullOrEmpty(actividad.MateriaNombre))
                                                     {
-                                                        <span class="badge rounded-pill" style="background-color: @(actividad.MateriaColor ?? "#6c757d"); color: white; font-size: 0.7rem;">
+                                                        <span class="badge rounded-pill text-truncate d-inline-block" style="background-color: @(actividad.MateriaColor ?? "#6c757d"); color: white; font-size: 0.7rem; max-width: 100%;" title="@actividad.MateriaNombre">
                                                             @actividad.MateriaNombre
                                                         </span>
                                                     }
