@@ -262,4 +262,49 @@ namespace QuizCraft.Application.ViewModels
         // Nota: Esta propiedad se manejará en el controlador para evitar dependencias
         public object? Materias { get; set; } = new();
     }
+
+    public class TomarQuizViewModel
+    {
+        public int Id { get; set; }
+        public int QuizId { get; set; }
+        public string Titulo { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
+        public string MateriaNombre { get; set; } = string.Empty;
+        public int TotalPreguntas { get; set; }
+        public int PreguntaActual { get; set; }
+        public DateTime FechaInicio { get; set; }
+        
+        // Pregunta actual
+        public int PreguntaId { get; set; }
+        public string PreguntaTexto { get; set; } = string.Empty;
+        public List<OpcionQuizViewModel> Opciones { get; set; } = new();
+        
+        // Estado
+        public bool MostrarRespuesta { get; set; }
+        public int? OpcionSeleccionadaId { get; set; }
+        public bool? RespuestaCorrecta { get; set; }
+        public string? Explicacion { get; set; }
+    }
+
+    public class OpcionQuizViewModel
+    {
+        public int Id { get; set; }
+        public string Texto { get; set; } = string.Empty;
+        public bool EsCorrecta { get; set; }
+    }
+
+    public class EstadisticasQuizViewModel
+    {
+        public int? QuizProgramadoId { get; set; }
+        public int QuizId { get; set; }
+        public string QuizTitulo { get; set; } = string.Empty;
+        public string MateriaNombre { get; set; } = string.Empty;
+        public int TotalPreguntas { get; set; }
+        public int RespuestasCorrectas { get; set; }
+        public int RespuestasIncorrectas { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaFin { get; set; }
+        public TimeSpan TiempoTotal { get; set; }
+        public List<int> PreguntasIncorrectasIds { get; set; } = new();
+    }
 }

@@ -185,6 +185,7 @@
     <script>
         // Variables globales del repaso
         let repasoData = @Html.Raw(Json.Serialize(Model));
+        repasoData.flashcardsIncorrectasIds = []; // Array para rastrear IDs de flashcards incorrectas
         let tiempoInicio = new Date(repasoData.inicioSesion);
         let tiempoRespuestaInicio = new Date();
         let intervaloTiempo;
@@ -255,6 +256,8 @@
                             repasoData.flashcardsCorrectas++;
                         } else {
                             repasoData.flashcardsIncorrectas++;
+                            // Agregar ID de flashcard incorrecta
+                            repasoData.flashcardsIncorrectasIds.push(repasoData.flashcardActual.id);
                         }
                         
                         actualizarEstadisticas();
@@ -283,7 +286,13 @@
 
         function siguienteFlashcard() {
             if (repasoData.indiceActual >= repasoData.totalFlashcards - 1) {
-                finalizarRepaso();
+                // Si es la última flashcard, mostrar resultados
+                const estadisticas = {
+                    totalRevisadas: repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas,
+                    porcentajeAcierto: 0,
+                    tiempoTotal: '00:00:00'
+                };
+                mostrarResultadosFinales(estadisticas);
                 return;
             }
 
@@ -295,7 +304,12 @@
                 success: function(response) {
                     if (response.success) {
                         if (response.terminada) {
-                            mostrarResultadosFinales(response.estadisticas);
+                            const estadisticas = {
+                                totalRevisadas: repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas,
+                                porcentajeAcierto: 0,
+                                tiempoTotal: '00:00:00'
+                            };
+                            mostrarResultadosFinales(estadisticas);
                         } else {
                             cargarSiguienteFlashcard(response);
                         }
@@ -392,17 +406,24 @@
             // Preparar los datos para enviar a las estadísticas
             const ahora = new Date();
             const tiempoTranscurrido = ahora - tiempoInicio;
+            const totalFlashcards = repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas;
+            const porcentajeAcierto = totalFlashcards > 0 ? (repasoData.flashcardsCorrectas / totalFlashcards * 100) : 0;
+            const tiempoPromedioSegundos = totalFlashcards > 0 ? (tiempoTranscurrido / totalFlashcards / 1000) : 0;
             
             const estadisticasCompletas = {
                 MateriaNombre: repasoData.flashcardActual.materiaNombre || 'Mixta',
-                FlashcardsRevisadas: repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas,
+                MateriaColor: repasoData.flashcardActual.materiaColor || '#007bff',
+                FlashcardsRevisadas: totalFlashcards,
                 FlashcardsCorrectas: repasoData.flashcardsCorrectas,
                 FlashcardsIncorrectas: repasoData.flashcardsIncorrectas,
-                PorcentajeAcierto: estadisticas.porcentajeAcierto || 0,
+                PorcentajeAcierto: porcentajeAcierto,
                 TiempoTotal: timeSpanFromMilliseconds(tiempoTranscurrido),
-                TiempoPromedioRespuesta: (tiempoTranscurrido / (repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas)) / 1000,
+                TiempoPromedioRespuesta: tiempoPromedioSegundos,
+                FechaInicio: tiempoInicio.toISOString(),
+                FechaFin: ahora.toISOString(),
                 FlashcardsParaManana: 0,
-                FlashcardsParaSiguienteSemana: 0
+                FlashcardsParaSiguienteSemana: 0,
+                FlashcardsIncorrectasIds: JSON.stringify(repasoData.flashcardsIncorrectasIds)
             };
             
             // Enviar a las estadísticas utilizando POST
@@ -432,20 +453,11 @@
         }
 
         function finalizarRepaso() {
-            clearInterval(intervaloTiempo);
-            
-            // Calcular estadísticas finales
-            const ahora = new Date();
-            const tiempoTranscurrido = ahora - tiempoInicio;
-            const totalRevisadas = repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas;
-            const porcentajeAcierto = totalRevisadas > 0 ? (repasoData.flashcardsCorrectas / totalRevisadas * 100) : 0;
-            
             const estadisticas = {
-                totalRevisadas: totalRevisadas,
-                porcentajeAcierto: porcentajeAcierto,
-                tiempoTotal: timeSpanFromMilliseconds(tiempoTranscurrido)
+                totalRevisadas: repasoData.flashcardsCorrectas + repasoData.flashcardsIncorrectas,
+                porcentajeAcierto: 0,
+                tiempoTotal: '00:00:00'
             };
-            
             mostrarResultadosFinales(estadisticas);
         }
     </script>

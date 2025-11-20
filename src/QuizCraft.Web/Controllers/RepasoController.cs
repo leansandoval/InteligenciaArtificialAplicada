@@ -221,8 +221,8 @@ public class RepasoController : Controller
             // Redireccionar según el tipo de contenido
             if (repaso.QuizId.HasValue)
             {
-                // Si tiene quiz, ir al quiz
-                return RedirectToAction("Take", "Quiz", new { id = repaso.QuizId });
+                // Si tiene quiz, ir al quiz en modo pregunta por pregunta
+                return RedirectToAction("TomarQuiz", "Quiz", new { id = repaso.QuizId });
             }
             else if (repaso.FlashcardId.HasValue || repaso.MateriaId.HasValue)
             {

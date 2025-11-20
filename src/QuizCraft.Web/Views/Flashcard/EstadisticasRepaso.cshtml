@@ -2,6 +2,17 @@
 @using QuizCraft.Application.ViewModels
 @{
     ViewData["Title"] = "Estadísticas del Repaso";
+    
+    // Calcular estadísticas directamente en la vista
+    var porcentajeAcierto = Model.FlashcardsRevisadas > 0 
+        ? (double)Model.FlashcardsCorrectas / Model.FlashcardsRevisadas * 100 
+        : 0;
+    
+    var tiempoPromedioSegundos = Model.FlashcardsRevisadas > 0 
+        ? Model.TiempoTotal.TotalSeconds / Model.FlashcardsRevisadas 
+        : 0;
+    
+    var fechaFin = Model.FechaInicio.Add(Model.TiempoTotal);
 }
 
 <div class="container-fluid py-4">
@@ -33,7 +44,7 @@
                     <div class="card text-center border-0 shadow-sm h-100">
                         <div class="card-body">
                             <i class="fas fa-percentage text-success mb-3" style="font-size: 2rem;"></i>
-                            <h3 class="text-success mb-2">@Model.PorcentajeAcierto.ToString("F1")%</h3>
+                            <h3 class="text-success mb-2">@porcentajeAcierto.ToString("F1")%</h3>
                             <p class="text-muted mb-0">Porcentaje de Acierto</p>
                         </div>
                     </div>
@@ -53,7 +64,7 @@
                     <div class="card text-center border-0 shadow-sm h-100">
                         <div class="card-body">
                             <i class="fas fa-tachometer-alt text-warning mb-3" style="font-size: 2rem;"></i>
-                            <h3 class="text-warning mb-2">@Model.TiempoPromedioRespuesta.ToString("F1")s</h3>
+                            <h3 class="text-warning mb-2">@tiempoPromedioSegundos.ToString("F1")s</h3>
                             <p class="text-muted mb-0">Tiempo Promedio</p>
                         </div>
                     </div>
@@ -112,31 +123,32 @@
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-white border-0">
                             <h5 class="mb-0">
-                                <i class="fas fa-calendar-alt me-2"></i>Próximas Revisiones
+                                <i class="fas fa-calendar-alt me-2"></i>Repetición Espaciada
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-danger bg-opacity-10 rounded">
                                 <div>
-                                    <i class="fas fa-sun text-warning me-2"></i>
-                                    <span>Mañana</span>
+                                    <i class="fas fa-redo text-danger me-2"></i>
+                                    <strong>Flashcards Incorrectas</strong>
                                 </div>
-                                <span class="badge bg-warning rounded-pill">@Model.FlashcardsParaManana flashcards</span>
+                                <span class="badge bg-danger rounded-pill">@Model.FlashcardsIncorrectas</span>
                             </div>
                             
-                            <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-success bg-opacity-10 rounded">
                                 <div>
-                                    <i class="fas fa-calendar-week text-info me-2"></i>
-                                    <span>Esta semana</span>
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Flashcards Correctas</strong>
                                 </div>
-                                <span class="badge bg-info rounded-pill">@Model.FlashcardsParaSiguienteSemana flashcards</span>
+                                <span class="badge bg-success rounded-pill">@Model.FlashcardsCorrectas</span>
                             </div>
                             
-                            <div class="mt-4 p-3 bg-light rounded">
+                            <div class="mt-3 p-3 bg-light rounded">
                                 <small class="text-muted">
                                     <i class="fas fa-info-circle me-1"></i>
-                                    Las flashcards incorrectas se reprogramaron para mañana,
-                                    mientras que las correctas siguen el algoritmo de repetición espaciada.
+                                    <strong>Algoritmo SuperMemo SM-2:</strong><br/>
+                                    • <strong class="text-danger">Incorrectas:</strong> Se reprograman para <strong>mañana</strong> (1 día)<br/>
+                                    • <strong class="text-success">Correctas:</strong> Siguen lo programado según algoritmo
                                 </small>
                             </div>
                         </div>
@@ -152,21 +164,11 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <strong>Materia:</strong>
-                            <div class="mt-1">
-                                <i class="fas fa-book me-2" style="color: @Model.MateriaColor;"></i>
-                                @Model.MateriaNombre
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <strong>Inicio:</strong>
-                            <div class="mt-1">@Model.FechaInicio.ToString("HH:mm")</div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <strong>Finalización:</strong>
-                            <div class="mt-1">@(Model.FechaFin?.ToString("HH:mm") ?? "En curso")</div>
+                    <div class="text-center">
+                        <strong>Materia:</strong>
+                        <div class="mt-2">
+                            <i class="fas fa-book me-2" style="color: @Model.MateriaColor; font-size: 1.2rem;"></i>
+                            <span style="font-size: 1.1rem;">@Model.MateriaNombre</span>
                         </div>
                     </div>
                 </div>
@@ -175,7 +177,7 @@
             <!-- Motivación y consejos -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body text-center py-4">
-                    @if (Model.PorcentajeAcierto >= 80)
+                    @if (porcentajeAcierto >= 80)
                     {
                         <i class="fas fa-star text-warning mb-3" style="font-size: 3rem;"></i>
                         <h4 class="text-success mb-3">¡Excelente trabajo!</h4>
@@ -184,7 +186,7 @@
                             el conocimiento fresco en tu memoria.
                         </p>
                     }
-                    else if (Model.PorcentajeAcierto >= 60)
+                    else if (porcentajeAcierto >= 60)
                     {
                         <i class="fas fa-thumbs-up text-success mb-3" style="font-size: 3rem;"></i>
                         <h4 class="text-info mb-3">¡Buen progreso!</h4>
@@ -207,34 +209,28 @@
 
             <!-- Acciones -->
             <div class="text-center">
-                @if (TempData["RepasoId"] != null)
-                {
-                    <div class="alert alert-info mb-4">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Has completado las flashcards como parte de un repaso programado.
-                    </div>
+                <form asp-action="MarcarRepasoCompletado" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="MateriaNombre" value="@Model.MateriaNombre" />
+                    <input type="hidden" name="MateriaColor" value="@Model.MateriaColor" />
+                    <input type="hidden" name="FlashcardsRevisadas" value="@Model.FlashcardsRevisadas" />
+                    <input type="hidden" name="FlashcardsCorrectas" value="@Model.FlashcardsCorrectas" />
+                    <input type="hidden" name="FlashcardsIncorrectas" value="@Model.FlashcardsIncorrectas" />
+                    <input type="hidden" name="PorcentajeAcierto" value="@Model.PorcentajeAcierto" />
+                    <input type="hidden" name="TiempoTotal" value="@Model.TiempoTotal" />
+                    <input type="hidden" name="TiempoPromedioRespuesta" value="@Model.TiempoPromedioRespuesta" />
+                    <input type="hidden" name="FechaInicio" value="@Model.FechaInicio" />
+                    <input type="hidden" name="RepasoProgramadoId" value="@Model.RepasoProgramadoId" />
+                    <input type="hidden" name="FlashcardsIncorrectasIds" value="@(TempData["FlashcardsIncorrectasIds"] ?? "")" />
                     
-                    <form asp-controller="Repaso" asp-action="CompletarConResultados" method="post" class="d-inline">
-                        <input type="hidden" name="repasoId" value="@TempData["RepasoId"]" />
-                        <input type="hidden" name="puntaje" value="@Model.PorcentajeAcierto" />
-                        <button type="submit" class="btn btn-success btn-lg me-3">
-                            <i class="fas fa-check me-2"></i>Completar Repaso
-                        </button>
-                    </form>
-                    
-                    <a asp-action="Index" class="btn btn-outline-primary btn-lg">
-                        <i class="fas fa-list me-2"></i>Ver Flashcards
-                    </a>
-                }
-                else
-                {
-                    <a asp-action="ConfigurarRepaso" class="btn btn-primary btn-lg me-3">
-                        <i class="fas fa-redo me-2"></i>Nuevo Repaso
-                    </a>
-                    <a asp-action="Index" class="btn btn-outline-primary btn-lg">
-                        <i class="fas fa-list me-2"></i>Ver Flashcards
-                    </a>
-                }
+                    <button type="submit" class="btn btn-success btn-lg me-3">
+                        <i class="fas fa-check-circle me-2"></i>Marcar como Completado
+                    </button>
+                </form>
+                
+                <a asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-list me-2"></i>Ver Flashcards
+                </a>
             </div>
         </div>
     </div>

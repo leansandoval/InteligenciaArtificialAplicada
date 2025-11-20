@@ -58,7 +58,7 @@ public class RepasoProgramadoService : IRepasoProgramadoService
             RepasosVencidos = repasos.Where(r => !r.Completado && r.FechaProgramada < ahora).ToList(),
             RepasosProximos = repasos.Where(r => !r.Completado && r.FechaProgramada >= ahora && r.FechaProgramada <= en24Horas).ToList(),
             RepasosPendientes = repasos.Where(r => !r.Completado && r.FechaProgramada > en24Horas).ToList(),
-            RepasosCompletados = repasos.Where(r => r.Completado).OrderByDescending(r => r.FechaCompletado).Take(10).ToList()
+            RepasosCompletados = repasos.Where(r => r.Completado).OrderByDescending(r => r.FechaCompletado).ToList()
         };
     }
 

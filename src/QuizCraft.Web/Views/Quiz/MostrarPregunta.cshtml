@@ -1,0 +1,302 @@
+@model QuizCraft.Application.ViewModels.TomarQuizViewModel
+@using QuizCraft.Application.ViewModels
+@{
+    ViewData["Title"] = "Quiz - " + Model.Titulo;
+}
+
+<div class="container-fluid py-4" id="quizContainer">
+    <!-- Barra de progreso -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">
+                            <i class="fas fa-graduation-cap me-2 text-primary"></i>
+                            @Model.MateriaNombre - @Model.Titulo
+                        </h6>
+                        <small class="text-muted">
+                            Pregunta @Model.PreguntaActual de @Model.TotalPreguntas
+                        </small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: @(((double)Model.PreguntaActual / Model.TotalPreguntas) * 100)%" 
+                             aria-valuenow="@Model.PreguntaActual" 
+                             aria-valuemin="0" 
+                             aria-valuemax="@Model.TotalPreguntas"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pregunta principal -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg" id="preguntaCard">
+                <div class="card-body p-5">
+                    
+                    <!-- Pregunta -->
+                    <div id="preguntaSection" class="@(!Model.MostrarRespuesta ? "" : "d-none")">
+                        <div class="mb-4">
+                            <h4 class="text-primary mb-3">
+                                <i class="fas fa-question-circle me-2"></i>Pregunta @Model.PreguntaActual
+                            </h4>
+                            <h3 class="mb-4 text-dark">@Model.PreguntaTexto</h3>
+                        </div>
+
+                        <!-- Opciones -->
+                        <div class="opciones-container">
+                            @{ var indice = 0; }
+                            @foreach (var opcion in Model.Opciones)
+                            {
+                                <div class="opcion-item mb-3">
+                                    <button type="button" 
+                                            class="btn btn-outline-primary btn-opcion w-100 text-start p-3" 
+                                            data-opcion-id="@opcion.Id">
+                                        <span class="opcion-letra me-3">@((char)('A' + indice))</span>
+                                        <span class="opcion-texto">@opcion.Texto</span>
+                                    </button>
+                                </div>
+                                indice++;
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Respuesta y explicación -->
+                    <div id="respuestaSection" class="d-none">
+                        <div class="mb-4">
+                            <h4 class="mb-3">
+                                <i class="fas fa-question-circle me-2 text-muted"></i>Pregunta @Model.PreguntaActual
+                            </h4>
+                            <p class="mb-4 text-muted">@Model.PreguntaTexto</p>
+                        </div>
+
+                        <!-- Resultado -->
+                        <div id="resultadoContainer" class="alert mb-4">
+                            <!-- Se llena dinámicamente con JavaScript -->
+                        </div>
+
+                        <!-- Opciones con feedback -->
+                        <div class="opciones-container">
+                            @{ var indice2 = 0; }
+                            @foreach (var opcion in Model.Opciones)
+                            {
+                                <div class="opcion-item mb-3">
+                                    <div class="btn btn-outline-secondary w-100 text-start p-3 opcion-respuesta" 
+                                         data-opcion-id="@opcion.Id"
+                                         data-es-correcta="@opcion.EsCorrecta.ToString().ToLower()">
+                                        <span class="opcion-letra me-3">@((char)('A' + indice2))</span>
+                                        <span class="opcion-texto">@opcion.Texto</span>
+                                        <i class="fas opcion-icono float-end"></i>
+                                    </div>
+                                </div>
+                                indice2++;
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Explicacion))
+                        {
+                            <div class="alert alert-info mt-4">
+                                <h6><i class="fas fa-info-circle me-2"></i>Explicación:</h6>
+                                <p class="mb-0">@Model.Explicacion</p>
+                            </div>
+                        }
+
+                        <!-- Botón siguiente -->
+                        <div class="text-center mt-4">
+                            <form asp-action="SiguientePregunta" method="post">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-arrow-right me-2"></i>
+                                    @(Model.PreguntaActual < Model.TotalPreguntas ? "Siguiente Pregunta" : "Ver Resultados")
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <div>
+                            <i class="fas fa-clock me-2"></i>
+                            Tiempo transcurrido: <span id="tiempoTranscurrido">00:00</span>
+                        </div>
+                        <div>
+                            <i class="fas fa-book me-2"></i>
+                            @Model.MateriaNombre
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Variables globales
+        let preguntaId = @Model.PreguntaId;
+        let opcionSeleccionadaId = null;
+        let fechaInicio = new Date('@Model.FechaInicio.ToString("o")');
+        let timerInterval = null;
+
+        // Iniciar temporizador
+        function iniciarTemporizador() {
+            timerInterval = setInterval(() => {
+                const ahora = new Date();
+                const diff = Math.floor((ahora - fechaInicio) / 1000);
+                const minutos = Math.floor(diff / 60);
+                const segundos = diff % 60;
+                document.getElementById('tiempoTranscurrido').textContent = 
+                    `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Evaluar respuesta
+        async function evaluarRespuesta(opcionId) {
+            if (opcionSeleccionadaId !== null) return; // Ya se seleccionó una opción
+
+            opcionSeleccionadaId = opcionId;
+
+            // Deshabilitar todos los botones
+            document.querySelectorAll('.btn-opcion').forEach(btn => {
+                btn.disabled = true;
+            });
+
+            try {
+                const response = await fetch('@Url.Action("EvaluarRespuesta", "Quiz")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: `preguntaId=${preguntaId}&opcionSeleccionadaId=${opcionId}`
+                });
+
+                const resultado = await response.json();
+
+                if (resultado.success) {
+                    mostrarResultado(opcionId, resultado.esCorrecta, resultado.explicacion);
+                } else {
+                    alert('Error al evaluar la respuesta');
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al evaluar la respuesta');
+                location.reload();
+            }
+        }
+
+        // Mostrar resultado
+        function mostrarResultado(opcionId, esCorrecta, explicacion) {
+            // Ocultar sección de pregunta
+            document.getElementById('preguntaSection').classList.add('d-none');
+            
+            // Mostrar sección de respuesta
+            document.getElementById('respuestaSection').classList.remove('d-none');
+
+            // Mostrar resultado
+            const resultadoContainer = document.getElementById('resultadoContainer');
+            if (esCorrecta) {
+                resultadoContainer.className = 'alert alert-success mb-4';
+                resultadoContainer.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>¡Correcto!</strong> Tu respuesta es correcta.';
+            } else {
+                resultadoContainer.className = 'alert alert-danger mb-4';
+                resultadoContainer.innerHTML = '<i class="fas fa-times-circle me-2"></i><strong>Incorrecto</strong> La respuesta seleccionada no es correcta.';
+            }
+
+            // Marcar opciones
+            document.querySelectorAll('.opcion-respuesta').forEach(div => {
+                const opId = parseInt(div.getAttribute('data-opcion-id'));
+                const esCorrectaOpcion = div.getAttribute('data-es-correcta') === 'true';
+                const icono = div.querySelector('.opcion-icono');
+
+                if (opId === opcionId) {
+                    // Opción seleccionada
+                    div.classList.add('border-3');
+                    if (esCorrecta) {
+                        div.classList.add('border-success', 'bg-success', 'bg-opacity-10');
+                        icono.classList.add('fa-check-circle', 'text-success');
+                    } else {
+                        div.classList.add('border-danger', 'bg-danger', 'bg-opacity-10');
+                        icono.classList.add('fa-times-circle', 'text-danger');
+                    }
+                } else if (esCorrectaOpcion) {
+                    // Respuesta correcta
+                    div.classList.add('border-success', 'border-2', 'bg-success', 'bg-opacity-10');
+                    icono.classList.add('fa-check-circle', 'text-success');
+                }
+            });
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Iniciar temporizador
+            iniciarTemporizador();
+
+            // Agregar event listener a los botones de opciones
+            document.querySelectorAll('.btn-opcion').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const opcionId = parseInt(btn.getAttribute('data-opcion-id'));
+                    evaluarRespuesta(opcionId);
+                });
+            });
+        });
+
+        // Limpiar temporizador al salir
+        window.addEventListener('beforeunload', () => {
+            if (timerInterval) clearInterval(timerInterval);
+        });
+    </script>
+
+    <style>
+        .opcion-item {
+            transition: all 0.3s ease;
+        }
+
+        .btn-opcion {
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .btn-opcion:hover:not(:disabled) {
+            transform: translateX(5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .opcion-letra {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            line-height: 35px;
+            text-align: center;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+
+        .btn-opcion:hover:not(:disabled) .opcion-letra {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .opcion-respuesta {
+            cursor: default;
+        }
+
+        .opcion-icono {
+            font-size: 1.5rem;
+            margin-top: 5px;
+        }
+    </style>
+}

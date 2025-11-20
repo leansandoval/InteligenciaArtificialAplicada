@@ -1007,7 +1007,43 @@ public class FlashcardController : Controller
     /// Finaliza la sesión de repaso y muestra estadísticas
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> FinalizarRepaso(EstadisticasRepasoViewModel estadisticas)
+    public async Task<IActionResult> FinalizarRepaso(EstadisticasRepasoViewModel estadisticas, string flashcardsIncorrectasIds)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        try
+        {
+            // Obtener el RepasoId si viene de TempData
+            if (TempData.ContainsKey("RepasoId") && TempData["RepasoId"] != null)
+            {
+                estadisticas.RepasoProgramadoId = (int)TempData["RepasoId"];
+                TempData.Keep("RepasoId"); // Mantener para la siguiente acción
+            }
+            
+            // Guardar las estadísticas y flashcards incorrectas en TempData para mostrarlas
+            TempData["EstadisticasRepaso"] = System.Text.Json.JsonSerializer.Serialize(estadisticas);
+            TempData["FlashcardsIncorrectasIds"] = flashcardsIncorrectasIds;
+            
+            return View("EstadisticasRepaso", estadisticas);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al finalizar repaso para usuario {UserId}", usuario.Id);
+            TempData["Error"] = "Error al procesar las estadísticas del repaso.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    /// <summary>
+    /// Marca el repaso como completado y guarda las estadísticas
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> MarcarRepasoCompletado(EstadisticasRepasoViewModel estadisticas, string flashcardsIncorrectasIds)
     {
         var usuario = await _userManager.GetUserAsync(User);
         if (usuario == null)
@@ -1033,21 +1069,63 @@ public class FlashcardController : Controller
             };
 
             await _context.EstadisticasEstudio.AddAsync(estadisticaEstudio);
-            await _unitOfWork.SaveChangesAsync();
-
-            TempData["Success"] = $"¡Sesión de repaso completada! Revisaste {estadisticas.FlashcardsRevisadas} flashcards con {estadisticas.PorcentajeAcierto:F1}% de acierto.";
             
-            // Mantener el RepasoId en TempData si viene de un repaso programado
-            if (TempData.ContainsKey("RepasoId"))
+            // Si viene de un repaso programado, marcarlo como completado
+            if (estadisticas.RepasoProgramadoId.HasValue)
             {
-                TempData.Keep("RepasoId");
+                var repasoProgramado = await _context.RepasosProgramados.FindAsync(estadisticas.RepasoProgramadoId.Value);
+                if (repasoProgramado != null && repasoProgramado.UsuarioId == usuario.Id)
+                {
+                    repasoProgramado.Completado = true;
+                    repasoProgramado.FechaCompletado = DateTime.Now;
+                    repasoProgramado.UltimoPuntaje = estadisticas.PorcentajeAcierto;
+                    _context.RepasosProgramados.Update(repasoProgramado);
+                }
             }
             
-            return View("EstadisticasRepaso", estadisticas);
+            // Si hay flashcards incorrectas, crear un repaso programado para mañana
+            if (!string.IsNullOrEmpty(flashcardsIncorrectasIds) && estadisticas.FlashcardsIncorrectas > 0)
+            {
+                var flashcardIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(flashcardsIncorrectasIds);
+                
+                if (flashcardIds != null && flashcardIds.Count > 0)
+                {
+                    // Crear un repaso para cada flashcard incorrecta
+                    foreach (var flashcardId in flashcardIds)
+                    {
+                        var nuevoRepaso = new RepasoProgramado
+                        {
+                            UsuarioId = usuario.Id,
+                            Titulo = $"Repaso de flashcard incorrecta",
+                            Descripcion = $"Repaso automático generado desde sesión del {DateTime.Now:dd/MM/yyyy}.",
+                            FechaProgramada = DateTime.Today.AddDays(1).AddHours(9), // Mañana a las 9 AM
+                            Completado = false,
+                            TipoRepaso = TipoRepaso.Automatico,
+                            NotificacionesHabilitadas = true,
+                            MinutosNotificacionPrevia = 15,
+                            FlashcardId = flashcardId
+                        };
+
+                        await _context.RepasosProgramados.AddAsync(nuevoRepaso);
+                    }
+                }
+            }
+            
+            await _unitOfWork.SaveChangesAsync();
+
+            var mensaje = $"¡Repaso completado! Revisaste {estadisticas.FlashcardsRevisadas} flashcards con {estadisticas.PorcentajeAcierto:F1}% de acierto.";
+            if (estadisticas.FlashcardsIncorrectas > 0)
+            {
+                mensaje += $" Se creó un repaso programado para mañana con las {estadisticas.FlashcardsIncorrectas} flashcard(s) incorrecta(s).";
+            }
+            
+            TempData["Success"] = mensaje;
+            
+            return RedirectToAction("Index", "Repaso");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al finalizar repaso para usuario {UserId}", usuario.Id);
+            _logger.LogError(ex, "Error al marcar repaso como completado para usuario {UserId}", usuario.Id);
             TempData["Error"] = "Error al guardar las estadísticas del repaso.";
             return RedirectToAction(nameof(Index));
         }

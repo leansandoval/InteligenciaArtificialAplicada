@@ -24,6 +24,7 @@ namespace QuizCraft.Web.Controllers
         private readonly IQuizGenerationService _quizGenerationService;
         private readonly AIService _aiService;
         private readonly IDocumentTextExtractor _textExtractor;
+        private readonly IRepasoProgramadoService _repasoProgramadoService;
 
         public QuizController(
             IUnitOfWork unitOfWork,
@@ -31,7 +32,8 @@ namespace QuizCraft.Web.Controllers
             ILogger<QuizController> logger,
             IQuizGenerationService quizGenerationService,
             AIService aiService,
-            IDocumentTextExtractor textExtractor)
+            IDocumentTextExtractor textExtractor,
+            IRepasoProgramadoService repasoProgramadoService)
         {
             _unitOfWork = unitOfWork;
             _userManager = userManager;
@@ -39,6 +41,7 @@ namespace QuizCraft.Web.Controllers
             _quizGenerationService = quizGenerationService;
             _aiService = aiService;
             _textExtractor = textExtractor;
+            _repasoProgramadoService = repasoProgramadoService;
         }
 
         // GET: Quiz
@@ -448,6 +451,420 @@ namespace QuizCraft.Web.Controllers
             _logger.LogInformation($"Quiz {id}: TotalPreguntas={viewModel.TotalPreguntas}, PreguntasCargadas={viewModel.Preguntas.Count}");
 
             return View(viewModel);
+        }
+
+        // GET: Quiz/TomarQuiz - Nueva acción para el flujo pregunta por pregunta
+        public async Task<IActionResult> TomarQuiz(int id)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var quiz = await _unitOfWork.QuizRepository.GetQuizConPreguntasAsync(id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            // Verificar permisos
+            if (!quiz.EsPublico && quiz.CreadorId != usuarioId)
+            {
+                return Forbid();
+            }
+
+            // Verificar que hay preguntas disponibles
+            var preguntasActivas = quiz.Preguntas.Where(p => p.EstaActivo).OrderBy(p => p.Orden).ToList();
+
+            if (!preguntasActivas.Any())
+            {
+                TempData["Error"] = "Este quiz no tiene preguntas disponibles.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
+            // Aleatorizar preguntas y guardar en sesión
+            var random = new Random(Guid.NewGuid().GetHashCode());
+            var preguntasAleatorias = preguntasActivas.OrderBy(x => random.Next()).ToList();
+            
+            // Capturar RepasoId si existe (viene desde repasos programados)
+            var repasoId = TempData["RepasoId"] as int?;
+            
+            // Guardar información en TempData
+            TempData["QuizId"] = id;
+            TempData["PreguntaActual"] = 0;
+            TempData["TotalPreguntas"] = preguntasAleatorias.Count;
+            TempData["FechaInicio"] = DateTime.Now.ToString("o");
+            TempData["PreguntasIds"] = JsonSerializer.Serialize(preguntasAleatorias.Select(p => p.Id).ToList());
+            
+            // Mantener RepasoId si existe
+            if (repasoId.HasValue)
+            {
+                TempData["RepasoId"] = repasoId.Value;
+            }
+            
+            TempData.Keep();
+
+            return RedirectToAction(nameof(MostrarPregunta));
+        }
+
+        // GET: Quiz/MostrarPregunta
+        public async Task<IActionResult> MostrarPregunta()
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            
+            // Recuperar datos de TempData
+            if (TempData["QuizId"] == null || TempData["PreguntaActual"] == null)
+            {
+                TempData["Error"] = "Sesión de quiz expirada.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var quizId = (int)TempData["QuizId"]!;
+            var preguntaActual = (int)TempData["PreguntaActual"]!;
+            var totalPreguntas = (int)TempData["TotalPreguntas"]!;
+            var fechaInicioStr = TempData["FechaInicio"]!.ToString();
+            var preguntasIdsJson = TempData["PreguntasIds"]!.ToString();
+            
+            TempData.Keep();
+
+            // Si ya se respondieron todas las preguntas
+            if (preguntaActual >= totalPreguntas)
+            {
+                return RedirectToAction(nameof(FinalizarQuiz));
+            }
+
+            var preguntasIds = JsonSerializer.Deserialize<List<int>>(preguntasIdsJson!);
+            var preguntaId = preguntasIds![preguntaActual];
+
+            var quiz = await _unitOfWork.QuizRepository.GetQuizConPreguntasAsync(quizId);
+            
+            if (quiz == null)
+            {
+                TempData["Error"] = "Error al cargar el quiz.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var pregunta = quiz.Preguntas.FirstOrDefault(p => p.Id == preguntaId);
+
+            if (pregunta == null)
+            {
+                TempData["Error"] = "Error al cargar la pregunta.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Crear lista de opciones y aleatorizarlas
+            var random = new Random(Guid.NewGuid().GetHashCode());
+            var opciones = new List<OpcionQuizViewModel>
+            {
+                new OpcionQuizViewModel { Id = 1, Texto = pregunta.OpcionA ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
+                new OpcionQuizViewModel { Id = 2, Texto = pregunta.OpcionB ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
+                new OpcionQuizViewModel { Id = 3, Texto = pregunta.OpcionC ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
+                new OpcionQuizViewModel { Id = 4, Texto = pregunta.OpcionD ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
+            }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
+
+            // Aleatorizar opciones
+            opciones = opciones.OrderBy(x => random.Next()).ToList();
+
+            var viewModel = new TomarQuizViewModel
+            {
+                QuizId = quizId,
+                Titulo = quiz.Titulo,
+                Descripcion = quiz.Descripcion,
+                MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
+                TotalPreguntas = totalPreguntas,
+                PreguntaActual = preguntaActual + 1,
+                FechaInicio = DateTime.Parse(fechaInicioStr!),
+                PreguntaId = preguntaId,
+                PreguntaTexto = pregunta.TextoPregunta,
+                Opciones = opciones,
+                Explicacion = pregunta.Explicacion
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: Quiz/EvaluarRespuesta
+        [HttpPost]
+        public async Task<IActionResult> EvaluarRespuesta(int preguntaId, int opcionSeleccionadaId)
+        {
+            // Obtener el quizId de TempData
+            if (TempData["QuizId"] == null)
+            {
+                return Json(new { success = false, message = "Sesión expirada" });
+            }
+
+            var quizId = (int)TempData["QuizId"]!;
+            TempData.Keep();
+
+            var quiz = await _unitOfWork.QuizRepository.GetQuizConPreguntasAsync(quizId);
+            
+            if (quiz == null)
+            {
+                return Json(new { success = false, message = "Quiz no encontrado" });
+            }
+
+            var pregunta = quiz.Preguntas.FirstOrDefault(p => p.Id == preguntaId);
+            
+            if (pregunta == null)
+            {
+                return Json(new { success = false, message = "Pregunta no encontrada" });
+            }
+
+            // Crear lista de opciones en el mismo orden que en MostrarPregunta
+            var random = new Random(Guid.NewGuid().GetHashCode());
+            var opciones = new List<OpcionQuizViewModel>
+            {
+                new OpcionQuizViewModel { Id = 1, Texto = pregunta.OpcionA ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
+                new OpcionQuizViewModel { Id = 2, Texto = pregunta.OpcionB ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
+                new OpcionQuizViewModel { Id = 3, Texto = pregunta.OpcionC ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
+                new OpcionQuizViewModel { Id = 4, Texto = pregunta.OpcionD ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
+            }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
+
+            var opcionSeleccionada = opciones.FirstOrDefault(o => o.Id == opcionSeleccionadaId);
+            var esCorrecta = opcionSeleccionada?.EsCorrecta ?? false;
+
+            // Guardar la respuesta en TempData
+            var respuestasJson = TempData["Respuestas"]?.ToString() ?? "[]";
+            var respuestas = JsonSerializer.Deserialize<List<RespuestaQuizTemp>>(respuestasJson) ?? new List<RespuestaQuizTemp>();
+            
+            respuestas.Add(new RespuestaQuizTemp
+            {
+                PreguntaId = preguntaId,
+                OpcionSeleccionadaId = opcionSeleccionadaId,
+                EsCorrecta = esCorrecta
+            });
+
+            TempData["Respuestas"] = JsonSerializer.Serialize(respuestas);
+            TempData.Keep();
+
+            return Json(new
+            {
+                success = true,
+                esCorrecta = esCorrecta,
+                explicacion = pregunta.Explicacion
+            });
+        }
+
+        // POST: Quiz/SiguientePregunta
+        [HttpPost]
+        public IActionResult SiguientePregunta()
+        {
+            var preguntaActual = (int)TempData["PreguntaActual"]!;
+            TempData["PreguntaActual"] = preguntaActual + 1;
+            TempData.Keep();
+
+            return RedirectToAction(nameof(MostrarPregunta));
+        }
+
+        // GET: Quiz/FinalizarQuiz
+        public async Task<IActionResult> FinalizarQuiz()
+        {
+            // Recuperar datos de TempData
+            if (TempData["QuizId"] == null)
+            {
+                TempData["Error"] = "Sesión de quiz expirada.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var quizId = (int)TempData["QuizId"]!;
+            var totalPreguntas = (int)TempData["TotalPreguntas"]!;
+            var fechaInicioStr = TempData["FechaInicio"]!.ToString();
+            var respuestasJson = TempData["Respuestas"]?.ToString() ?? "[]";
+            var repasoId = TempData["RepasoId"] as int?;
+            
+            var quiz = await _unitOfWork.QuizRepository.GetQuizCompletoAsync(quizId);
+            
+            if (quiz == null)
+            {
+                TempData["Error"] = "Quiz no encontrado.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var respuestas = JsonSerializer.Deserialize<List<RespuestaQuizTemp>>(respuestasJson) ?? new List<RespuestaQuizTemp>();
+            var respuestasCorrectas = respuestas.Count(r => r.EsCorrecta);
+            var respuestasIncorrectas = respuestas.Count(r => !r.EsCorrecta);
+            var fechaInicio = DateTime.Parse(fechaInicioStr!);
+            var fechaFin = DateTime.Now;
+
+            // Obtener IDs de preguntas incorrectas
+            var preguntasIncorrectasIds = respuestas
+                .Where(r => !r.EsCorrecta)
+                .Select(r => r.PreguntaId)
+                .ToList();
+
+            var viewModel = new EstadisticasQuizViewModel
+            {
+                QuizProgramadoId = repasoId,
+                QuizId = quizId,
+                QuizTitulo = quiz.Titulo,
+                MateriaNombre = quiz.Materia?.Nombre ?? "Sin materia",
+                TotalPreguntas = totalPreguntas,
+                RespuestasCorrectas = respuestasCorrectas,
+                RespuestasIncorrectas = respuestasIncorrectas,
+                FechaInicio = fechaInicio,
+                FechaFin = fechaFin,
+                TiempoTotal = fechaFin - fechaInicio,
+                PreguntasIncorrectasIds = preguntasIncorrectasIds
+            };
+
+            // Guardar en TempData para MarcarQuizCompletado
+            TempData["EstadisticasQuiz"] = JsonSerializer.Serialize(viewModel);
+            TempData.Keep();
+
+            // Limpiar datos de sesión del quiz
+            TempData.Remove("QuizId");
+            TempData.Remove("PreguntaActual");
+            TempData.Remove("TotalPreguntas");
+            TempData.Remove("FechaInicio");
+            TempData.Remove("PreguntasIds");
+            TempData.Remove("Respuestas");
+            TempData.Remove("RepasoId");
+
+            return RedirectToAction(nameof(EstadisticasQuiz));
+        }
+
+        [HttpGet]
+        public IActionResult EstadisticasQuiz()
+        {
+            var estadisticasJson = TempData["EstadisticasQuiz"]?.ToString();
+            
+            if (string.IsNullOrEmpty(estadisticasJson))
+            {
+                TempData["Error"] = "No se encontraron estadísticas del quiz.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var viewModel = JsonSerializer.Deserialize<EstadisticasQuizViewModel>(estadisticasJson);
+            TempData.Keep("EstadisticasQuiz");
+
+            return View(viewModel);
+        }
+
+        // POST: Quiz/MarcarQuizCompletado
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarcarQuizCompletado(int? repasoId)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+
+            if (string.IsNullOrEmpty(usuarioId))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // Recuperar estadísticas de TempData
+            var estadisticasJson = TempData["EstadisticasQuiz"]?.ToString();
+            
+            if (string.IsNullOrEmpty(estadisticasJson))
+            {
+                TempData["Error"] = "No se encontraron las estadísticas del quiz.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var estadisticas = JsonSerializer.Deserialize<EstadisticasQuizViewModel>(estadisticasJson);
+
+            if (estadisticas == null)
+            {
+                TempData["Error"] = "Error al procesar las estadísticas.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                // Guardar el resultado del quiz
+                var quiz = await _unitOfWork.QuizRepository.GetQuizConPreguntasAsync(estadisticas.QuizId);
+                
+                if (quiz == null)
+                {
+                    TempData["Error"] = "Quiz no encontrado.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var porcentajeAcierto = estadisticas.TotalPreguntas > 0 
+                    ? (double)estadisticas.RespuestasCorrectas / estadisticas.TotalPreguntas * 100 
+                    : 0;
+
+                var puntajeMaximo = quiz.Preguntas.Sum(p => p.Puntos);
+                var puntajeObtenido = (int)(puntajeMaximo * (porcentajeAcierto / 100));
+
+                var resultado = new ResultadoQuiz
+                {
+                    QuizId = estadisticas.QuizId,
+                    UsuarioId = usuarioId,
+                    FechaInicio = estadisticas.FechaInicio,
+                    FechaFinalizacion = estadisticas.FechaFin,
+                    FechaRealizacion = DateTime.Now,
+                    TiempoTranscurrido = (int)estadisticas.TiempoTotal.TotalSeconds,
+                    TiempoTotal = estadisticas.TiempoTotal,
+                    PorcentajeAcierto = porcentajeAcierto,
+                    PuntajeObtenido = puntajeObtenido,
+                    PuntajeMaximo = puntajeMaximo,
+                    Puntuacion = puntajeMaximo > 0 ? (decimal)puntajeObtenido / puntajeMaximo : 0,
+                    EstaCompletado = true
+                };
+
+                // Guardar usando el contexto directamente
+                var context = (QuizCraft.Infrastructure.Data.ApplicationDbContext)_unitOfWork.GetType()
+                    .GetProperty("Context")!
+                    .GetValue(_unitOfWork)!;
+
+                context.ResultadosQuiz.Add(resultado);
+                await context.SaveChangesAsync();
+
+                // Si viene de un repaso programado, completarlo y crear uno nuevo con las incorrectas
+                if (repasoId.HasValue)
+                {
+                    var repaso = await _repasoProgramadoService.ObtenerRepasoPorIdAsync(repasoId.Value, usuarioId);
+                    
+                    if (repaso != null && !repaso.Completado)
+                    {
+                        // Completar el repaso actual
+                        var completarViewModel = new CompletarRepasoViewModel
+                        {
+                            Id = repasoId.Value,
+                            NotasRepaso = $"Completado con {estadisticas.RespuestasCorrectas} de {estadisticas.TotalPreguntas} correctas ({porcentajeAcierto:F1}%)",
+                            Puntaje = porcentajeAcierto,
+                            ProgramarProximo = false
+                        };
+                        
+                        await _repasoProgramadoService.CompletarRepasoAsync(completarViewModel, usuarioId);
+                        
+                        // Crear repaso programado para mañana con las preguntas incorrectas si hay alguna
+                        if (estadisticas.PreguntasIncorrectasIds.Any())
+                        {
+                            var nuevoRepaso = new CrearRepasoProgramadoViewModel
+                            {
+                                Titulo = $"Repaso: {quiz.Titulo} - Preguntas Incorrectas",
+                                Descripcion = $"Repaso automático creado con {estadisticas.PreguntasIncorrectasIds.Count} pregunta(s) incorrecta(s) del quiz anterior.",
+                                FechaProgramada = DateTime.Now.AddDays(1),
+                                QuizId = estadisticas.QuizId,
+                                TipoRepaso = TipoRepaso.Automatico,
+                                FrecuenciaRepeticion = FrecuenciaRepaso.Unica
+                            };
+                            
+                            await _repasoProgramadoService.CrearRepasoProgramadoAsync(nuevoRepaso, usuarioId);
+                            
+                            TempData["Success"] = $"¡Repaso completado! Obtuviste {estadisticas.RespuestasCorrectas} de {estadisticas.TotalPreguntas} correctas ({porcentajeAcierto:F1}%). Se ha programado un repaso completo del quiz para mañana con todas sus preguntas para reforzar tu aprendizaje.";
+                        }
+                        else
+                        {
+                            TempData["Success"] = $"¡Perfecto! Completaste el quiz con todas las respuestas correctas ({porcentajeAcierto:F1}%).";
+                        }
+                    }
+                }
+                else
+                {
+                    TempData["Success"] = $"Quiz completado. Obtuviste {estadisticas.RespuestasCorrectas} de {estadisticas.TotalPreguntas} respuestas correctas ({porcentajeAcierto:F1}%).";
+                }
+                
+                // Limpiar TempData
+                TempData.Remove("EstadisticasQuiz");
+
+                return RedirectToAction("Index", "Repaso", new { tab = "completados" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al marcar quiz como completado. RepasoId: {RepasoId}", repasoId);
+                TempData["Error"] = "Ocurrió un error al guardar el resultado del quiz.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: Quiz/Details/5
@@ -2280,6 +2697,14 @@ Solo responde con el dato incorrecto específico.";
             _logger.LogInformation("No hay otras flashcards disponibles, generando distractor con IA para: {Pregunta}", flashcardActual.Pregunta);
             return await GenerarOpcionIncorrectaConIA(flashcardActual.Pregunta, flashcardActual.Respuesta, materiaNombre);
         }
+    }
+
+    // Clase helper para respuestas temporales de quiz
+    public class RespuestaQuizTemp
+    {
+        public int PreguntaId { get; set; }
+        public int OpcionSeleccionadaId { get; set; }
+        public bool EsCorrecta { get; set; }
     }
 }
 

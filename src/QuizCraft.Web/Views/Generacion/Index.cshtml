@@ -193,8 +193,7 @@
 
             // Cancelar
             $('#btnCancelar').on('click', function(e) {
-                $('#areaResultados').hide();
-                $('#formGeneracion')[0].reset();
+                window.location.href = '@Url.Action("Index", "Flashcard")';
             });
 
             // Vista previa

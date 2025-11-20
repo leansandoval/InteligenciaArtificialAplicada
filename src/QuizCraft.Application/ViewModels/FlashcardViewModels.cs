@@ -232,6 +232,9 @@ public class EstadisticasRepasoViewModel
     public double TiempoPromedioRespuesta { get; set; }
     public int FlashcardsParaManana { get; set; }
     public int FlashcardsParaSiguienteSemana { get; set; }
+    
+    // ID del repaso programado asociado (si aplica)
+    public int? RepasoProgramadoId { get; set; }
 }
 
 /// <summary>
