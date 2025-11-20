@@ -644,8 +644,24 @@ public class FlashcardController : Controller
         try
         {
             // Obtener flashcards para repaso
-            var flashcardsParaRepaso = await _unitOfWork.FlashcardRepository.GetFlashcardsParaRepasoAsync(
-                usuario.Id, configuracion.MateriaId);
+            // En lugar de usar GetFlashcardsParaRepasoAsync que filtra por fecha,
+            // obtener todas las flashcards y dejar que el usuario elija cuántas quiere repasar
+            IEnumerable<Flashcard> flashcardsParaRepaso;
+            
+            if (configuracion.MateriaId.HasValue)
+            {
+                flashcardsParaRepaso = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(configuracion.MateriaId.Value);
+            }
+            else
+            {
+                var todasMaterias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
+                var materiaIds = todasMaterias.Select(m => m.Id).ToList();
+                
+                var flashcardsListas = await Task.WhenAll(
+                    materiaIds.Select(id => _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(id))
+                );
+                flashcardsParaRepaso = flashcardsListas.SelectMany(f => f);
+            }
 
             // Aplicar filtros adicionales
             if (configuracion.DificultadFiltro.HasValue)
@@ -653,11 +669,22 @@ public class FlashcardController : Controller
                 flashcardsParaRepaso = flashcardsParaRepaso.Where(f => f.Dificultad == configuracion.DificultadFiltro.Value);
             }
 
-            // Usar algoritmo de repaso para priorizar
-            var flashcardsOptimizadas = _algoritmoRepasoService.ObtenerFlashcardsParaRepaso(
+            // Usar algoritmo de repaso para priorizar las que necesitan repaso
+            // pero luego completar con el resto si es necesario
+            var flashcardsPriorizadas = _algoritmoRepasoService.ObtenerFlashcardsParaRepaso(
                 flashcardsParaRepaso, configuracion.MaximoFlashcards);
 
-            var flashcardsLista = flashcardsOptimizadas.ToList();
+            var flashcardsLista = flashcardsPriorizadas.ToList();
+            
+            // Si no hay suficientes flashcards priorizadas, agregar más de todas las disponibles
+            if (flashcardsLista.Count < configuracion.MaximoFlashcards)
+            {
+                var idsPriorizadas = flashcardsLista.Select(f => f.Id).ToHashSet();
+                var flashcardsRestantes = flashcardsParaRepaso
+                    .Where(f => !idsPriorizadas.Contains(f.Id))
+                    .Take(configuracion.MaximoFlashcards - flashcardsLista.Count);
+                flashcardsLista.AddRange(flashcardsRestantes);
+            }
 
             if (!flashcardsLista.Any())
             {
@@ -773,13 +800,21 @@ public class FlashcardController : Controller
                     return RedirectToAction("Index", "Repaso");
                 }
                 
-                // Usar algoritmo de repaso para priorizar (máximo 20 flashcards) pero incluir todas
-                flashcardsParaRepaso = _algoritmoRepasoService.ObtenerFlashcardsParaRepaso(
-                    todasFlashcards, 20);
+                // Para repasos programados, incluir TODAS las flashcards sin filtrar por fecha
+                // Priorizar las que necesitan repaso pero incluir todas
+                var flashcardsPriorizadas = _algoritmoRepasoService.ObtenerFlashcardsParaRepaso(
+                    todasFlashcards, todasFlashcards.Count());
                 
-                // Si el algoritmo no devuelve nada (por filtro de fechas), tomar las primeras 20
-                if (!flashcardsParaRepaso.Any())
+                // Si hay flashcards priorizadas por el algoritmo, usarlas primero y luego agregar el resto
+                if (flashcardsPriorizadas.Any())
                 {
+                    var idsPriorizadas = flashcardsPriorizadas.Select(f => f.Id).ToHashSet();
+                    var flashcardsRestantes = todasFlashcards.Where(f => !idsPriorizadas.Contains(f.Id));
+                    flashcardsParaRepaso = flashcardsPriorizadas.Concat(flashcardsRestantes).Take(20);
+                }
+                else
+                {
+                    // Si el algoritmo no devuelve ninguna (todas tienen fecha futura), tomar todas
                     flashcardsParaRepaso = todasFlashcards.Take(20);
                 }
             }
@@ -1018,9 +1053,9 @@ public class FlashcardController : Controller
         try
         {
             // Obtener el RepasoId si viene de TempData
-            if (TempData.ContainsKey("RepasoId") && TempData["RepasoId"] != null)
+            if (TempData.ContainsKey("RepasoId") && TempData["RepasoId"] is int repasoId)
             {
-                estadisticas.RepasoProgramadoId = (int)TempData["RepasoId"];
+                estadisticas.RepasoProgramadoId = repasoId;
                 TempData.Keep("RepasoId"); // Mantener para la siguiente acción
             }
             

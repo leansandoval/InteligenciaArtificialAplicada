@@ -148,9 +148,10 @@
                                          aria-labelledby="heading@i">
                                         <div class="accordion-body">
                                             <div class="row">
-                                                @foreach (var opcion in pregunta.Opciones)
+                                                @for (int j = 0; j < pregunta.Opciones.Count; j++)
                                                 {
-                                                    var letra = pregunta.Opciones.IndexOf(opcion) switch {
+                                                    var opcion = pregunta.Opciones[j];
+                                                    var letra = j switch {
                                                         0 => "A",
                                                         1 => "B",
                                                         2 => "C", 
@@ -175,6 +176,37 @@
                                             @if (!string.IsNullOrEmpty(pregunta.Explicacion))
                                             {
                                                 <div class="mt-3 p-3 border rounded" style="background-color: var(--bg-secondary);">
+                                                    @{
+                                                        var indiceRespuestaCorrecta = -1;
+                                                        string textoRespuestaCorrecta = "";
+                                                        
+                                                        for (int k = 0; k < pregunta.Opciones.Count; k++)
+                                                        {
+                                                            if (pregunta.Opciones[k].EsCorrecta)
+                                                            {
+                                                                indiceRespuestaCorrecta = k;
+                                                                textoRespuestaCorrecta = pregunta.Opciones[k].Texto;
+                                                                break;
+                                                            }
+                                                        }
+                                                        
+                                                        var letraCorrecta = indiceRespuestaCorrecta switch {
+                                                            0 => "A",
+                                                            1 => "B",
+                                                            2 => "C",
+                                                            3 => "D",
+                                                            _ => "?"
+                                                        };
+                                                    }
+                                                    
+                                                    @if (indiceRespuestaCorrecta >= 0)
+                                                    {
+                                                        <div class="mb-3">
+                                                            <strong>Respuesta correcta:</strong> 
+                                                            <span class="text-success fw-bold">@letraCorrecta) @textoRespuestaCorrecta</span>
+                                                        </div>
+                                                    }
+                                                    
                                                     <div>
                                                         <i class="fas fa-lightbulb text-warning me-2"></i>
                                                         <strong>Explicación:</strong>
@@ -220,6 +252,14 @@
                                 @Model.MensajeNoDisponible
                             </small>
                         </div>
+                    }
+
+                    @if (Model.MostrarPreguntas && Model.Preguntas.Any())
+                    {
+                        <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="btn btn-outline-danger w-100 mb-2" target="_blank">
+                            <i class="fas fa-file-pdf me-1"></i>
+                            Descargar PDF
+                        </a>
                     }
 
                     <a asp-action="Index" class="btn btn-outline-secondary w-100 mb-2">
@@ -399,49 +439,50 @@
             }
         });
 
+        let allExpanded = false;
+        
         function toggleAllQuestions() {
             const accordion = document.getElementById('accordionPreguntas');
             const toggleText = document.getElementById('toggleText');
             const toggleIcon = document.querySelector('#toggleAllBtn i');
             
-            if (!accordion) {
-                console.warn('No se encontró el accordion');
-                return;
-            }
+            if (!accordion) return;
             
-            // Obtener todos los elementos collapse y botones
             const collapseElements = accordion.querySelectorAll('.accordion-collapse');
-            const buttonElements = accordion.querySelectorAll('.accordion-button');
+            if (!collapseElements.length) return;
             
-            if (!collapseElements.length) {
-                console.warn('No se encontraron elementos collapse');
-                return;
-            }
-            
-            // Verificar el estado actual: si todos están expandidos o no
-            const allCurrentlyExpanded = Array.from(collapseElements).every(el => el.classList.contains('show'));
-            
-            // Expandir o colapsar todos usando la API de Bootstrap
+            // Alternar entre expandir y colapsar basado en el estado guardado
             collapseElements.forEach((collapseEl) => {
-                if (allCurrentlyExpanded) {
-                    // Si todos están expandidos, colapsar todos
-                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
-                    bsCollapse.hide();
+                // Remover temporalmente data-bs-parent para permitir múltiples abiertos
+                collapseEl.removeAttribute('data-bs-parent');
+                
+                if (allExpanded) {
+                    // Colapsar
+                    collapseEl.classList.remove('show');
                 } else {
-                    // Si no todos están expandidos, expandir todos
-                    const bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
-                    bsCollapse.show();
+                    // Expandir
+                    collapseEl.classList.add('show');
                 }
             });
             
-            // Actualizar el texto y el icono del botón según el nuevo estado
+            // Cambiar el estado
+            allExpanded = !allExpanded;
+            
+            // Actualizar el texto y el icono del botón
             if (toggleText) {
-                toggleText.textContent = allCurrentlyExpanded ? 'Expandir Todo' : 'Colapsar Todo';
+                toggleText.textContent = allExpanded ? 'Colapsar Todo' : 'Expandir Todo';
             }
             
             if (toggleIcon) {
-                toggleIcon.className = allCurrentlyExpanded ? 'fas fa-expand-arrows-alt me-1' : 'fas fa-compress-arrows-alt me-1';
+                toggleIcon.className = allExpanded ? 'fas fa-compress-arrows-alt me-1' : 'fas fa-expand-arrows-alt me-1';
             }
+            
+            // Restaurar data-bs-parent después de un momento
+            setTimeout(() => {
+                collapseElements.forEach((collapseEl) => {
+                    collapseEl.setAttribute('data-bs-parent', '#accordionPreguntas');
+                });
+            }, 400);
         }
     </script>
 }

@@ -161,7 +161,7 @@ public class HomeController : Controller
                 actividadesRecientes.Add(new ActividadReciente
                 {
                     TipoActividad = TipoActividad.Flashcard,
-                    ReferenciaId = estadistica.MateriaId.Value,
+                    ReferenciaId = estadistica.MateriaId ?? 0,
                     Titulo = "Sesión de Flashcards",
                     Descripcion = $"{estadistica.FlashcardsRevisadas} tarjetas revisadas",
                     FechaActividad = estadistica.FechaCreacion,

@@ -11,6 +11,9 @@ using QuizCraft.Application.Interfaces;
 using QuizCraft.Application.Models;
 using QuizCraft.Web.ViewModels;
 using QuizCraft.Core.Enums;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using AIService = QuizCraft.Application.Interfaces.IAIService;
 
 namespace QuizCraft.Web.Controllers
@@ -913,13 +916,186 @@ namespace QuizCraft.Web.Controllers
                     RespuestaCorrecta = p.RespuestaCorrecta,
                     Explicacion = p.Explicacion,
                     Puntos = p.Puntos,
-                    Orden = p.Orden
+                    Orden = p.Orden,
+                    Opciones = new List<OpcionRespuestaViewModel>
+                    {
+                        new OpcionRespuestaViewModel { Texto = p.OpcionA ?? "", Valor = "A", EsCorrecta = p.RespuestaCorrecta == "A" },
+                        new OpcionRespuestaViewModel { Texto = p.OpcionB ?? "", Valor = "B", EsCorrecta = p.RespuestaCorrecta == "B" },
+                        new OpcionRespuestaViewModel { Texto = p.OpcionC ?? "", Valor = "C", EsCorrecta = p.RespuestaCorrecta == "C" },
+                        new OpcionRespuestaViewModel { Texto = p.OpcionD ?? "", Valor = "D", EsCorrecta = p.RespuestaCorrecta == "D" }
+                    }
                 }).ToList() ?? new List<PreguntaQuizViewModel>(),
                 MensajeNoDisponible = quiz.EsPublico || quiz.CreadorId == usuarioId
                     ? "" : "Este quiz no está disponible públicamente."
             };
 
             return View(viewModel);
+        }
+
+        // GET: Quiz/DownloadPdf/5
+        public async Task<IActionResult> DownloadPdf(int id)
+        {
+            var usuarioId = _userManager.GetUserId(User);
+            var quiz = await _unitOfWork.QuizRepository.GetQuizCompletoAsync(id);
+
+            if (quiz == null)
+            {
+                return NotFound();
+            }
+
+            // Solo el creador puede descargar el PDF
+            if (quiz.CreadorId != usuarioId)
+            {
+                return Forbid();
+            }
+
+            try
+            {
+                QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+                var document = QuestPDF.Fluent.Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        page.Size(PageSizes.A4);
+                        page.Margin(2, Unit.Centimetre);
+                        page.DefaultTextStyle(x => x.FontSize(11));
+
+                        page.Header()
+                            .Column(column =>
+                            {
+                                column.Item().Text(quiz.Titulo)
+                                    .FontSize(20).Bold().FontColor("#2c3e50");
+                                
+                                column.Item().PaddingTop(5).Text(text =>
+                                {
+                                    text.Span("Materia: ").Bold();
+                                    text.Span(quiz.Materia?.Nombre ?? "Sin materia");
+                                });
+                                
+                                if (!string.IsNullOrEmpty(quiz.Descripcion))
+                                {
+                                    column.Item().PaddingTop(5).Text(text =>
+                                    {
+                                        text.Span("Descripción: ").Bold();
+                                        text.Span(quiz.Descripcion);
+                                    });
+                                }
+                                
+                                column.Item().PaddingTop(5).Text(text =>
+                                {
+                                    text.Span("Total de preguntas: ").Bold();
+                                    text.Span($"{quiz.Preguntas?.Count ?? 0}");
+                                });
+                                
+                                column.Item().PaddingTop(10).LineHorizontal(1).LineColor("#bdc3c7");
+                            });
+
+                        page.Content()
+                            .PaddingVertical(10)
+                            .Column(column =>
+                            {
+                                if (quiz.Preguntas != null && quiz.Preguntas.Any())
+                                {
+                                    for (int i = 0; i < quiz.Preguntas.Count; i++)
+                                    {
+                                        var pregunta = quiz.Preguntas.ElementAt(i);
+                                        
+                                        column.Item().PaddingTop(15).Column(preguntaColumn =>
+                                        {
+                                            // Número y texto de la pregunta
+                                            preguntaColumn.Item().Text($"Pregunta {i + 1}")
+                                                .FontSize(14).Bold().FontColor("#34495e");
+                                            
+                                            preguntaColumn.Item().PaddingTop(5).Text(pregunta.TextoPregunta)
+                                                .FontSize(12);
+
+                                            // Opciones
+                                            preguntaColumn.Item().PaddingTop(10).Column(opcionesColumn =>
+                                            {
+                                                var opciones = new[] {
+                                                    ("A", pregunta.OpcionA),
+                                                    ("B", pregunta.OpcionB),
+                                                    ("C", pregunta.OpcionC),
+                                                    ("D", pregunta.OpcionD)
+                                                };
+
+                                                foreach (var (letra, texto) in opciones)
+                                                {
+                                                    if (!string.IsNullOrEmpty(texto))
+                                                    {
+                                                        bool esCorrecta = pregunta.RespuestaCorrecta == letra;
+                                                        
+                                                        opcionesColumn.Item().PaddingTop(3).Text(text =>
+                                                        {
+                                                            text.Span($"{letra}) ").Bold();
+                                                            text.Span(texto);
+                                                            
+                                                            if (esCorrecta)
+                                                            {
+                                                                text.Span(" ✓").Bold().FontColor("#27ae60");
+                                                            }
+                                                        });
+                                                    }
+                                                }
+                                            });
+
+                                            // Respuesta correcta destacada
+                                            preguntaColumn.Item().PaddingTop(10).Background("#d5f4e6")
+                                                .Padding(8).Text(text =>
+                                                {
+                                                    text.Span("Respuesta correcta: ").Bold().FontColor("#27ae60");
+                                                    text.Span($"{pregunta.RespuestaCorrecta}) ");
+                                                    
+                                                    var textoRespuesta = pregunta.RespuestaCorrecta switch
+                                                    {
+                                                        "A" => pregunta.OpcionA,
+                                                        "B" => pregunta.OpcionB,
+                                                        "C" => pregunta.OpcionC,
+                                                        "D" => pregunta.OpcionD,
+                                                        _ => ""
+                                                    };
+                                                    text.Span(textoRespuesta ?? "");
+                                                });
+
+                                            // Explicación si existe
+                                            if (!string.IsNullOrEmpty(pregunta.Explicacion))
+                                            {
+                                                preguntaColumn.Item().PaddingTop(5).Background("#fff9e6")
+                                                    .Padding(8).Text(text =>
+                                                    {
+                                                        text.Span("Explicación: ").Bold().FontColor("#f39c12");
+                                                        text.Span(pregunta.Explicacion);
+                                                    });
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+
+                        page.Footer()
+                            .AlignCenter()
+                            .Text(x =>
+                            {
+                                x.Span("Página ");
+                                x.CurrentPageNumber();
+                                x.Span(" de ");
+                                x.TotalPages();
+                            });
+                    });
+                });
+
+                var pdfBytes = document.GeneratePdf();
+                var fileName = $"{quiz.Titulo.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
+                
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar PDF del quiz {QuizId}", id);
+                TempData["Error"] = "Error al generar el PDF. Por favor, intenta nuevamente.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
         }
 
         // GET: Quiz/Delete/5
