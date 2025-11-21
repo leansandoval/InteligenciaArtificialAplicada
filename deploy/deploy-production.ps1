@@ -13,9 +13,10 @@ param(
 )
 
 # Configuración
+$SubscriptionId = "901827b0-55ab-4258-93e0-fe34819602f4"
 $ResourceGroup = "IAAplicadaGrupo2"
 $WebAppName = "quizcraft-webapp"
-$ProjectPath = "C:\QuizCraft\src\QuizCraft.Web"
+$ProjectPath = "c:\Users\umabe\OneDrive\Desktop\2doC2025\TP_IAA\QuizCraft\src\QuizCraft.Web"
 $PublishPath = Join-Path $ProjectPath "publish"
 
 Write-Host "======================================" -ForegroundColor Cyan
@@ -41,6 +42,15 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Write-Host "✅ Sesión activa: $($account.user.name)" -ForegroundColor Green
+
+# Establecer la suscripción correcta
+Write-Host "🔍 Estableciendo suscripción..." -ForegroundColor Yellow
+az account set --subscription $SubscriptionId
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Error al establecer la suscripción" -ForegroundColor Red
+    exit 1
+}
+Write-Host "✅ Suscripción establecida: $SubscriptionId" -ForegroundColor Green
 Write-Host ""
 
 # Paso 1: Limpiar publicaciones anteriores

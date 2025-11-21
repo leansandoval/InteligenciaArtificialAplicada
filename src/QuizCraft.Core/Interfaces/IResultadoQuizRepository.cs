@@ -26,4 +26,14 @@ public interface IResultadoQuizRepository : IGenericRepository<ResultadoQuiz>
     /// Obtiene el mejor resultado de un usuario para un quiz específico
     /// </summary>
     Task<ResultadoQuiz?> GetMejorResultadoAsync(int quizId, string usuarioId);
+    
+    /// <summary>
+    /// Obtiene todos los resultados de un usuario (para estadísticas)
+    /// </summary>
+    Task<IEnumerable<ResultadoQuiz>> GetResultadosByUsuarioIdAsync(string usuarioId);
+    
+    /// <summary>
+    /// Obtiene todos los resultados de una materia para un usuario
+    /// </summary>
+    Task<IEnumerable<ResultadoQuiz>> GetResultadosByMateriaIdAsync(int materiaId);
 }

@@ -1,0 +1,329 @@
+@using QuizCraft.Web.ViewModels.Statistics
+@using Newtonsoft.Json
+@model PerformanceChartsViewModel
+
+@{
+    ViewData["Title"] = "Gráficos de Desempeño";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">
+                <i class="fas fa-chart-line text-primary"></i> Gráficos de Desempeño
+            </h1>
+            <p class="text-muted">Visualiza tu desempeño académico con gráficos interactivos</p>
+        </div>
+    </div>
+
+    <!-- Gráfico de Tasa de Aciertos por Materia -->
+    <div class="row g-3 mb-5">
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="m-0"><i class="fas fa-bullseye"></i> Tasa de Aciertos por Materia</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="accuracyChart"></canvas>
+                    <div class="small text-muted mt-3">
+                        <strong>Promedio General:</strong> @Model.AccuracyRate.PromedioGeneralAciertos%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tiempo de Estudio por Materia -->
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="m-0"><i class="fas fa-hourglass"></i> Tiempo de Estudio</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="studyTimeChart"></canvas>
+                    <div class="small text-muted mt-3">
+                        <strong>Total:</strong> @Model.StudyTime.TotalMinutos minutos
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actividad Semanal -->
+    <div class="row g-3 mb-5">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="m-0"><i class="fas fa-calendar-week"></i> Actividad Semanal</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="weeklyChart"></canvas>
+                    <div class="row mt-3 small text-muted">
+                        <div class="col-md-4">
+                            <strong>Flashcards esta semana:</strong> @Model.WeeklyActivity.TotalFlashcardsEstaSemana
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Quizzes esta semana:</strong> @Model.WeeklyActivity.TotalQuizzesEstaSemana
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Minutos totales:</strong> @Model.WeeklyActivity.TotalMinutosEstudio
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Heatmap de Actividad -->
+    <div class="row g-3 mb-5">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="m-0"><i class="fas fa-fire"></i> Mapa de Calor - Actividad Diaria (3 meses)</h5>
+                </div>
+                <div class="card-body">
+                    <div id="heatmapContainer" style="padding: 20px; overflow-x: auto;">
+                        <!-- El heatmap se generará con JavaScript -->
+                    </div>
+                    <div class="small text-muted mt-3">
+                        <i class="fas fa-square" style="color: #ebedf0;"></i> Sin actividad
+                        <i class="fas fa-square" style="color: #c6e48b;"></i> Baja
+                        <i class="fas fa-square" style="color: #7bc96f;"></i> Media
+                        <i class="fas fa-square" style="color: #239a3b;"></i> Alta
+                        <i class="fas fa-square" style="color: #196127;"></i> Muy Alta
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análisis de Tendencias -->
+    <div class="row g-3 mb-5">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="m-0"><i class="fas fa-arrow-trend-up"></i> Análisis de Tendencias (30 días)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart"></canvas>
+                    <div class="row mt-3 small">
+                        <div class="col-md-3">
+                            <strong>Tendencia de Aciertos:</strong>
+                            <p class="@(Model.TrendAnalysis.TendenciaTasaAciertos > 0 ? "text-success" : "text-danger")">
+                                @if (Model.TrendAnalysis.TendenciaTasaAciertos > 0)
+                                {
+                                    <i class="fas fa-arrow-up"></i> <span>Mejorando</span>
+                                }
+                                else if (Model.TrendAnalysis.TendenciaTasaAciertos < 0)
+                                {
+                                    <i class="fas fa-arrow-down"></i> <span>Empeorando</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-minus"></i> <span>Estable</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Cambio Porcentual:</strong>
+                            <p>@Math.Abs(Model.TrendAnalysis.TendenciaTasaAciertos):F1%</p>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Racha Actual:</strong>
+                            <p>@Model.TrendAnalysis.ConsecultivosEstudio días</p>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Días sin estudiar:</strong>
+                            <p>@Model.TrendAnalysis.DiasSinEstudio</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div class="row g-3">
+        <div class="col-12">
+            <a href="@Url.Action("Dashboard", "Statistics")" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+            <a href="@Url.Action("PerformanceReport", "Statistics")" class="btn btn-primary">
+                <i class="fas fa-file-download"></i> Descargar Reporte Completo
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    
+    <script>
+        // Gráfico de Tasa de Aciertos
+        const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+        new Chart(accuracyCtx, {
+            type: 'radar',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.AccuracyRate.Materias.Select(m => $"'{m.MateriaNombre}'")))],
+                datasets: [{
+                    label: 'Tasa de Aciertos (%)',
+                    data: [@Html.Raw(string.Join(",", Model.AccuracyRate.Materias.Select(m => m.TasaAciertos)))],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        max: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Tiempo de Estudio
+        const studyTimeCtx = document.getElementById('studyTimeChart').getContext('2d');
+        new Chart(studyTimeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.StudyTime.Materias.Select(m => $"'{m.MateriaNombre}'")))],
+                datasets: [{
+                    data: [@Html.Raw(string.Join(",", Model.StudyTime.Materias.Select(m => m.MinutosEstudio)))],
+                    backgroundColor: [@Html.Raw(string.Join(",", Model.StudyTime.Materias.Select(m => $"'{m.MateriaColor}'")))],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Actividad Semanal
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        new Chart(weeklyCtx, {
+            type: 'bar',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.WeeklyActivity.Dias.Select(d => $"'{d.Dia}'")))],
+                datasets: [
+                    {
+                        label: 'Flashcards Revisadas',
+                        data: [@Html.Raw(string.Join(",", Model.WeeklyActivity.Dias.Select(d => d.FlashcardsRevisadas)))],
+                        backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                        borderColor: 'rgb(75, 192, 192)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Quizzes Completados',
+                        data: [@Html.Raw(string.Join(",", Model.WeeklyActivity.Dias.Select(d => d.QuizzesCompletados)))],
+                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
+                        borderColor: 'rgb(255, 193, 7)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        // Gráfico de Tendencias
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: [@Html.Raw(string.Join(",", Model.TrendAnalysis.Datos.Take(30).Select(d => $"'{d.Fecha:dd/MM}'")))],
+                datasets: [{
+                    label: 'Tasa de Aciertos (%)',
+                    data: [@Html.Raw(string.Join(",", Model.TrendAnalysis.Datos.Take(30).Select(d => d.TasaAciertos)))],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        // Generar Heatmap
+        generarHeatmap();
+
+        function generarHeatmap() {
+            const container = document.getElementById('heatmapContainer');
+            const dias = @Html.Raw(JsonConvert.SerializeObject(Model.ActivityHeatmap.Dias));
+            
+            let html = '<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">';
+            
+            dias.forEach(dia => {
+                const color = obtenerColorHeatmap(dia.actividad);
+                const fecha = new Date(dia.fecha);
+                html += `
+                    <div title="${dia.diaString}: Actividad ${dia.actividad}/10" 
+                         style="width: 20px; height: 20px; background-color: ${color}; 
+                                border-radius: 4px; cursor: pointer; border: 1px solid #ddd;">
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function obtenerColorHeatmap(actividad) {
+            if (actividad === 0) return '#ebedf0';
+            if (actividad <= 2) return '#c6e48b';
+            if (actividad <= 5) return '#7bc96f';
+            if (actividad <= 7) return '#239a3b';
+            return '#196127';
+        }
+    </script>
+}

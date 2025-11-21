@@ -51,4 +51,24 @@ public class ResultadoQuizRepository : GenericRepository<ResultadoQuiz>, IResult
             .ThenByDescending(r => r.FechaRealizacion)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<IEnumerable<ResultadoQuiz>> GetResultadosByUsuarioIdAsync(string usuarioId)
+    {
+        return await _context.ResultadosQuiz
+            .Where(r => r.UsuarioId == usuarioId)
+            .Include(r => r.Quiz)
+            .ThenInclude(q => q.Materia)
+            .OrderByDescending(r => r.FechaCreacion)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<ResultadoQuiz>> GetResultadosByMateriaIdAsync(int materiaId)
+    {
+        return await _context.ResultadosQuiz
+            .Where(r => r.Quiz != null && r.Quiz.MateriaId == materiaId)
+            .Include(r => r.Quiz)
+            .ThenInclude(q => q.Materia)
+            .OrderByDescending(r => r.FechaCreacion)
+            .ToListAsync();
+    }
 }

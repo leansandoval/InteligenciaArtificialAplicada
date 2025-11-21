@@ -1,0 +1,312 @@
+@using QuizCraft.Web.ViewModels.Statistics
+@model DashboardStatsViewModel
+
+@{
+    ViewData["Title"] = "Dashboard de Estadísticas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid mt-5">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">
+                <i class="fas fa-chart-line text-primary"></i> Dashboard de Estadísticas
+            </h1>
+            <p class="text-muted">Bienvenido, <strong>@Model.NombreUsuario</strong>. Aquí puedes ver un resumen completo de tu desempeño.</p>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Resumen Rápido -->
+    <div class="row g-3 mb-5">
+        <!-- Total de Materias -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-primary text-uppercase mb-1">
+                        <small class="font-weight-bold">Materias</small>
+                    </div>
+                    <div class="h3 mb-0 font-weight-bold">@Model.OverallStats.TotalMaterias</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total de Flashcards -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-success text-uppercase mb-1">
+                        <small class="font-weight-bold">Flashcards</small>
+                    </div>
+                    <div class="h3 mb-0 font-weight-bold">@Model.OverallStats.TotalFlashcards</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Promedio de Aciertos -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-info text-uppercase mb-1">
+                        <small class="font-weight-bold">Promedio de Aciertos</small>
+                    </div>
+                    <div class="h3 mb-0 font-weight-bold">@Model.OverallStats.PromedioAcierto%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Racha Actual -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-warning text-uppercase mb-1">
+                        <small class="font-weight-bold">Racha Actual</small>
+                    </div>
+                    <div class="h3 mb-0 font-weight-bold">@Model.OverallStats.RachaEstudioActual días</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Principal de Gráficos -->
+    <div class="row g-3 mb-5">
+        <!-- Progreso General -->
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="m-0"><i class="fas fa-tachometer-alt"></i> Progreso General</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="text-center">
+                            <h3>@Model.OverallStats.PromedioAcierto%</h3>
+                            <p class="text-muted">@Model.OverallStats.NivelGeneralMastery</p>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: @(Model.OverallStats.PromedioAcierto)%" 
+                                 aria-valuenow="@(Model.OverallStats.PromedioAcierto)" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="small text-muted mt-3">
+                        <strong>Estadísticas de esta semana:</strong><br>
+                        📚 @Model.OverallStats.TiempoEstudioEstaSemana minutos de estudio<br>
+                        🎯 @Model.FlashcardMetrics.RevisionesTotales revisiones totales
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nivel de Dominio -->
+        <div class="col-lg-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="m-0"><i class="fas fa-star"></i> Nivel de Dominio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <h6>Quizzes</h6>
+                            <p class="h4 text-primary mb-0">@Model.QuizMetrics.TasaAprobacion%</p>
+                            <small class="text-muted">Tasa de aprobación</small>
+                        </div>
+                        <div class="col-6">
+                            <h6>Flashcards</h6>
+                            <p class="h4 text-success mb-0">@Model.FlashcardMetrics.PercentajeComplecion%</p>
+                            <small class="text-muted">Completadas</small>
+                        </div>
+                    </div>
+                    <div class="alert alert-info small" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        Último estudio: @Model.OverallStats.FechaUltimoEstudio.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Materias -->
+    <div class="row g-3 mb-5">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="m-0"><i class="fas fa-trophy"></i> Top 5 Materias</h5>
+                    <a href="@Url.Action("MateriaAnalytics", "Statistics", new { id = 0 })" class="btn btn-sm btn-light">
+                        Ver todas
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (Model.TopMaterias.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Materia</th>
+                                        <th>Tasa de Aciertos</th>
+                                        <th>Nivel</th>
+                                        <th>Tiempo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var materia in Model.TopMaterias)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (materia.Ranking == 1)
+                                                {
+                                                    <span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> 1º</span>
+                                                }
+                                                else if (materia.Ranking == 2)
+                                                {
+                                                    <span class="badge bg-secondary"><i class="fas fa-medal"></i> 2º</span>
+                                                }
+                                                else if (materia.Ranking == 3)
+                                                {
+                                                    <span class="badge bg-danger"><i class="fas fa-medal"></i> 3º</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-light text-dark">@materia.Ranking</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <strong>@materia.MateriaNombre</strong>
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar" role="progressbar" 
+                                                         style="width: @(materia.TasaAciertos)%;" 
+                                                         aria-valuenow="@(materia.TasaAciertos)" 
+                                                         aria-valuemin="0" aria-valuemax="100">
+                                                        @materia.TasaAciertos%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge" style="background-color: @(materia.NivelDominio switch 
+                                                { 
+                                                    "Experto" => "#FFD700",
+                                                    "Avanzado" => "#87CEEB",
+                                                    "Intermedio" => "#90EE90",
+                                                    _ => "#D3D3D3"
+                                                })">
+                                                    @materia.NivelDominio
+                                                </span>
+                                            </td>
+                                            <td>@materia.TiempoEstudioMinutos min</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Aún no tienes materias. ¡Crea una para comenzar!
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recomendaciones -->
+        <div class="col-lg-4">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="m-0"><i class="fas fa-lightbulb"></i> Recomendaciones</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    @if (Model.Recomendaciones.Any())
+                    {
+                        @foreach (var rec in Model.Recomendaciones.Take(5))
+                        {
+                            <div class="alert alert-@(rec.Tipo switch 
+                            {
+                                "urgente" => "danger",
+                                "importante" => "warning",
+                                _ => "info"
+                            })" role="alert" style="margin-bottom: 1rem;">
+                                <strong>@rec.Titulo</strong>
+                                <p class="mb-0 small mt-2">@rec.Descripcion</p>
+                                <small class="d-block mt-2">
+                                    <a href="#" class="text-decoration-none">
+                                        @rec.AccionRecomendada →
+                                    </a>
+                                </small>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> ¡Vas muy bien! No hay recomendaciones urgentes.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accesos Rápidos a Análisis Detallados -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="m-0"><i class="fas fa-sliders-h"></i> Análisis Detallados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-md-6">
+                            <a href="@Url.Action("Charts", "Statistics")" class="btn btn-outline-primary btn-block w-100">
+                                <i class="fas fa-chart-bar"></i> Gráficos de Desempeño
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="@Url.Action("WeeklyActivity", "Statistics")" class="btn btn-outline-info btn-block w-100">
+                                <i class="fas fa-calendar-week"></i> Actividad Semanal
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="@Url.Action("TrendAnalysis", "Statistics")" class="btn btn-outline-success btn-block w-100">
+                                <i class="fas fa-arrow-trend-up"></i> Análisis de Tendencias
+                            </a>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <a href="@Url.Action("PerformanceReport", "Statistics")" class="btn btn-outline-warning btn-block w-100">
+                                <i class="fas fa-file-pdf"></i> Generar Reporte
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #007bff !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #28a745 !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #17a2b8 !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #ffc107 !important;
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+</style>

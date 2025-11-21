@@ -114,6 +114,9 @@ builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIDocumentProcessor
 // FUNC_ConfigurarGeneracionQuizzes: Servicio para generación automática de quizzes con IA
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IQuizGenerationService, QuizCraft.Infrastructure.Services.QuizGeneration.QuizGenerationService>();
 
+// FUNC_ConfigurarEstadisticas: Servicio para análisis y estadísticas de desempeño
+builder.Services.AddScoped<QuizCraft.Application.Interfaces.IStatisticsService, QuizCraft.Infrastructure.Services.StatisticsService>();
+
 // FUNC_ConfigurarAutenticacion: Configuración de cookies de autenticación
 builder.Services.ConfigureApplicationCookie(options =>
 {
