@@ -2463,11 +2463,13 @@ namespace QuizCraft.Web.Controllers
 
                 if (!response.Success || string.IsNullOrWhiteSpace(response.Content))
                 {
-                    _logger.LogWarning("AI service returned error: {Error}", response.ErrorMessage);
-                    // Crear quiz de ejemplo con preguntas simples del texto
-                    var quizEjemplo = await CrearQuizDeEjemplo(contenido, materia, model, usuario.Id);
-                    TempData["Warning"] = $"Se creó un quiz básico con {quizEjemplo.Item2} preguntas (servicio IA no disponible).";
-                    return RedirectToAction("Details", new { id = quizEjemplo.Item1.Id });
+                    var errorMessage = response.ErrorMessage ?? "Servicio IA no disponible";
+                    _logger.LogWarning("AI service returned error: {Error}", errorMessage);
+                    
+                    // Mostrar el error al usuario en lugar de crear quiz de ejemplo
+                    TempData["Error"] = $"Error al generar quiz con IA:\n\n{errorMessage}";
+                    model.Materias = (await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id)).ToList();
+                    return View(model);
                 }
 
                 // Parsear respuesta JSON

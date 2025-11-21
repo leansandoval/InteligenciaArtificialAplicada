@@ -1,0 +1,385 @@
+@model QuizCraft.Application.ViewModels.FlashcardsCompartidasViewModel
+@{
+    ViewData["Title"] = "Flashcards Compartidas";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container-fluid my-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-share-alt text-primary me-2"></i>
+                    Flashcards Compartidas
+                </h2>
+                <a asp-controller="Flashcard" asp-action="Index" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    Volver a Mis Flashcards
+                </a>
+            </div>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (ViewBag.CodigoCompartido != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-check-circle me-2"></i>
+                        ¡Código de Compartición Generado!
+                    </h5>
+                    <hr>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Código de Compartición:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="@ViewBag.CodigoCompartido" readonly id="codigoGenerado">
+                            <button class="btn btn-outline-primary" type="button" onclick="copiarAlPortapapeles()">
+                                <i class="fas fa-copy me-1"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+                    @if (ViewBag.UrlCompartir != null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">URL para Importar:</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="@ViewBag.UrlCompartir" readonly id="urlGenerada">
+                                <button class="btn btn-outline-primary" type="button" onclick="copiarUrl()">
+                                    <i class="fas fa-copy me-1"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    <p class="mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Comparte este código con otros usuarios para que puedan importar tu flashcard.
+                    </p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4" id="flashcardTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="compartidos-tab" data-bs-toggle="tab" data-bs-target="#compartidos" type="button" role="tab">
+                        <i class="fas fa-share me-1"></i>
+                        Mis Flashcards Compartidas (@Model.FlashcardsCompartidas.Count)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="importados-tab" data-bs-toggle="tab" data-bs-target="#importados" type="button" role="tab">
+                        <i class="fas fa-download me-1"></i>
+                        Flashcards Importadas (@Model.FlashcardsImportadas.Count)
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="flashcardTabContent">
+                <!-- Tab: Flashcards Compartidas -->
+                <div class="tab-pane fade show active" id="compartidos" role="tabpanel">
+                    @if (!Model.FlashcardsCompartidas.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No has compartido ninguna flashcard todavía.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            @foreach (var compartida in Model.FlashcardsCompartidas)
+                            {
+                                <div class="col">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="card-title mb-0 text-truncate">@compartida.Pregunta</h6>
+                                            @if (compartida.EstaExpirado)
+                                            {
+                                                <span class="badge bg-danger">Expirado</span>
+                                            }
+                                            else if (compartida.EstaAgotado)
+                                            {
+                                                <span class="badge bg-warning text-dark">Agotado</span>
+                                            }
+                                            else if (compartida.EstaActivo)
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            }
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-2">
+                                                <i class="fas fa-book text-muted me-2"></i>
+                                                <strong>Materia:</strong> @compartida.NombreMateria
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="fas fa-signal text-muted me-2"></i>
+                                                <strong>Dificultad:</strong> @compartida.Dificultad
+                                            </p>
+                                            <hr>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">Código:</label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="text" class="form-control font-monospace" value="@compartida.Codigo" readonly>
+                                                    <button class="btn btn-outline-secondary" type="button" onclick="copiarCodigo('@compartida.Codigo', this)">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p class="mb-2 small">
+                                                <i class="fas fa-calendar text-muted me-2"></i>
+                                                <strong>Creado:</strong> @compartida.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                                            </p>
+                                            @if (compartida.FechaExpiracion.HasValue)
+                                            {
+                                                <p class="mb-2 small">
+                                                    <i class="fas fa-clock text-muted me-2"></i>
+                                                    <strong>Expira:</strong> @compartida.FechaExpiracion.Value.ToString("dd/MM/yyyy HH:mm")
+                                                </p>
+                                            }
+                                            else
+                                            {
+                                                <p class="mb-2 small">
+                                                    <i class="fas fa-infinity text-muted me-2"></i>
+                                                    <strong>Sin expiración</strong>
+                                                </p>
+                                            }
+                                            <p class="mb-2 small">
+                                                <i class="fas fa-users text-muted me-2"></i>
+                                                <strong>Usos:</strong> @compartida.VecesUsado
+                                                @if (compartida.MaximoUsos.HasValue)
+                                                {
+                                                    <text> / @compartida.MaximoUsos.Value</text>
+                                                }
+                                                else
+                                                {
+                                                    <text> (ilimitado)</text>
+                                                }
+                                            </p>
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <div class="d-flex justify-content-between">
+                                                <a asp-controller="Flashcard" asp-action="Details" asp-route-id="@compartida.FlashcardId" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-eye me-1"></i>
+                                                    Ver
+                                                </a>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger" 
+                                                        onclick="mostrarModalRevocar(@compartida.Id, '@compartida.Pregunta.Replace("'", "\\'")' )">
+                                                    <i class="fas fa-times me-1"></i>
+                                                    Revocar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Tab: Flashcards Importadas -->
+                <div class="tab-pane fade" id="importados" role="tabpanel">
+                    @if (!Model.FlashcardsImportadas.Any())
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No has importado ninguna flashcard todavía.
+                            <a asp-action="Importar" class="alert-link">Importar una flashcard ahora</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            @foreach (var importada in Model.FlashcardsImportadas)
+                            {
+                                <div class="col">
+                                    <div class="card h-100 shadow-sm border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="card-title mb-0 text-truncate">@importada.Pregunta</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="mb-2">
+                                                <i class="fas fa-book text-muted me-2"></i>
+                                                <strong>Materia:</strong> @importada.NombreMateria
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="fas fa-signal text-muted me-2"></i>
+                                                <strong>Dificultad:</strong> @importada.Dificultad
+                                            </p>
+                                            <p class="mb-2">
+                                                <i class="fas fa-user text-muted me-2"></i>
+                                                <strong>Autor:</strong> @importada.NombrePropietarioOriginal
+                                            </p>
+                                            <p class="mb-2 small">
+                                                <i class="fas fa-calendar-plus text-muted me-2"></i>
+                                                <strong>Importada:</strong> @importada.FechaImportacion.ToString("dd/MM/yyyy HH:mm")
+                                            </p>
+                                            @if (importada.PermiteModificaciones)
+                                            {
+                                                <p class="mb-0 small text-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    Puedes modificar esta flashcard
+                                                </p>
+                                            }
+                                            else
+                                            {
+                                                <p class="mb-0 small text-warning">
+                                                    <i class="fas fa-lock me-1"></i>
+                                                    Flashcard de solo lectura
+                                                </p>
+                                            }
+                                        </div>
+                                        <div class="card-footer bg-transparent">
+                                            <a asp-controller="Flashcard" asp-action="Details" asp-route-id="@importada.FlashcardId" class="btn btn-sm btn-info w-100">
+                                                <i class="fas fa-eye me-1"></i>
+                                                Ver Flashcard
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para confirmar revocación -->
+<div class="modal fade" id="revocarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmar Revocación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas revocar la compartición de esta flashcard?</p>
+                <p class="fw-bold" id="flashcardNombre"></p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Advertencia:</strong> Esto eliminará todas las copias importadas por otros usuarios.
+                </div>
+                <input type="hidden" id="flashcardCompartidaId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="confirmarRevocacion()">
+                    <i class="fas fa-times me-1"></i>
+                    Revocar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copiarAlPortapapeles() {
+            const input = document.getElementById('codigoGenerado');
+            input.select();
+            document.execCommand('copy');
+            
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check me-1"></i> Copiado';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+
+        function copiarUrl() {
+            const input = document.getElementById('urlGenerada');
+            input.select();
+            document.execCommand('copy');
+            
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check me-1"></i> Copiado';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+
+        function copiarCodigo(codigo, btn) {
+            navigator.clipboard.writeText(codigo).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        }
+
+        function mostrarModalRevocar(id, nombre) {
+            document.getElementById('flashcardCompartidaId').value = id;
+            document.getElementById('flashcardNombre').textContent = nombre;
+            new bootstrap.Modal(document.getElementById('revocarModal')).show();
+        }
+
+        function confirmarRevocacion() {
+            const id = document.getElementById('flashcardCompartidaId').value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            
+            fetch('@Url.Action("Revocar", "FlashcardCompartida")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `id=${id}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al revocar la compartición');
+            });
+        }
+    </script>
+}

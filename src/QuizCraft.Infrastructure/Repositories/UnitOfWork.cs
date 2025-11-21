@@ -19,6 +19,7 @@ namespace QuizCraft.Infrastructure.Repositories
         private IFlashcardRepository? _flashcardRepository;
         private IQuizRepository? _quizRepository;
         private IQuizCompartidoRepository? _quizCompartidoRepository;
+        private IFlashcardCompartidaRepository? _flashcardCompartidaRepository;
         private IEstadisticaEstudioRepository? _estadisticaEstudioRepository;
         private IResultadoQuizRepository? _resultadoQuizRepository;
 
@@ -62,6 +63,15 @@ namespace QuizCraft.Infrastructure.Repositories
             {
                 _quizCompartidoRepository ??= new QuizCompartidoRepository(_context);
                 return _quizCompartidoRepository;
+            }
+        }
+
+        public IFlashcardCompartidaRepository FlashcardCompartidaRepository
+        {
+            get
+            {
+                _flashcardCompartidaRepository ??= new FlashcardCompartidaRepository(_context);
+                return _flashcardCompartidaRepository;
             }
         }
 

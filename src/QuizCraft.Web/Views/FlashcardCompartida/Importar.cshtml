@@ -1,0 +1,216 @@
+@model QuizCraft.Application.ViewModels.ImportarFlashcardViewModel
+@{
+    ViewData["Title"] = "Importar Flashcard";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center align-items-center min-vh-50">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-download me-2"></i>
+                        Importar Flashcard Compartida
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (Model.InfoFlashcard != null && Model.InfoFlashcard.EstaDisponible)
+                    {
+                        <!-- Información de la Flashcard a Importar -->
+                        <div class="alert alert-success">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Flashcard Encontrada
+                            </h5>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Pregunta:</strong> @Model.InfoFlashcard.Pregunta
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Materia Original:</strong> @Model.InfoFlashcard.NombreMateria
+                                    </p>
+                                    <p class="mb-2">
+                                        <strong>Dificultad:</strong> @Model.InfoFlashcard.Dificultad
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="mb-2">
+                                        <strong>Creado por:</strong> @Model.InfoFlashcard.NombrePropietario
+                                    </p>
+                                    @if (Model.InfoFlashcard.FechaExpiracion.HasValue)
+                                    {
+                                        <p class="mb-2">
+                                            <strong>Expira:</strong> @Model.InfoFlashcard.FechaExpiracion.Value.ToString("dd/MM/yyyy HH:mm")
+                                        </p>
+                                    }
+                                    @if (Model.InfoFlashcard.Pista != null)
+                                    {
+                                        <p class="mb-2">
+                                            <strong>Pista:</strong> @Model.InfoFlashcard.Pista
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+                            @if (Model.InfoFlashcard.UsosRestantes.HasValue)
+                            {
+                                <div class="mt-2">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-users me-1"></i>
+                                        Usos restantes: @Model.InfoFlashcard.UsosRestantes
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Formulario de Importación -->
+                        <form asp-action="Importar" method="post">
+                            <input type="hidden" asp-for="Codigo" />
+                            
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                            <!-- Selección de Materia -->
+                            <div class="mb-4">
+                                <label asp-for="MateriaDestinoId" class="form-label">
+                                    <i class="fas fa-book me-1"></i>
+                                    Asignar a Materia
+                                </label>
+                                <select asp-for="MateriaDestinoId" class="form-select">
+                                    <option value="">-- Selecciona una materia --</option>
+                                    @foreach (var materia in Model.MateriasDisponibles)
+                                    {
+                                        <option value="@materia.Id">
+                                            @materia.Icono @materia.Nombre
+                                        </option>
+                                    }
+                                </select>
+                                <div class="form-text">
+                                    La flashcard se importará a la materia que selecciones. Puedes elegir una diferente a la original.
+                                </div>
+                                <span asp-validation-for="MateriaDestinoId" class="text-danger"></span>
+                            </div>
+
+                            <!-- Información adicional -->
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    ¿Qué sucederá al importar?
+                                </h6>
+                                <ul class="mb-0">
+                                    <li>Se creará una copia completa de la flashcard en tu cuenta.</li>
+                                    <li>La pregunta, respuesta y pista se copiarán exactamente.</li>
+                                    <li>Podrás usar la flashcard de forma independiente.</li>
+                                    @if (Model.InfoFlashcard.PermiteModificaciones)
+                                    {
+                                        <li class="text-success"><strong>Podrás editar la flashcard después de importarla.</strong></li>
+                                    }
+                                    else
+                                    {
+                                        <li class="text-warning"><strong>La flashcard será de solo lectura (no podrás modificarla).</strong></li>
+                                    }
+                                </ul>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-times me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-download me-1"></i>
+                                    Importar Flashcard
+                                </button>
+                            </div>
+                        </form>
+                    }
+                    else if (Model.InfoFlashcard != null && !Model.InfoFlashcard.EstaDisponible)
+                    {
+                        <!-- Flashcard No Disponible -->
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Flashcard No Disponible
+                            </h5>
+                            <hr>
+                            <p class="mb-0">@Model.InfoFlashcard.MensajeError</p>
+                        </div>
+                        <div class="mt-4">
+                            <a asp-action="Importar" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Intentar con Otro Código
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Formulario para Ingresar Código -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Ingresa el código de 8 caracteres que te compartieron para importar una flashcard.
+                        </div>
+
+                        @if (TempData["Error"] != null)
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                @TempData["Error"]
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+
+                        <form asp-action="Importar" method="get">
+                            <div class="mb-4">
+                                <label for="codigo" class="form-label">
+                                    <i class="fas fa-key me-1"></i>
+                                    Código de Compartición
+                                </label>
+                                <input id="codigo" name="codigo" type="text" class="form-control form-control-lg text-center font-monospace" 
+                                       placeholder="ABCD1234" maxlength="8" style="letter-spacing: 0.3em;" 
+                                       value="@Model.Codigo"
+                                       onkeyup="this.value = this.value.toUpperCase()" required />
+                                <div class="form-text">
+                                    Ingresa el código exactamente como te lo compartieron (8 caracteres).
+                                </div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-action="Index" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>
+                                    Volver
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>
+                                    Buscar Flashcard
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Ayuda -->
+                        <div class="mt-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-question-circle me-1"></i>
+                                        ¿Cómo obtener un código?
+                                    </h6>
+                                    <p class="card-text mb-0">
+                                        Los códigos de compartición son generados por otros usuarios cuando comparten sus flashcards. 
+                                        Solicita el código a la persona que desea compartir la flashcard contigo. El código tiene 8 caracteres 
+                                        y puede incluir letras y números.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

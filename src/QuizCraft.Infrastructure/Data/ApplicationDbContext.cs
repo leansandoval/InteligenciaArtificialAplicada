@@ -26,6 +26,8 @@ namespace QuizCraft.Infrastructure.Data
         public DbSet<RepasoProgramado> RepasosProgramados { get; set; }
         public DbSet<QuizCompartido> QuizzesCompartidos { get; set; }
         public DbSet<QuizImportado> QuizzesImportados { get; set; }
+        public DbSet<FlashcardCompartida> FlashcardsCompartidas { get; set; }
+        public DbSet<FlashcardImportada> FlashcardsImportadas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -379,6 +381,62 @@ namespace QuizCraft.Infrastructure.Data
                 
                 entity.HasIndex(e => new { e.QuizCompartidoId, e.UsuarioId })
                     .HasDatabaseName("IX_QuizzesImportados_Compartido_Usuario");
+            });
+            
+            // Configuración de FlashcardCompartida
+            builder.Entity<FlashcardCompartida>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasOne(e => e.Flashcard)
+                    .WithMany()
+                    .HasForeignKey(e => e.FlashcardId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(e => e.Propietario)
+                    .WithMany()
+                    .HasForeignKey(e => e.PropietarioId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.HasIndex(e => e.CodigoCompartido)
+                    .IsUnique()
+                    .HasDatabaseName("IX_FlashcardsCompartidas_Codigo");
+                
+                entity.Property(e => e.CodigoCompartido)
+                    .IsRequired()
+                    .HasMaxLength(100);
+                
+                entity.Property(e => e.PropietarioId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+            });
+            
+            // Configuración de FlashcardImportada
+            builder.Entity<FlashcardImportada>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                entity.HasOne(e => e.FlashcardCompartida)
+                    .WithMany(fc => fc.Importaciones)
+                    .HasForeignKey(e => e.FlashcardCompartidaId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                entity.HasOne(e => e.Flashcard)
+                    .WithMany()
+                    .HasForeignKey(e => e.FlashcardId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.HasOne(e => e.Usuario)
+                    .WithMany()
+                    .HasForeignKey(e => e.UsuarioId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.Property(e => e.UsuarioId)
+                    .IsRequired()
+                    .HasMaxLength(450);
+                
+                entity.HasIndex(e => new { e.FlashcardCompartidaId, e.UsuarioId })
+                    .HasDatabaseName("IX_FlashcardsImportadas_Compartida_Usuario");
             });
         }
     }

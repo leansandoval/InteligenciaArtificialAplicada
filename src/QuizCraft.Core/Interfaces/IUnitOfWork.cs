@@ -10,6 +10,7 @@ public interface IUnitOfWork : IDisposable
     IFlashcardRepository FlashcardRepository { get; }
     IQuizRepository QuizRepository { get; }
     IQuizCompartidoRepository QuizCompartidoRepository { get; }
+    IFlashcardCompartidaRepository FlashcardCompartidaRepository { get; }
     IEstadisticaEstudioRepository EstadisticaEstudioRepository { get; }
     IResultadoQuizRepository ResultadoQuizRepository { get; }
 

@@ -1290,7 +1290,10 @@ public class FlashcardController : Controller
 
             if (!response.Success)
             {
-                ModelState.AddModelError("", $"Error al generar flashcards: {response.ErrorMessage}");
+                var errorMessage = response.ErrorMessage ?? "Servicio IA no disponible";
+                _logger.LogWarning("AI service returned error: {Error}", errorMessage);
+                
+                TempData["Error"] = $"Error al generar flashcards con IA:\n\n{errorMessage}";
                 var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuario.Id);
                 model.Materias = materias.ToList();
                 return View(model);

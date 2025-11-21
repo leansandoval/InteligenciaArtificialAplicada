@@ -45,6 +45,15 @@ namespace QuizCraft.Infrastructure.Services
 
                 if (!response.Success)
                 {
+                    _logger.LogWarning("GenerateTextAsync failed for flashcards. ErrorMessage: '{ErrorMessage}', Content: '{Content}'", 
+                        response.ErrorMessage, response.Content);
+                    
+                    // Asegurar que ErrorMessage esté configurado
+                    if (string.IsNullOrEmpty(response.ErrorMessage) && !string.IsNullOrEmpty(response.Content))
+                    {
+                        response.ErrorMessage = response.Content;
+                    }
+                    
                     return response;
                 }
 
@@ -67,10 +76,12 @@ namespace QuizCraft.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating flashcards with Gemini");
+                var errorMsg = $"Error al comunicarse con Gemini: {ex.Message}";
                 return new AIResponse
                 {
                     Success = false,
-                    Content = $"Error al comunicarse con Gemini: {ex.Message}",
+                    Content = errorMsg,
+                    ErrorMessage = errorMsg,
                     TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                 };
             }
@@ -92,10 +103,12 @@ namespace QuizCraft.Infrastructure.Services
                 if (estimatedTokens > 12000) // Límite aumentado para documentos extensos
                 {
                     _logger.LogWarning("Content too large. Estimated tokens: {Tokens}", estimatedTokens);
+                    var errorMsg = "El contenido es demasiado largo. El documento debe tener menos de 10,000 caracteres.";
                     return new AIResponse
                     {
                         Success = false,
-                        Content = "El contenido es demasiado largo. El documento debe tener menos de 10,000 caracteres.",
+                        Content = errorMsg,
+                        ErrorMessage = errorMsg,
                         TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                     };
                 }
@@ -111,6 +124,15 @@ namespace QuizCraft.Infrastructure.Services
 
                 if (!response.Success)
                 {
+                    _logger.LogWarning("GenerateTextAsync failed. ErrorMessage: '{ErrorMessage}', Content: '{Content}'", 
+                        response.ErrorMessage, response.Content);
+                    
+                    // Asegurar que ErrorMessage esté configurado
+                    if (string.IsNullOrEmpty(response.ErrorMessage) && !string.IsNullOrEmpty(response.Content))
+                    {
+                        response.ErrorMessage = response.Content;
+                    }
+                    
                     return response;
                 }
 
@@ -133,10 +155,12 @@ namespace QuizCraft.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating quiz with Gemini");
+                var errorMsg = $"Error al comunicarse con Gemini: {ex.Message}";
                 return new AIResponse
                 {
                     Success = false,
-                    Content = $"Error al comunicarse con Gemini: {ex.Message}",
+                    Content = errorMsg,
+                    ErrorMessage = errorMsg,
                     TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                 };
             }
@@ -185,10 +209,14 @@ namespace QuizCraft.Infrastructure.Services
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
 
+                    // Parsear el error para obtener información detallada
+                    string errorMessage = ParseGeminiError(response.StatusCode, errorContent);
+
                     return new AIResponse
                     {
                         Success = false,
-                        Content = $"Error de la API de Gemini: {response.StatusCode}",
+                        Content = errorMessage,
+                        ErrorMessage = errorMessage,
                         TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                     };
                 }
@@ -200,10 +228,12 @@ namespace QuizCraft.Infrastructure.Services
                     candidates.GetArrayLength() == 0)
                 {
                     _logger.LogError("Gemini returned no candidates");
+                    var errorMsg = "Error: No se recibió respuesta válida de Gemini";
                     return new AIResponse
                     {
                         Success = false,
-                        Content = "Error: No se recibió respuesta válida de Gemini",
+                        Content = errorMsg,
+                        ErrorMessage = errorMsg,
                         TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                     };
                 }
@@ -214,10 +244,12 @@ namespace QuizCraft.Infrastructure.Services
                     parts.GetArrayLength() == 0)
                 {
                     _logger.LogError("Gemini response format invalid");
+                    var errorMsg = "Error: Formato de respuesta de Gemini inválido";
                     return new AIResponse
                     {
                         Success = false,
-                        Content = "Error: Formato de respuesta de Gemini inválido",
+                        Content = errorMsg,
+                        ErrorMessage = errorMsg,
                         TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                     };
                 }
@@ -243,10 +275,12 @@ namespace QuizCraft.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error making request to Gemini");
+                var errorMsg = $"Error al comunicarse con Gemini: {ex.Message}";
                 return new AIResponse
                 {
                     Success = false,
-                    Content = $"Error al comunicarse con Gemini: {ex.Message}",
+                    Content = errorMsg,
+                    ErrorMessage = errorMsg,
                     TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                 };
             }
@@ -743,6 +777,58 @@ namespace QuizCraft.Infrastructure.Services
                 "difícil" or "hard" or "dificil" => Core.Enums.NivelDificultad.Dificil,
                 _ => Core.Enums.NivelDificultad.Intermedio
             };
+        }
+
+        /// <summary>
+        /// Parsea los errores de Gemini para proporcionar mensajes útiles al usuario
+        /// </summary>
+        private string ParseGeminiError(System.Net.HttpStatusCode statusCode, string errorContent)
+        {
+            try
+            {
+                var error = JsonSerializer.Deserialize<JsonElement>(errorContent);
+                if (error.TryGetProperty("error", out var errorObj))
+                {
+                    var message = errorObj.TryGetProperty("message", out var msg) ? msg.GetString() : "";
+                    var code = errorObj.TryGetProperty("code", out var codeElement) ? codeElement.GetInt32() : (int)statusCode;
+
+                    // Error 429: Cuota excedida
+                    if (code == 429 || statusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    {
+                        return "❌ Has excedido el límite de uso gratuito de la API de Gemini.\n\n" +
+                               "📊 Para verificar tu uso actual: https://ai.dev/usage\n" +
+                               "📖 Más información sobre límites: https://ai.google.dev/gemini-api/docs/rate-limits\n\n" +
+                               "⏰ Espera unos minutos e intenta nuevamente, o considera actualizar a un plan de pago.";
+                    }
+
+                    // Error 401: API Key inválida
+                    if (code == 401 || statusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        return "❌ Tu API Key de Gemini no es válida o ha expirado.\n\n" +
+                               "🔑 Verifica tu API Key en: https://aistudio.google.com/app/apikey\n" +
+                               "⚙️ Actualiza la configuración en appsettings.json";
+                    }
+
+                    // Error 403: Permisos insuficientes
+                    if (code == 403 || statusCode == System.Net.HttpStatusCode.Forbidden)
+                    {
+                        return "❌ No tienes permisos para usar este modelo de Gemini.\n\n" +
+                               "📖 Verifica que tu API Key tenga acceso al modelo gemini-2.0-flash-exp";
+                    }
+
+                    // Otros errores: mostrar mensaje de la API
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        return $"Error de Gemini ({code}): {message}";
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Si no se puede parsear, usar mensaje genérico
+            }
+
+            return $"Error de la API de Gemini ({(int)statusCode}). Por favor, verifica tu configuración e intenta nuevamente.";
         }
 
         private int EstimateTokens(string text)

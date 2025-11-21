@@ -1,0 +1,276 @@
+@model QuizCraft.Web.ViewModels.DiagnosticoIAViewModel
+@{
+    ViewData["Title"] = "Diagnóstico de IA";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-stethoscope me-2"></i>
+                        Diagnóstico de Configuración de IA
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Verificación realizada: @Model.FechaVerificacion.ToString("dd/MM/yyyy HH:mm:ss")
+                    </p>
+
+                    <!-- Estado de Configuración -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">
+                            <i class="fas fa-cog me-2"></i>
+                            Estado de Configuración
+                        </h5>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card @(Model.ApiKeyConfigurada ? "border-success" : "border-danger")">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            @if (Model.ApiKeyConfigurada)
+                                            {
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                            }
+                                            API Key
+                                        </h6>
+                                        @if (Model.ApiKeyConfigurada)
+                                        {
+                                            <p class="mb-0 small font-monospace">@Model.ApiKeyParcial</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="mb-0 text-danger">No configurada</p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card @(Model.ConfiguracionValida ? "border-success" : "border-warning")">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            @if (Model.ConfiguracionValida)
+                                            {
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                            }
+                                            Modelo Configurado
+                                        </h6>
+                                        <p class="mb-0">@(Model.ModeloConfigurudo ?? "No especificado")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado de Conexión -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">
+                            <i class="fas fa-plug me-2"></i>
+                            Estado de Conexión
+                        </h5>
+                        
+                        @if (Model.ConfiguracionValida)
+                        {
+                            @if (Model.ConexionExitosa)
+                            {
+                                <div class="alert alert-success">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        ✅ Conexión Exitosa
+                                    </h6>
+                                    <hr>
+                                    <p class="mb-2"><strong>Respuesta:</strong> @Model.MensajeRespuesta</p>
+                                    <p class="mb-0"><strong>Tokens utilizados en prueba:</strong> @Model.TokensUsados</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-danger">
+                                    <h6 class="alert-heading">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        ❌ Error de Conexión
+                                    </h6>
+                                    <hr>
+                                    <p class="mb-0"><strong>Error:</strong> @Model.MensajeError</p>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>No se puede probar la conexión:</strong> @Model.MensajeError
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Errores Comunes -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">
+                            <i class="fas fa-question-circle me-2"></i>
+                            Errores Comunes y Soluciones
+                        </h5>
+                        
+                        <div class="accordion" id="errorAccordion">
+                            <!-- Error 429 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#error429">
+                                        <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                                        Error 429 - Cuota Excedida
+                                    </button>
+                                </h2>
+                                <div id="error429" class="accordion-collapse collapse" data-bs-parent="#errorAccordion">
+                                    <div class="accordion-body">
+                                        <p><strong>Síntoma:</strong> "Resource has been exhausted (e.g. check quota)"</p>
+                                        <p><strong>Causa:</strong> Has superado el límite de solicitudes por minuto o por día.</p>
+                                        <p><strong>Solución:</strong></p>
+                                        <ul>
+                                            <li>Espera unos minutos antes de volver a intentar</li>
+                                            <li>Verifica tu cuota en <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                                            <li>Considera solicitar un aumento de cuota si es necesario</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Error 401 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#error401">
+                                        <i class="fas fa-key text-warning me-2"></i>
+                                        Error 401 - API Key Inválida
+                                    </button>
+                                </h2>
+                                <div id="error401" class="accordion-collapse collapse" data-bs-parent="#errorAccordion">
+                                    <div class="accordion-body">
+                                        <p><strong>Síntoma:</strong> "API key not valid"</p>
+                                        <p><strong>Causa:</strong> La API Key es incorrecta o ha sido revocada.</p>
+                                        <p><strong>Solución:</strong></p>
+                                        <ul>
+                                            <li>Verifica que copiaste la API Key completa</li>
+                                            <li>Genera una nueva API Key en <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a></li>
+                                            <li>Actualiza el archivo <code>appsettings.Development.json</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Error 403 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#error403">
+                                        <i class="fas fa-ban text-danger me-2"></i>
+                                        Error 403 - Sin Permisos
+                                    </button>
+                                </h2>
+                                <div id="error403" class="accordion-collapse collapse" data-bs-parent="#errorAccordion">
+                                    <div class="accordion-body">
+                                        <p><strong>Síntoma:</strong> "The caller does not have permission"</p>
+                                        <p><strong>Causa:</strong> La API Key no tiene permisos para usar el servicio Gemini.</p>
+                                        <p><strong>Solución:</strong></p>
+                                        <ul>
+                                            <li>Verifica que la API Key tenga habilitado el servicio Gemini API</li>
+                                            <li>Asegúrate de estar usando una cuenta válida de Google</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="d-flex justify-content-between">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="btn btn-info">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            Ir a Google AI Studio
+                        </a>
+                        <div>
+                            <button type="button" class="btn btn-primary" onclick="verificarNuevamente()">
+                                <i class="fas fa-sync-alt me-1"></i>
+                                Verificar Nuevamente
+                            </button>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Volver
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Resultado de verificación en tiempo real -->
+                    <div id="resultadoVerificacion" class="mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function verificarNuevamente() {
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Verificando...';
+            btn.disabled = true;
+            
+            const resultadoDiv = document.getElementById('resultadoVerificacion');
+            resultadoDiv.style.display = 'none';
+            
+            fetch('@Url.Action("VerificarEstado", "DiagnosticoIA")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                
+                resultadoDiv.style.display = 'block';
+                
+                if (data.success) {
+                    resultadoDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>✅ Verificación Exitosa</strong><br>
+                            Respuesta: ${data.mensaje}<br>
+                            Tokens usados: ${data.tokens}<br>
+                            Hora: ${new Date(data.timestamp).toLocaleString()}
+                        </div>
+                    `;
+                } else {
+                    resultadoDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>❌ Error en Verificación</strong><br>
+                            ${data.mensaje}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                
+                resultadoDiv.style.display = 'block';
+                resultadoDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+            });
+        }
+    </script>
+}

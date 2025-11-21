@@ -31,6 +31,14 @@
                 <i class="fas fa-magic me-1"></i>
                 Generar con IA
             </a>
+            <a asp-controller="FlashcardCompartida" asp-action="Index" class="btn btn-outline-primary text-nowrap">
+                <i class="fas fa-share-alt me-1"></i>
+                Compartidas
+            </a>
+            <a asp-controller="FlashcardCompartida" asp-action="Importar" class="btn btn-outline-success text-nowrap">
+                <i class="fas fa-download me-1"></i>
+                Importar
+            </a>
             @if (Model.Any())
             {
                 <a asp-action="ConfigurarRepaso" class="btn btn-success text-nowrap">
@@ -195,6 +203,10 @@
                                 </a>
                                 <a asp-action="Edit" asp-route-id="@flashcard.Id" class="btn btn-outline-primary" title="Editar">
                                     <i class="fas fa-edit"></i>
+                                </a>
+                                <a asp-controller="FlashcardCompartida" asp-action="Compartir" asp-route-flashcardId="@flashcard.Id" 
+                                   class="btn btn-outline-success" title="Compartir">
+                                    <i class="fas fa-share-alt"></i>
                                 </a>
                                 <button type="button" class="btn btn-outline-danger" 
                                         onclick="confirmarEliminacion(@flashcard.Id, '@flashcard.Pregunta')" title="Eliminar">
