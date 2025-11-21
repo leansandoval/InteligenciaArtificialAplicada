@@ -91,6 +91,11 @@ public class FlashcardController : Controller
                     f.Respuesta.Contains(filtros.TextoBusqueda, StringComparison.OrdinalIgnoreCase));
             }
 
+            // Obtener IDs de flashcards importadas por el usuario
+            var flashcardsImportadas = await _unitOfWork.FlashcardCompartidaRepository
+                .GetImportadasByUsuarioAsync(usuario.Id);
+            var idsImportadas = new HashSet<int>(flashcardsImportadas.Select(fi => fi.FlashcardId));
+
             // Mapear a ViewModels
             var flashcardViewModels = flashcards.Select(f => new FlashcardViewModel
             {
@@ -108,7 +113,8 @@ public class FlashcardController : Controller
                 FechaCreacion = f.FechaCreacion,
                 FechaModificacion = f.FechaModificacion,
                 VecesRepasada = f.VecesVista,
-                UltimaVezRepasada = f.UltimaRevision
+                UltimaVezRepasada = f.UltimaRevision,
+                EsImportada = idsImportadas.Contains(f.Id)
             }).ToList();
 
             // Pasar datos a la vista

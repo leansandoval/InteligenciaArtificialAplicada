@@ -321,22 +321,28 @@ public class FlashcardCompartidaService : IFlashcardCompartidaService
     {
         var compartidas = await _flashcardCompartidaRepository.GetByPropietarioAsync(usuarioId);
         
-        return compartidas.Select(fc => new FlashcardCompartidaResumen
-        {
-            Id = fc.Id,
-            FlashcardId = fc.FlashcardId,
-            Codigo = fc.CodigoCompartido,
-            Pregunta = fc.Flashcard?.Pregunta ?? "Sin pregunta",
-            NombreMateria = fc.Flashcard?.Materia?.Nombre ?? "Sin materia",
-            Dificultad = fc.Flashcard?.Dificultad.ToString() ?? "Desconocida",
-            FechaCreacion = fc.FechaCreacion,
-            FechaExpiracion = fc.FechaExpiracion,
-            VecesUsado = fc.VecesUsado,
-            MaximoUsos = fc.MaximoUsos,
-            EstaExpirado = fc.FechaExpiracion.HasValue && fc.FechaExpiracion.Value < DateTime.UtcNow,
-            EstaAgotado = fc.MaximoUsos.HasValue && fc.VecesUsado >= fc.MaximoUsos.Value,
-            EstaActivo = fc.EstaActivo
-        }).ToList();
+        // Obtener IDs de flashcards importadas por el usuario para excluirlas
+        var flashcardsImportadas = await _flashcardCompartidaRepository.GetImportadasByUsuarioAsync(usuarioId);
+        var idsFlashcardsImportadas = new HashSet<int>(flashcardsImportadas.Select(fi => fi.FlashcardId));
+        
+        return compartidas
+            .Where(fc => !idsFlashcardsImportadas.Contains(fc.FlashcardId)) // Excluir flashcards importadas
+            .Select(fc => new FlashcardCompartidaResumen
+            {
+                Id = fc.Id,
+                FlashcardId = fc.FlashcardId,
+                Codigo = fc.CodigoCompartido,
+                Pregunta = fc.Flashcard?.Pregunta ?? "Sin pregunta",
+                NombreMateria = fc.Flashcard?.Materia?.Nombre ?? "Sin materia",
+                Dificultad = fc.Flashcard?.Dificultad.ToString() ?? "Desconocida",
+                FechaCreacion = fc.FechaCreacion,
+                FechaExpiracion = fc.FechaExpiracion,
+                VecesUsado = fc.VecesUsado,
+                MaximoUsos = fc.MaximoUsos,
+                EstaExpirado = fc.FechaExpiracion.HasValue && fc.FechaExpiracion.Value < DateTime.UtcNow,
+                EstaAgotado = fc.MaximoUsos.HasValue && fc.VecesUsado >= fc.MaximoUsos.Value,
+                EstaActivo = fc.EstaActivo
+            }).ToList();
     }
 
     public async Task<List<FlashcardImportadaResumen>> ObtenerFlashcardsImportadasAsync(string usuarioId)
@@ -349,7 +355,9 @@ public class FlashcardCompartidaService : IFlashcardCompartidaService
             Pregunta = fi.Flashcard?.Pregunta ?? "Sin pregunta",
             NombreMateria = fi.Flashcard?.Materia?.Nombre ?? "Sin materia",
             Dificultad = fi.Flashcard?.Dificultad.ToString() ?? "Desconocida",
-            NombrePropietarioOriginal = fi.FlashcardCompartida?.Propietario?.UserName ?? "Usuario desconocido",
+            NombrePropietarioOriginal = fi.FlashcardCompartida?.Propietario?.NombreCompleto ?? 
+                                       fi.FlashcardCompartida?.Propietario?.UserName ?? 
+                                       "Usuario desconocido",
             FechaImportacion = fi.FechaImportacion,
             PermiteModificaciones = fi.FlashcardCompartida?.PermiteModificaciones ?? true
         }).ToList();

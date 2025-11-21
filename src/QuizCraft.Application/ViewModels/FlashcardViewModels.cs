@@ -47,6 +47,9 @@ public class FlashcardViewModel
     [Display(Name = "Última Vez Repasada")]
     public DateTime? UltimaVezRepasada { get; set; }
     
+    [Display(Name = "Es Importada")]
+    public bool EsImportada { get; set; }
+    
     // Archivos adjuntos
     public List<ArchivoAdjuntoViewModel> ArchivosAdjuntos { get; set; } = new();
 }

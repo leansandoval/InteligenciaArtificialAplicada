@@ -199,12 +199,19 @@
 
                 <!-- Tab: Flashcards Importadas -->
                 <div class="tab-pane fade" id="importados" role="tabpanel">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a asp-action="Importar" class="btn btn-success">
+                            <i class="fas fa-download me-1"></i>
+                            Importar Flashcard
+                        </a>
+                    </div>
+                    
                     @if (!Model.FlashcardsImportadas.Any())
                     {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             No has importado ninguna flashcard todavía.
-                            <a asp-action="Importar" class="alert-link">Importar una flashcard ahora</a>
+                            Haz clic en el botón "Importar Flashcard" arriba para comenzar.
                         </div>
                     }
                     else
