@@ -15,10 +15,12 @@ namespace QuizCraft.Infrastructure.Services
         private readonly HttpClient _httpClient;
         private readonly ILogger<GeminiService> _logger;
         private readonly GeminiSettings _settings;
+        private readonly GeminiRateLimiter _rateLimiter;
 
         public GeminiService(
             IOptions<GeminiSettings> options,
             ILogger<GeminiService> logger,
+            ILoggerFactory loggerFactory,
             HttpClient httpClient)
         {
             _logger = logger;
@@ -29,6 +31,16 @@ namespace QuizCraft.Infrastructure.Services
             {
                 throw new InvalidOperationException("Gemini API Key must be configured");
             }
+
+            // Inicializar rate limiter con logger del factory
+            var rateLimiterLogger = loggerFactory.CreateLogger<GeminiRateLimiter>();
+            
+            _rateLimiter = new GeminiRateLimiter(
+                rateLimiterLogger,
+                _settings.RequestsPerMinute,
+                _settings.RequestsPerDay,
+                _settings.TokensPerMinute
+            );
 
             _logger.LogInformation("Gemini Service initialized with model: {Model}",
                 _settings.Model);
@@ -168,114 +180,161 @@ namespace QuizCraft.Infrastructure.Services
 
         public async Task<AIResponse> GenerateTextAsync(string prompt, AISettings? customSettings = null)
         {
+            var estimatedTokens = EstimateTokens(prompt) + (customSettings?.MaxTokens ?? _settings.MaxTokens);
+            
+            // Aplicar rate limiting antes de hacer la petición
             try
             {
-                _logger.LogInformation("Sending request to Gemini with model {Model}", _settings.Model);
-
-                var requestBody = new
+                var waitTime = await _rateLimiter.WaitIfNeededAsync(estimatedTokens);
+                if (waitTime > 0)
                 {
-                    contents = new[]
-                    {
-                        new
-                        {
-                            parts = new[]
-                            {
-                                new { text = prompt }
-                            }
-                        }
-                    },
-                    generationConfig = new
-                    {
-                        temperature = customSettings?.Temperature ?? _settings.Temperature,
-                        topP = _settings.TopP,
-                        topK = _settings.TopK,
-                        maxOutputTokens = customSettings?.MaxTokens ?? _settings.MaxTokens
-                    }
+                    _logger.LogInformation("Waited {WaitTime}ms due to rate limiting", waitTime);
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Límite diario alcanzado
+                _logger.LogError(ex, "Rate limit exceeded");
+                return new AIResponse
+                {
+                    Success = false,
+                    Content = ex.Message,
+                    ErrorMessage = ex.Message,
+                    TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                 };
+            }
 
-                var json = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+            // Intentar con reintentos en caso de error 429
+            for (int attempt = 0; attempt <= _settings.MaxRetries; attempt++)
+            {
+                try
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
-
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var url = $"{_settings.BaseUrl}/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
-
-                var response = await _httpClient.PostAsync(url, content);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-
-                    // Parsear el error para obtener información detallada
-                    string errorMessage = ParseGeminiError(response.StatusCode, errorContent);
-
-                    return new AIResponse
+                    if (attempt > 0)
                     {
-                        Success = false,
-                        Content = errorMessage,
-                        ErrorMessage = errorMessage,
-                        TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
-                    };
-                }
+                        _logger.LogInformation("Retry attempt {Attempt}/{Max} for Gemini API", 
+                            attempt, _settings.MaxRetries);
+                    }
 
-                var responseJson = await response.Content.ReadAsStringAsync();
-                var geminiResponse = JsonSerializer.Deserialize<JsonElement>(responseJson);
-
-                if (!geminiResponse.TryGetProperty("candidates", out var candidates) ||
-                    candidates.GetArrayLength() == 0)
-                {
-                    _logger.LogError("Gemini returned no candidates");
-                    var errorMsg = "Error: No se recibió respuesta válida de Gemini";
-                    return new AIResponse
+                    var response = await ExecuteGeminiRequestAsync(prompt, customSettings);
+                    
+                    // Si fue exitoso, retornar
+                    if (response.Success || !_settings.EnableRetryOnRateLimit)
                     {
-                        Success = false,
-                        Content = errorMsg,
-                        ErrorMessage = errorMsg,
-                        TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
-                    };
-                }
+                        return response;
+                    }
 
-                var candidate = candidates[0];
-                if (!candidate.TryGetProperty("content", out var contentElement) ||
-                    !contentElement.TryGetProperty("parts", out var parts) ||
-                    parts.GetArrayLength() == 0)
-                {
-                    _logger.LogError("Gemini response format invalid");
-                    var errorMsg = "Error: Formato de respuesta de Gemini inválido";
-                    return new AIResponse
+                    // Si es error 429 y quedan reintentos, esperar y reintentar
+                    if (response.ErrorMessage?.Contains("429") == true && attempt < _settings.MaxRetries)
                     {
-                        Success = false,
-                        Content = errorMsg,
-                        ErrorMessage = errorMsg,
-                        TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
-                    };
+                        var delaySeconds = _settings.RetryDelaySeconds * Math.Pow(2, attempt); // Backoff exponencial
+                        _logger.LogWarning(
+                            "Rate limit error (429). Waiting {Delay}s before retry {Attempt}/{Max}",
+                            delaySeconds, attempt + 1, _settings.MaxRetries);
+                        
+                        await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+                        continue;
+                    }
+
+                    // Si es otro error, retornar inmediatamente
+                    return response;
                 }
+                catch (Exception ex)
+                {
+                    if (attempt >= _settings.MaxRetries)
+                    {
+                        _logger.LogError(ex, "Error making request to Gemini after {Attempts} attempts", 
+                            attempt + 1);
+                        
+                        return new AIResponse
+                        {
+                            Success = false,
+                            Content = $"Error al comunicarse con Gemini después de {attempt + 1} intentos: {ex.Message}",
+                            ErrorMessage = ex.Message,
+                            TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
+                        };
+                    }
 
-                var text = parts[0].GetProperty("text").GetString() ?? "";
+                    // Esperar antes de reintentar
+                    var delaySeconds = _settings.RetryDelaySeconds * Math.Pow(2, attempt);
+                    _logger.LogWarning(ex, "Request failed, retrying in {Delay}s", delaySeconds);
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+                }
+            }
 
-                _logger.LogInformation("Gemini response received successfully");
+            // No debería llegar aquí, pero por si acaso
+            return new AIResponse
+            {
+                Success = false,
+                Content = "Error inesperado al comunicarse con Gemini",
+                ErrorMessage = "Max retries exceeded",
+                TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
+            };
+        }
+
+        /// <summary>
+        /// Ejecuta la petición HTTP a Gemini sin lógica de reintentos
+        /// </summary>
+        private async Task<AIResponse> ExecuteGeminiRequestAsync(string prompt, AISettings? customSettings = null)
+        {
+            _logger.LogInformation("Sending request to Gemini with model {Model}", _settings.Model);
+
+            var requestBody = new
+            {
+                contents = new[]
+                {
+                    new
+                    {
+                        parts = new[]
+                        {
+                            new { text = prompt }
+                        }
+                    }
+                },
+                generationConfig = new
+                {
+                    temperature = customSettings?.Temperature ?? _settings.Temperature,
+                    topP = _settings.TopP,
+                    topK = _settings.TopK,
+                    maxOutputTokens = customSettings?.MaxTokens ?? _settings.MaxTokens
+                }
+            };
+
+            var json = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var url = $"{_settings.BaseUrl}/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
+
+            var response = await _httpClient.PostAsync(url, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+
+                // Parsear el error para obtener información detallada
+                string errorMessage = ParseGeminiError(response.StatusCode, errorContent);
 
                 return new AIResponse
                 {
-                    Success = true,
-                    Content = text,
-                    TokenUsage = new TokenUsageInfo
-                    {
-                        CompletionTokens = EstimateTokens(text),
-                        PromptTokens = EstimateTokens(prompt),
-                        TotalTokens = EstimateTokens(prompt + text),
-                        EstimatedCost = 0.00m, // Gemini es gratuito
-                        RequestTime = DateTime.UtcNow
-                    }
+                    Success = false,
+                    Content = errorMessage,
+                    ErrorMessage = $"{(int)response.StatusCode}:{errorMessage}",
+                    TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                 };
             }
-            catch (Exception ex)
+
+            var responseJson = await response.Content.ReadAsStringAsync();
+            var geminiResponse = JsonSerializer.Deserialize<JsonElement>(responseJson);
+
+            if (!geminiResponse.TryGetProperty("candidates", out var candidates) ||
+                candidates.GetArrayLength() == 0)
             {
-                _logger.LogError(ex, "Error making request to Gemini");
-                var errorMsg = $"Error al comunicarse con Gemini: {ex.Message}";
+                _logger.LogError("Gemini returned no candidates");
+                var errorMsg = "Error: No se recibió respuesta válida de Gemini";
                 return new AIResponse
                 {
                     Success = false,
@@ -284,6 +343,40 @@ namespace QuizCraft.Infrastructure.Services
                     TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
                 };
             }
+
+            var candidate = candidates[0];
+            if (!candidate.TryGetProperty("content", out var contentElement) ||
+                !contentElement.TryGetProperty("parts", out var parts) ||
+                parts.GetArrayLength() == 0)
+            {
+                _logger.LogError("Gemini response format invalid");
+                var errorMsg = "Error: Formato de respuesta de Gemini inválido";
+                return new AIResponse
+                {
+                    Success = false,
+                    Content = errorMsg,
+                    ErrorMessage = errorMsg,
+                    TokenUsage = new TokenUsageInfo { RequestTime = DateTime.UtcNow }
+                };
+            }
+
+            var text = parts[0].GetProperty("text").GetString() ?? "";
+
+            _logger.LogInformation("Gemini response received successfully");
+
+            return new AIResponse
+            {
+                Success = true,
+                Content = text,
+                TokenUsage = new TokenUsageInfo
+                {
+                    CompletionTokens = EstimateTokens(text),
+                    PromptTokens = EstimateTokens(prompt),
+                    TotalTokens = EstimateTokens(prompt + text),
+                    EstimatedCost = 0.00m, // Gemini es gratuito
+                    RequestTime = DateTime.UtcNow
+                }
+            };
         }
 
         public async Task<bool> ValidateApiKeyAsync()
@@ -835,6 +928,14 @@ namespace QuizCraft.Infrastructure.Services
         {
             // Estimación aproximada: 1 token ≈ 4 caracteres para español
             return (int)Math.Ceiling(text.Length / 4.0);
+        }
+
+        /// <summary>
+        /// Obtiene estadísticas actuales de uso del rate limiter
+        /// </summary>
+        public RateLimitStats GetRateLimitStats()
+        {
+            return _rateLimiter.GetStats();
         }
     }
 }

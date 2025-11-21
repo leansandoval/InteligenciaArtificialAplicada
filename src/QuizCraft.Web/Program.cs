@@ -109,8 +109,13 @@ if (geminiSettings == null ||
 else
 {
     // Usar servicio real de Gemini cuando hay configuración válida
-    builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIService, QuizCraft.Infrastructure.Services.GeminiService>();
+    // IMPORTANTE: GeminiService debe ser Singleton para que el rate limiter funcione correctamente
+    // El rate limiter necesita mantener el estado entre peticiones
+    builder.Services.AddSingleton<QuizCraft.Infrastructure.Services.GeminiService>();
+    builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIService>(sp => 
+        sp.GetRequiredService<QuizCraft.Infrastructure.Services.GeminiService>());
     Console.WriteLine($"✅ Usando Google Gemini - Modelo: {geminiSettings.Model}");
+    Console.WriteLine($"📊 Rate Limiting habilitado: {geminiSettings.RequestsPerMinute} req/min, {geminiSettings.RequestsPerDay} req/día");
 }
 
 builder.Services.AddScoped<QuizCraft.Application.Interfaces.IAIDocumentProcessor, QuizCraft.Infrastructure.Services.AIDocumentProcessor>();

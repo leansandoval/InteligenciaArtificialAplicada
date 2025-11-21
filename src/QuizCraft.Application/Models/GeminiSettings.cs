@@ -27,6 +27,36 @@ namespace QuizCraft.Application.Models
         public float Temperature { get; set; } = 0.7f;
 
         /// <summary>
+        /// Requests por minuto permitidos (default: 15 para plan gratuito)
+        /// </summary>
+        public int RequestsPerMinute { get; set; } = 15;
+
+        /// <summary>
+        /// Requests por día permitidos (default: 1500 para plan gratuito)
+        /// </summary>
+        public int RequestsPerDay { get; set; } = 1500;
+
+        /// <summary>
+        /// Tokens por minuto permitidos (default: 32000 para plan gratuito)
+        /// </summary>
+        public int TokensPerMinute { get; set; } = 32000;
+
+        /// <summary>
+        /// Habilitar reintentos automáticos en caso de rate limit (429)
+        /// </summary>
+        public bool EnableRetryOnRateLimit { get; set; } = true;
+
+        /// <summary>
+        /// Máximo número de reintentos para errores 429
+        /// </summary>
+        public int MaxRetries { get; set; } = 3;
+
+        /// <summary>
+        /// Delay base en segundos para backoff exponencial
+        /// </summary>
+        public int RetryDelaySeconds { get; set; } = 2;
+
+        /// <summary>
         /// Top-P para núcleo sampling (0.0 - 1.0)
         /// </summary>
         public float TopP { get; set; } = 0.95f;
@@ -50,11 +80,6 @@ namespace QuizCraft.Application.Models
         /// Timeout en segundos para las requests
         /// </summary>
         public int TimeoutSeconds { get; set; } = 120;
-
-        /// <summary>
-        /// Número máximo de reintentos en caso de error temporal
-        /// </summary>
-        public int MaxRetries { get; set; } = 3;
 
         /// <summary>
         /// Indica si el servicio está habilitado

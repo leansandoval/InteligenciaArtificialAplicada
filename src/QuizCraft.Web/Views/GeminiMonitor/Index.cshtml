@@ -1,0 +1,294 @@
+@model QuizCraft.Infrastructure.Services.RateLimitStats
+@{
+    ViewData["Title"] = "Monitor de API Gemini";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-speedometer2"></i> Monitor de Uso de API Gemini</h2>
+                <button id="refreshBtn" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise"></i> Actualizar
+                </button>
+            </div>
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (Model != null)
+            {
+                <!-- Resumen de Estado -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-clock"></i> Uso por Minuto
+                                </h6>
+                                <h3 class="mb-0">
+                                    @Model.RequestsInLastMinute / @Model.RequestsPerMinuteLimit
+                                </h3>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    @{
+                                        var minuteClass = Model.MinuteUsagePercent >= 90 ? "bg-danger" :
+                                                         Model.MinuteUsagePercent >= 70 ? "bg-warning" : "bg-success";
+                                    }
+                                    <div class="progress-bar @minuteClass" 
+                                         role="progressbar" 
+                                         style="width: @(Model.MinuteUsagePercent)%"
+                                         aria-valuenow="@Model.MinuteUsagePercent" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted">@Model.MinuteUsagePercent.ToString("F1")% utilizado</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-calendar-day"></i> Uso Diario
+                                </h6>
+                                <h3 class="mb-0">
+                                    @Model.DailyRequestCount / @Model.DailyRequestLimit
+                                </h3>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    @{
+                                        var dailyClass = Model.DailyUsagePercent >= 90 ? "bg-danger" :
+                                                        Model.DailyUsagePercent >= 70 ? "bg-warning" : "bg-info";
+                                    }
+                                    <div class="progress-bar @dailyClass" 
+                                         role="progressbar" 
+                                         style="width: @(Model.DailyUsagePercent)%"
+                                         aria-valuenow="@Model.DailyUsagePercent" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted">@Model.DailyUsagePercent.ToString("F1")% utilizado</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">
+                                    <i class="bi bi-cpu"></i> Tokens por Minuto
+                                </h6>
+                                <h3 class="mb-0">
+                                    @Model.TokensUsedInCurrentMinute.ToString("N0") / @Model.TokensPerMinuteLimit.ToString("N0")
+                                </h3>
+                                <div class="progress mt-2" style="height: 8px;">
+                                    @{
+                                        var tokenClass = Model.TokenUsagePercent >= 90 ? "bg-danger" :
+                                                        Model.TokenUsagePercent >= 70 ? "bg-warning" : "bg-success";
+                                    }
+                                    <div class="progress-bar @tokenClass" 
+                                         role="progressbar" 
+                                         style="width: @(Model.TokenUsagePercent)%"
+                                         aria-valuenow="@Model.TokenUsagePercent" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted">@Model.TokenUsagePercent.ToString("F1")% utilizado</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de Reset -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-arrow-clockwise"></i> Próximo Reset de Minuto
+                                </h6>
+                                <p class="mb-0">
+                                    <strong id="minuteReset">@Model.MinuteResetTime.ToLocalTime().ToString("HH:mm:ss")</strong>
+                                </p>
+                                <small class="text-muted">
+                                    En <span id="minuteCountdown"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-arrow-clockwise"></i> Próximo Reset Diario
+                                </h6>
+                                <p class="mb-0">
+                                    <strong id="dailyReset">@Model.DailyResetTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong>
+                                </p>
+                                <small class="text-muted">
+                                    En <span id="dailyCountdown"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recomendaciones -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-lightbulb"></i> Recomendaciones de Uso
+                        </h5>
+                        <ul class="mb-0">
+                            @if (Model.MinuteUsagePercent >= 80)
+                            {
+                                <li class="text-warning">
+                                    <strong>Precaución:</strong> Estás cerca del límite por minuto. 
+                                    Espera @((60 - (DateTime.UtcNow - Model.MinuteResetTime.AddMinutes(-1)).Seconds)) segundos antes de hacer más peticiones.
+                                </li>
+                            }
+                            @if (Model.DailyUsagePercent >= 80)
+                            {
+                                <li class="text-danger">
+                                    <strong>Alerta:</strong> Has usado más del 80% de tu cuota diaria. 
+                                    Considera optimizar el uso o esperar al reset.
+                                </li>
+                            }
+                            @if (Model.TokenUsagePercent >= 80)
+                            {
+                                <li class="text-warning">
+                                    <strong>Alto uso de tokens:</strong> Considera reducir la longitud de los contenidos 
+                                    o el número de preguntas/flashcards por generación.
+                                </li>
+                            }
+                            @if (Model.DailyUsagePercent < 50 && Model.MinuteUsagePercent < 50)
+                            {
+                                <li class="text-success">
+                                    <i class="bi bi-check-circle"></i> El uso está dentro de límites normales. 
+                                    Puedes continuar generando contenido sin problemas.
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Información de Límites -->
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-info-circle"></i> Información sobre Límites de API Gratuita
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Límites Actuales:</h6>
+                                <ul>
+                                    <li><strong>Peticiones por minuto:</strong> @Model.RequestsPerMinuteLimit</li>
+                                    <li><strong>Peticiones por día:</strong> @Model.DailyRequestLimit</li>
+                                    <li><strong>Tokens por minuto:</strong> @Model.TokensPerMinuteLimit.ToString("N0")</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Estimaciones:</h6>
+                                <ul>
+                                    <li>1 Flashcard: ~2,000 tokens</li>
+                                    <li>1 Quiz (10 preguntas): ~7,000 tokens</li>
+                                    <li>Capacidad diaria: ~@((Model.DailyRequestLimit * 0.7).ToString("N0")) generaciones mixtas</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <a href="https://ai.google.dev/gemini-api/docs/rate-limits" 
+                               target="_blank" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-box-arrow-up-right"></i> Más información sobre límites
+                            </a>
+                            <a href="https://aistudio.google.com/app/apikey" 
+                               target="_blank" 
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-key"></i> Gestionar API Keys
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    No se pudieron cargar las estadísticas. Por favor, intenta nuevamente.
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Auto-refresh cada 10 segundos
+    let autoRefreshInterval;
+
+    function updateCountdowns() {
+        if (!@Json.Serialize(Model != null)) return;
+
+        const minuteReset = new Date('@Model.MinuteResetTime.ToString("o")');
+        const dailyReset = new Date('@Model.DailyResetTime.ToString("o")');
+        const now = new Date();
+
+        // Countdown para minuto
+        const minuteDiff = Math.max(0, minuteReset - now);
+        const minuteSeconds = Math.floor(minuteDiff / 1000);
+        document.getElementById('minuteCountdown').textContent = 
+            `${minuteSeconds} segundos`;
+
+        // Countdown para día
+        const dailyDiff = Math.max(0, dailyReset - now);
+        const hours = Math.floor(dailyDiff / (1000 * 60 * 60));
+        const minutes = Math.floor((dailyDiff % (1000 * 60 * 60)) / (1000 * 60));
+        document.getElementById('dailyCountdown').textContent = 
+            `${hours}h ${minutes}m`;
+    }
+
+    function refreshStats() {
+        fetch('/GeminiMonitor/GetStats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Recargar la página con las nuevas estadísticas
+                    location.reload();
+                } else {
+                    console.error('Error al actualizar estadísticas:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error en la petición:', error);
+            });
+    }
+
+    document.getElementById('refreshBtn')?.addEventListener('click', function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Actualizando...';
+        refreshStats();
+    });
+
+    // Actualizar countdowns cada segundo
+    setInterval(updateCountdowns, 1000);
+    updateCountdowns();
+
+    // Auto-refresh cada 10 segundos
+    autoRefreshInterval = setInterval(refreshStats, 10000);
+
+    // Limpiar interval al salir de la página
+    window.addEventListener('beforeunload', function() {
+        clearInterval(autoRefreshInterval);
+    });
+</script>
+}
