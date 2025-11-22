@@ -30,91 +30,11 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// FUNC_MostrarPaginaInicio - Página principal de QuizCraft
-    /// </summary>
-    public async Task<IActionResult> Index()
-    {
-        try
-        {
-            var model = new HomeIndexViewModel
-            {
-                EsUsuarioAutenticado = User.Identity?.IsAuthenticated == true
-            };
-
-            // Si el usuario está autenticado, cargar sus datos
-            if (User.Identity?.IsAuthenticated == true)
-            {
-                var user = await _userManager.GetUserAsync(User);
-                if (user != null)
-                {
-                    // Obtener estadísticas del usuario
-                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
-                    var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
-                    var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
-
-                    model.NombreUsuario = user.NombreCompleto;
-                    model.TotalMaterias = materias.Count();
-                    model.TotalFlashcards = flashcards.Count();
-                    model.TotalQuizzes = quizzes.Count();
-                    model.QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(5).ToList();
-                }
-            }
-
-            return View(model);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al cargar la página de inicio");
-            return View(new HomeIndexViewModel());
-        }
-    }
-
-    /// <summary>
-    /// FUNC_MostrarPaginaHome - Página de inicio para todos los usuarios
-    /// </summary>
-    public async Task<IActionResult> Home()
-    {
-        try
-        {
-            var model = new HomeIndexViewModel
-            {
-                EsUsuarioAutenticado = User.Identity?.IsAuthenticated == true
-            };
-
-            // Si el usuario está autenticado, cargar sus datos
-            if (User.Identity?.IsAuthenticated == true)
-            {
-                var user = await _userManager.GetUserAsync(User);
-                if (user != null)
-                {
-                    // Obtener estadísticas del usuario
-                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
-                    var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
-                    var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
-
-                    model.NombreUsuario = user.NombreCompleto;
-                    model.TotalMaterias = materias.Count();
-                    model.TotalFlashcards = flashcards.Count();
-                    model.TotalQuizzes = quizzes.Count();
-                    model.QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(5).ToList();
-                }
-            }
-
-            return View("Index", model);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error al cargar la página de inicio");
-            return View("Index", new HomeIndexViewModel());
-        }
-    }
-
-    /// <summary>
-    /// FUNC_MostrarDashboard - Dashboard del usuario autenticado
+    /// FUNC_MostrarDashboard - Dashboard principal (Home) del usuario autenticado
     /// </summary>
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> Dashboard()
+    public async Task<IActionResult> Index()
     {
         try
         {
@@ -227,24 +147,9 @@ public class HomeController : Controller
     }
 
     /// <summary>
-    /// FUNC_MostrarAcercaDe - Página de información sobre QuizCraft
-    /// </summary>
-    public IActionResult About()
-    {
-        return View();
-    }
-
-    /// <summary>
-    /// FUNC_MostrarPoliticaPrivacidad - Política de privacidad
-    /// </summary>
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
-    /// <summary>
     /// FUNC_MostrarEstadisticas - Página de estadísticas del usuario
     /// </summary>
+    [HttpGet]
     [Authorize]
     public async Task<IActionResult> Statistics()
     {
@@ -256,7 +161,7 @@ public class HomeController : Controller
                 return RedirectToAction("Login", "Account");
             }
 
-            // Obtener todas las estadísticas del usuario
+            // Obtener estadísticas del usuario
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(user.Id);
             var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(user.Id);
             var quizzes = await _unitOfWork.QuizRepository.GetQuizzesByCreadorIdAsync(user.Id);
@@ -267,7 +172,7 @@ public class HomeController : Controller
                 TotalMaterias = materias.Count(),
                 TotalFlashcards = flashcards.Count(),
                 TotalQuizzes = quizzes.Count(),
-                Materias = materias.ToList(),
+                Materias = materias.OrderByDescending(m => m.FechaCreacion).ToList(),
                 QuizzesRecientes = quizzes.OrderByDescending(q => q.FechaCreacion).Take(10).ToList()
             };
 
@@ -275,9 +180,29 @@ public class HomeController : Controller
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al cargar las estadísticas del usuario");
-            return RedirectToAction("Dashboard");
+            _logger.LogError(ex, "Error al cargar estadísticas del usuario {UserId}", 
+                _userManager.GetUserId(User));
+            
+            // En caso de error, usar valores por defecto
+            return View(new StatisticsViewModel
+            {
+                NombreUsuario = User.Identity?.Name ?? "Usuario",
+                TotalMaterias = 0,
+                TotalFlashcards = 0,
+                TotalQuizzes = 0,
+                Materias = new List<Core.Entities.Materia>(),
+                QuizzesRecientes = new List<Core.Entities.Quiz>()
+            });
         }
+    }
+
+    /// <summary>
+    /// FUNC_MostrarAcercaDe - Página de información sobre QuizCraft
+    /// </summary>
+    [HttpGet]
+    public IActionResult About()
+    {
+        return View();
     }
 
     /// <summary>

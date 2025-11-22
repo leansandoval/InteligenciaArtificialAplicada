@@ -1,149 +1,409 @@
-﻿@model QuizCraft.Web.ViewModels.Home.HomeIndexViewModel
+@model QuizCraft.Web.ViewModels.Home.DashboardViewModel
+
 @{
-    ViewData["Title"] = "QuizCraft - Plataforma de Aprendizaje";
+    ViewData["Title"] = "Dashboard - QuizCraft";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid">
-    @if (Model.EsUsuarioAutenticado)
-    {
-        <!-- Vista para usuario autenticado -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="jumbotron bg-primary text-white p-4 rounded">
-                    <h1 class="display-4">¡Bienvenido, @Model.NombreUsuario!</h1>
-                    <p class="lead">Continúa tu aprendizaje con QuizCraft</p>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header de Bienvenida -->
+            <div class="jumbotron bg-gradient-primary text-white rounded p-5 mb-4 dashboard-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="display-4 fw-bold">
+                            ¡Bienvenido de vuelta, @Model.NombreUsuario!
+                        </h1>
+                        <p class="lead mb-4">
+                            Tu centro de aprendizaje personalizado. Gestiona tus materias, 
+                            estudia con flashcards y practica con quizzes.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-controller="Materia" asp-action="Index" class="btn btn-light btn-lg">
+                                <i class="fas fa-books me-2"></i>Mis Materias
+                            </a>
+                            <a asp-controller="Flashcard" asp-action="Index" class="btn btn-light btn-lg">
+                                <i class="fas fa-layer-group me-2"></i>Mis Flashcards
+                            </a>
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-light btn-lg">
+                                <i class="fas fa-question-circle me-2"></i>Mis Quizzes
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="display-1 opacity-75">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-book fa-3x text-primary mb-3"></i>
-                        <h5 class="card-title">Materias</h5>
-                        <h2 class="text-primary">@Model.TotalMaterias</h2>
-                        <p class="card-text">Materias organizadas</p>
-                        <a asp-controller="Materia" asp-action="Index" class="btn btn-primary">Ver Materias</a>
+            <!-- Estadísticas Rápidas -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100 card-hover">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-primary mb-2">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <h3 class="text-primary mb-1" id="totalMaterias">@Model.TotalMaterias</h3>
+                            <p class="text-muted mb-2">Materias organizadas</p>
+                            <a asp-controller="Materia" asp-action="Index" class="btn btn-sm btn-primary">Ver Materias</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100 card-hover">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-success mb-2">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <h3 class="text-success mb-1" id="totalFlashcards">@Model.TotalFlashcards</h3>
+                            <p class="text-muted mb-2">Tarjetas de estudio</p>
+                            <a asp-controller="Flashcard" asp-action="Index" class="btn btn-sm btn-success">Estudiar</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100 card-hover">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-warning mb-2">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <h3 class="text-warning mb-1" id="totalQuizzes">@Model.TotalQuizzes</h3>
+                            <p class="text-muted mb-2">Quizzes recientes</p>
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-warning">Realizar Quiz</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="display-4 text-info mb-2">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3 class="text-info mb-1">@Model.ProgresoPorcentaje%</h3>
+                            <p class="text-muted mb-0">@Model.ProgresoDescripcion</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-layer-group fa-3x text-success mb-3"></i>
-                        <h5 class="card-title">Flashcards</h5>
-                        <h2 class="text-success">@Model.TotalFlashcards</h2>
-                        <p class="card-text">Tarjetas de estudio</p>
-                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-success">Estudiar</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-question-circle fa-3x text-warning mb-3"></i>
-                        <h5 class="card-title">Quizzes</h5>
-                        <h2 class="text-warning">@Model.QuizzesRecientes.Count</h2>
-                        <p class="card-text">Quizzes recientes</p>
-                        <a asp-controller="Quiz" asp-action="Index" class="btn btn-warning">Realizar Quiz</a>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        @if (Model.QuizzesRecientes.Any())
-        {
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Quizzes Recientes</h5>
+            <!-- Acciones Rápidas -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-bolt me-2 text-primary"></i>Acciones Rápidas
+                            </h5>
                         </div>
                         <div class="card-body">
-                            <div class="list-group">
-                                @foreach (var quiz in Model.QuizzesRecientes)
-                                {
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">@quiz.Titulo</h6>
-                                            <small class="text-muted">@quiz.Materia?.Nombre</small>
-                                        </div>
-                                        <div>
-                                            <span class="badge badge-primary">@quiz.NumeroPreguntas preguntas</span>
-                                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.Id" class="btn btn-sm btn-outline-primary ml-2">Realizar</a>
-                                        </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="d-grid">
+                                        <a asp-controller="Flashcard" asp-action="Create" class="btn btn-success btn-lg text-white">
+                                            <i class="fas fa-file me-2"></i>
+                                            <div class="fw-bold">Crear Flashcard</div>
+                                            <small class="d-block text-white">Nueva tarjeta de estudio</small>
+                                        </a>
                                     </div>
-                                }
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-grid">
+                                        <a asp-controller="Quiz" asp-action="Create" class="btn btn-warning btn-lg text-dark">
+                                            <i class="fas fa-question-circle me-2"></i>
+                                            <div class="fw-bold">Crear Quiz</div>
+                                            <small class="d-block text-dark">Nuevo cuestionario de práctica</small>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-grid">
+                                        <a asp-controller="Flashcard" asp-action="Index" class="btn btn-secondary btn-lg text-white">
+                                            <i class="fas fa-play me-2"></i>
+                                            <div class="fw-bold">Sesión de Estudio</div>
+                                            <small class="d-block text-white">Practica con flashcards</small>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        }
-    }
-    else
-    {
-        <!-- Vista para visitantes no autenticados -->
-        <div class="text-center">
-            <div class="jumbotron">
-                <h1 class="display-3">
-                    <i class="fas fa-graduation-cap text-primary"></i>
-                    QuizCraft
-                </h1>
-                <p class="lead">Tu plataforma de aprendizaje personalizada</p>
-                <hr class="my-4">
-                <p class="text-muted">
-                    Crea flashcards, realiza quizzes y mejora tu conocimiento de manera eficiente
-                </p>
-                <div class="mt-4 mb-5">
-                    <a class="btn btn-primary btn-lg mr-4" href="@Url.Action("Register", "Account")" role="button">
-                        <i class="fas fa-user-plus"></i> Registrarse
-                    </a>
-                    <a class="btn btn-outline-primary btn-lg ml-4" href="@Url.Action("Login", "Account")" role="button">
-                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                    </a>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clock me-2 text-success"></i>Actividad Reciente
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.ActividadesRecientes.Any())
+                            {
+                                <div class="list-group list-group-flush">
+                                    @foreach (var actividad in Model.ActividadesRecientes)
+                                    {
+                                        <div class="list-group-item border-0 px-0 py-2">
+                                            <div class="d-flex align-items-start">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <i class="@actividad.IconoActividad @actividad.ColorActividad"></i>
+                                                </div>
+                                                <div class="flex-grow-1 min-w-0" style="overflow: hidden;">
+                                                    <h6 class="mb-1 text-truncate" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                        @if (actividad.TipoActividad == QuizCraft.Core.Enums.TipoActividad.Quiz)
+                                                        {
+                                                            <a href="@Url.Action("Details", "Quiz", new { id = actividad.ReferenciaId })" class="text-decoration-none" title="@actividad.Titulo">
+                                                                @actividad.Titulo
+                                                            </a>
+                                                        }
+                                                        else if (actividad.TipoActividad == QuizCraft.Core.Enums.TipoActividad.Flashcard)
+                                                        {
+                                                            <a href="@Url.Action("Index", "Flashcard", new { materiaId = actividad.ReferenciaId })" class="text-decoration-none" title="@actividad.Titulo - Ver flashcards de @actividad.MateriaNombre">
+                                                                @actividad.Titulo
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span title="@actividad.Titulo">@actividad.Titulo</span>
+                                                        }
+                                                    </h6>
+                                                    <p class="mb-1 small text-muted text-truncate" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@actividad.Descripcion">@actividad.Descripcion</p>
+                                                    @if (!string.IsNullOrEmpty(actividad.MateriaNombre))
+                                                    {
+                                                        <span class="badge rounded-pill text-truncate d-inline-block" style="background-color: @(actividad.MateriaColor ?? "#6c757d"); color: white; font-size: 0.7rem; max-width: 100%;" title="@actividad.MateriaNombre">
+                                                            @actividad.MateriaNombre
+                                                        </span>
+                                                    }
+                                                    <small class="text-muted d-block mt-1">
+                                                        <i class="fas fa-clock me-1"></i>@actividad.FechaActividad.ToString("dd/MM HH:mm")
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-2x mb-3 opacity-50"></i>
+                                    <p class="mb-0">No hay actividad reciente</p>
+                                    <small>¡Comienza creando tu primera materia!</small>
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row text-center mb-5 mt-5">
-            <div class="col-md-4">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <i class="fas fa-layer-group fa-4x text-primary mb-3"></i>
-                        <h4 class="card-title">Flashcards Inteligentes</h4>
-                        <p class="card-text">
-                            Crea y estudia flashcards con un sistema de repetición espaciada 
-                            que se adapta a tu progreso de aprendizaje.
-                        </p>
-                    </div>
+            <!-- Materias Recientes -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-books me-2 text-primary"></i>Mis Materias
+                    </h5>
+                    <a asp-controller="Materia" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                        Ver todas <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (Model.TotalMaterias > 0)
+                    {
+                        <div class="row">
+                            @foreach (var materia in Model.MateriasRecientes)
+                            {
+                                <div class="col-md-4 mb-3">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="flex-shrink-0">
+                                                    @if (!string.IsNullOrEmpty(materia.Icono))
+                                                    {
+                                                        <i class="@materia.Icono fa-2x" style="color: @materia.Color"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-book fa-2x text-primary"></i>
+                                                    }
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <h6 class="mb-1">@materia.Nombre</h6>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar me-1"></i>
+                                                        @materia.FechaCreacion.ToString("dd/MM/yyyy")
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <p class="card-text small text-muted mb-2">
+                                                @(string.IsNullOrEmpty(materia.Descripcion) ? "Sin descripción" : 
+                                                  materia.Descripcion.Length > 60 ? materia.Descripcion.Substring(0, 60) + "..." : materia.Descripcion)
+                                            </p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-layer-group me-1"></i>
+                                                    Flashcards
+                                                </small>
+                                                <a asp-controller="Flashcard" asp-action="Index" asp-route-materiaId="@materia.Id" class="btn btn-sm btn-outline-primary">
+                                                    Ver <i class="fas fa-arrow-right ms-1"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="text-center mt-3">
+                            <a asp-controller="Materia" asp-action="Index" class="btn btn-primary">
+                                <i class="fas fa-books me-2"></i>Ver Materias
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-books fa-3x mb-3 opacity-50"></i>
+                            <h6 class="mb-2">No tienes materias creadas</h6>
+                            <p class="mb-3">Las materias te ayudan a organizar tu contenido de estudio por temas.</p>
+                            <a asp-controller="Materia" asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Crear Primera Materia
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <i class="fas fa-question-circle fa-4x text-success mb-3"></i>
-                        <h4 class="card-title">Quizzes Personalizados</h4>
-                        <p class="card-text">
-                            Diseña quizzes adaptados a tus necesidades con diferentes tipos 
-                            de preguntas y niveles de dificultad.
-                        </p>
-                    </div>
+
+            <!-- Quizzes Recientes -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle me-2 text-warning"></i>Mis Quizzes
+                    </h5>
+                    <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-warning text-dark">
+                        Ver todos <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-0 h-100">
-                    <div class="card-body">
-                        <i class="fas fa-chart-line fa-4x text-warning mb-3"></i>
-                        <h4 class="card-title">Progreso Detallado</h4>
-                        <p class="card-text">
-                            Monitorea tu progreso con estadísticas detalladas y 
-                            visualizaciones que te ayudan a mejorar continuamente.
-                        </p>
-                    </div>
+                <div class="card-body">
+                    @if (Model.QuizzesRecientes.Any())
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var quiz in Model.QuizzesRecientes.Take(3))
+                            {
+                                <div class="list-group-item border-0 px-0 py-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 text-truncate" style="max-width: 200px;">
+                                                <a asp-controller="Quiz" asp-action="Details" asp-route-id="@quiz.Id" class="text-decoration-none">
+                                                    @quiz.Titulo
+                                                </a>
+                                            </h6>
+                                            <p class="mb-1 text-muted small">
+                                                <i class="fas fa-folder me-1"></i>@(quiz.Materia?.Nombre ?? "Sin materia")
+                                            </p>
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-question me-1"></i>@(quiz.Preguntas?.Count ?? quiz.NumeroPreguntas) preguntas
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>@quiz.FechaCreacion.ToString("dd/MM/yyyy")
+                                            </small>
+                                        </div>
+                                        <div class="text-end">
+                                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@quiz.Id" class="btn btn-sm btn-warning text-dark">
+                                                <i class="fas fa-play me-1"></i>Realizar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        <div class="text-center mt-3">
+                            <a asp-controller="Quiz" asp-action="Index" class="btn btn-sm btn-primary text-white">
+                                <i class="fas fa-eye me-1"></i>Ver Todos los Quizzes
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-question-circle fa-2x mb-3 opacity-50"></i>
+                            <h6 class="mb-2">No tienes quizzes creados</h6>
+                            <p class="mb-3">Los quizzes te ayudan a evaluar tu conocimiento.</p>
+                            <a asp-controller="Quiz" asp-action="Create" class="btn btn-warning">
+                                <i class="fas fa-plus me-2"></i>Crear Primer Quiz
+                            </a>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
-    }
+    </div>
 </div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+    
+    .jumbotron {
+        border: none;
+        box-shadow: 0 10px 30px rgba(0, 123, 255, 0.2);
+    }
+    
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .card:hover, .card-hover:hover {
+        transform: translateY(-2px);
+    }
+    
+    .card-hover {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .card-hover:hover .card-body {
+        background-color: #f8f9fa;
+    }
+    
+    a.text-decoration-none:hover {
+        text-decoration: none !important;
+    }
+    
+    /* Asegurar que los botones sean clickeables */
+    .btn {
+        pointer-events: auto !important;
+        z-index: 10;
+        position: relative;
+    }
+    
+    .card-body {
+        position: relative;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Función para los enlaces temporales - solo aplica a enlaces con href="#"
+        document.addEventListener('DOMContentLoaded', function() {
+            const tempLinks = document.querySelectorAll('a[href="#"]');
+            tempLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    mostrarModalAlerta({
+                        titulo: 'Próximamente',
+                        mensaje: 'Esta funcionalidad estará disponible pronto. Por ahora puedes gestionar tus materias.',
+                        tipo: 'info',
+                        icono: 'fas fa-clock'
+                    });
+                });
+            });
+            
+            // Debug: Mostrar todos los enlaces para verificar
+            console.log('Enlaces encontrados en la página:');
+            document.querySelectorAll('a').forEach((link, index) => {
+                console.log(`Link ${index}: href="${link.href}", text="${link.textContent.trim()}"`);
+            });
+        });
+    </script>
+}
