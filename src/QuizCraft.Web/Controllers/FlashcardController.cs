@@ -91,10 +91,18 @@ public class FlashcardController : Controller
                     f.Respuesta.Contains(filtros.TextoBusqueda, StringComparison.OrdinalIgnoreCase));
             }
 
-            // Obtener IDs de flashcards importadas por el usuario
-            var flashcardsImportadas = await _unitOfWork.FlashcardCompartidaRepository
-                .GetImportadasByUsuarioAsync(usuario.Id);
-            var idsImportadas = new HashSet<int>(flashcardsImportadas.Select(fi => fi.FlashcardId));
+            // Obtener IDs de flashcards importadas por el usuario (con manejo de error si la tabla no existe)
+            HashSet<int> idsImportadas = new HashSet<int>();
+            try
+            {
+                var flashcardsImportadas = await _unitOfWork.FlashcardCompartidaRepository
+                    .GetImportadasByUsuarioAsync(usuario.Id);
+                idsImportadas = new HashSet<int>(flashcardsImportadas.Select(fi => fi.FlashcardId));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudieron obtener flashcards importadas (posiblemente tabla FlashcardsImportadas no existe aún)");
+            }
 
             // Mapear a ViewModels
             var flashcardViewModels = flashcards.Select(f => new FlashcardViewModel
@@ -216,7 +224,8 @@ public class FlashcardController : Controller
                 Pista = string.IsNullOrWhiteSpace(viewModel.Pista) ? null : viewModel.Pista.Trim(),
                 Dificultad = viewModel.Dificultad,
                 MateriaId = viewModel.MateriaId,
-                VecesVista = 0
+                VecesVista = 0,
+                EstaActivo = true // Garantizar que la flashcard esté activa
             };
 
             await _unitOfWork.FlashcardRepository.AddAsync(flashcard);

@@ -58,6 +58,7 @@ namespace QuizCraft.Infrastructure.Repositories
         {
             entity.FechaCreacion = DateTime.UtcNow;
             entity.FechaModificacion = DateTime.UtcNow;
+            entity.EstaActivo = true; // Garantizar que la entidad esté activa
             
             await _dbSet.AddAsync(entity);
             return entity;
@@ -72,6 +73,7 @@ namespace QuizCraft.Infrastructure.Repositories
             {
                 entity.FechaCreacion = now;
                 entity.FechaModificacion = now;
+                entity.EstaActivo = true; // Garantizar que las entidades estén activas
             }
             
             await _dbSet.AddRangeAsync(entitiesList);

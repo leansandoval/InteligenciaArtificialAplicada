@@ -19,7 +19,7 @@ namespace QuizCraft.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(f => f.Materia)
-                .Where(f => f.MateriaId == materiaId)
+                .Where(f => f.MateriaId == materiaId && f.EstaActivo)
                 .OrderBy(f => f.FechaCreacion)
                 .ToListAsync();
         }
@@ -28,7 +28,7 @@ namespace QuizCraft.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(f => f.Materia)
-                .Where(f => f.MateriaId == materiaId && f.Dificultad == dificultad)
+                .Where(f => f.MateriaId == materiaId && f.Dificultad == dificultad && f.EstaActivo)
                 .OrderBy(f => f.FechaCreacion)
                 .ToListAsync();
         }
@@ -38,7 +38,7 @@ namespace QuizCraft.Infrastructure.Repositories
             // Entity Framework no soporta NEWID() de forma directa, así que obtenemos todos y ordenamos en memoria
             var flashcards = await _dbSet
                 .Include(f => f.Materia)  
-                .Where(f => f.MateriaId == materiaId)
+                .Where(f => f.MateriaId == materiaId && f.EstaActivo)
                 .ToListAsync();
 
             return flashcards
@@ -49,7 +49,7 @@ namespace QuizCraft.Infrastructure.Repositories
 
         public async Task<IEnumerable<Flashcard>> BuscarFlashcardsAsync(string termino, int? materiaId = null)
         {
-            IQueryable<Flashcard> query = _dbSet.Include(f => f.Materia);
+            IQueryable<Flashcard> query = _dbSet.Include(f => f.Materia).Where(f => f.EstaActivo);
 
             if (materiaId.HasValue)
                 query = query.Where(f => f.MateriaId == materiaId.Value);
@@ -63,13 +63,13 @@ namespace QuizCraft.Infrastructure.Repositories
         public async Task<int> GetCantidadByDificultadAsync(int materiaId, NivelDificultad dificultad)
         {
             return await _dbSet
-                .CountAsync(f => f.MateriaId == materiaId && f.Dificultad == dificultad);
+                .CountAsync(f => f.MateriaId == materiaId && f.Dificultad == dificultad && f.EstaActivo);
         }
 
         public async Task<Dictionary<NivelDificultad, int>> GetEstadisticasDificultadAsync(int materiaId)
         {
             var estadisticas = await _dbSet
-                .Where(f => f.MateriaId == materiaId)
+                .Where(f => f.MateriaId == materiaId && f.EstaActivo)
                 .GroupBy(f => f.Dificultad)
                 .Select(g => new { Dificultad = g.Key, Cantidad = g.Count() })
                 .ToListAsync();
@@ -179,7 +179,7 @@ namespace QuizCraft.Infrastructure.Repositories
         {
             return await _dbSet
                 .Include(f => f.Materia)
-                .Where(f => f.Materia.UsuarioId == usuarioId)
+                .Where(f => f.Materia.UsuarioId == usuarioId && f.EstaActivo)
                 .OrderByDescending(f => f.FechaCreacion)
                 .ToListAsync();
         }
@@ -200,7 +200,7 @@ namespace QuizCraft.Infrastructure.Repositories
             
             IQueryable<Flashcard> query = _dbSet
                 .Include(f => f.Materia)
-                .Where(f => f.Materia.UsuarioId == usuarioId);
+                .Where(f => f.Materia.UsuarioId == usuarioId && f.EstaActivo);
 
             if (materiaId.HasValue)
                 query = query.Where(f => f.MateriaId == materiaId.Value);
@@ -221,7 +221,7 @@ namespace QuizCraft.Infrastructure.Repositories
             
             return await _dbSet
                 .Include(f => f.Materia)
-                .Where(f => f.MateriaId == materiaId && 
+                .Where(f => f.MateriaId == materiaId && f.EstaActivo &&
                            (f.ProximaRevision == null || f.ProximaRevision <= hoy))
                 .OrderBy(f => f.ProximaRevision ?? DateTime.MinValue)
                 .ThenBy(f => f.UltimaRevision ?? DateTime.MinValue)
@@ -237,7 +237,7 @@ namespace QuizCraft.Infrastructure.Repositories
             
             IQueryable<Flashcard> query = _dbSet
                 .Include(f => f.Materia)
-                .Where(f => f.Materia.UsuarioId == usuarioId);
+                .Where(f => f.Materia.UsuarioId == usuarioId && f.EstaActivo);
 
             if (materiaId.HasValue)
                 query = query.Where(f => f.MateriaId == materiaId.Value);
