@@ -2,6 +2,34 @@
 
 **QuizCraft** es una plataforma web de estudio personalizada desarrollada con **ASP.NET Core 8** que combina flashcards inteligentes, quizzes adaptativos y análisis de progreso para optimizar el aprendizaje. Utiliza **repetición espaciada** e **inteligencia artificial** para crear contenido educativo automático y personalizar la experiencia de estudio según el rendimiento del usuario.
 
+## Información de la Asignatura
+* **Carrera**: Ingeniería en Informática
+* **Asignatura**: Inteligencia Artificial Aplicada (3668)
+* **Cuatrimestre**: Segundo Cuatrimestre
+* **Año**: 2025
+* **Grupo**: 2
+
+## Trayecto - Desarrollo de Software
+* **Año académico**: Quinto Año - Primer Cuatrimestre
+* **Responsable / Jefe de catedra**: Montefiori, Damian
+* **Carga horaria semanal**: 4 hs
+* **Carga horaria total**: 64 hs
+* **Modalidad**: Virtual
+* **Correlativas anteriores**
+  + Estadística Aplicada (3656)
+  + Inteligencia Artificial (3664)
+
+## Docentes
+* Montefiori, Damian
+
+## Integrantes
+| DNI | Apellido/s | Nombre/s |
+|--|--|--|
+| 43.630.151 | Antonioli | Iván Oscar |
+| 40.742.053 | Berti | Rodrigo Nicolás |
+| 43.089.397 | Fragassi | Donatella |
+| 41.548.235 | Sandoval Vasquez | Juan Leandro |
+
 ## 🎯 Características Principales
 
 - **🎴 Gestión de Materias y Flashcards** con algoritmos de repetición espaciada
