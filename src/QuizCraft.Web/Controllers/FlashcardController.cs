@@ -9,6 +9,9 @@ using QuizCraft.Core.Entities;
 using QuizCraft.Core.Enums;
 using QuizCraft.Core.Interfaces;
 using QuizCraft.Infrastructure.Data;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using AIService = QuizCraft.Application.Interfaces.IAIService;
 
 namespace QuizCraft.Web.Controllers;
@@ -1455,6 +1458,179 @@ public class FlashcardController : Controller
         }
 
         return creadas;
+    }
+
+    #endregion
+
+    #region Generación de PDF
+
+    /// <summary>
+    /// Genera un PDF con las flashcards filtradas
+    /// </summary>
+    public async Task<IActionResult> DownloadPdf(int? materiaId, bool incluirRespuestas = true)
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        try
+        {
+            // Obtener flashcards del usuario
+            var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByUsuarioIdAsync(usuario.Id);
+            
+            // Filtrar por materia si se especifica
+            if (materiaId.HasValue)
+            {
+                flashcards = flashcards.Where(f => f.MateriaId == materiaId.Value);
+            }
+
+            var flashcardsList = flashcards.OrderBy(f => f.Materia.Nombre).ThenBy(f => f.FechaCreacion).ToList();
+
+            if (!flashcardsList.Any())
+            {
+                TempData["Error"] = "No hay flashcards para generar el PDF.";
+                return RedirectToAction(nameof(Index), new { materiaId });
+            }
+
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+            var document = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.DefaultTextStyle(x => x.FontSize(11));
+
+                    page.Header()
+                        .Column(column =>
+                        {
+                            column.Item().Text("Mis Flashcards")
+                                .FontSize(20).Bold().FontColor("#2c3e50");
+                            
+                            if (materiaId.HasValue && flashcardsList.Any())
+                            {
+                                column.Item().PaddingTop(5).Text(text =>
+                                {
+                                    text.Span("Materia: ").Bold();
+                                    text.Span(flashcardsList.First().Materia?.Nombre ?? "Sin materia");
+                                });
+                            }
+                            else
+                            {
+                                column.Item().PaddingTop(5).Text("Todas las materias").Bold();
+                            }
+                            
+                            column.Item().PaddingTop(5).Text(text =>
+                            {
+                                text.Span("Total de flashcards: ").Bold();
+                                text.Span($"{flashcardsList.Count}");
+                            });
+                            
+                            column.Item().PaddingTop(10).LineHorizontal(1).LineColor("#bdc3c7");
+                        });
+
+                    page.Content()
+                        .PaddingVertical(10)
+                        .Column(column =>
+                        {
+                            string? materiaActual = null;
+                            
+                            for (int i = 0; i < flashcardsList.Count; i++)
+                            {
+                                var flashcard = flashcardsList[i];
+                                
+                                // Encabezado de materia si cambia
+                                if (!materiaId.HasValue && flashcard.Materia?.Nombre != materiaActual)
+                                {
+                                    materiaActual = flashcard.Materia?.Nombre;
+                                    
+                                    if (i > 0)
+                                    {
+                                        column.Item().PaddingTop(15);
+                                    }
+                                    
+                                    column.Item().Background("#3498db").Padding(8).Text(materiaActual ?? "Sin materia")
+                                        .FontSize(14).Bold().FontColor("#ffffff");
+                                    
+                                    column.Item().PaddingBottom(10);
+                                }
+                                
+                                column.Item().PaddingTop(10).Column(flashcardColumn =>
+                                {
+                                    // Número y pregunta
+                                    flashcardColumn.Item().Background("#ecf0f1").Padding(10).Column(preguntaBox =>
+                                    {
+                                        preguntaBox.Item().Text($"Flashcard {i + 1}")
+                                            .FontSize(12).Bold().FontColor("#2c3e50");
+                                        
+                                        preguntaBox.Item().PaddingTop(5).Text(flashcard.Pregunta)
+                                            .FontSize(11).FontColor("#34495e");
+                                        
+                                        // Pista si existe
+                                        if (!string.IsNullOrEmpty(flashcard.Pista))
+                                        {
+                                            preguntaBox.Item().PaddingTop(5).Text(text =>
+                                            {
+                                                text.Span("💡 Pista: ").Bold().FontColor("#f39c12");
+                                                text.Span(flashcard.Pista).Italic().FontColor("#7f8c8d");
+                                            });
+                                        }
+                                    });
+
+                                    // Respuesta (solo si incluirRespuestas es true)
+                                    if (incluirRespuestas)
+                                    {
+                                        flashcardColumn.Item().PaddingTop(5).Background("#d5f4e6")
+                                            .Padding(10).Column(respuestaBox =>
+                                            {
+                                                respuestaBox.Item().Text("Respuesta:")
+                                                    .FontSize(11).Bold().FontColor("#27ae60");
+                                                
+                                                respuestaBox.Item().PaddingTop(3).Text(flashcard.Respuesta)
+                                                    .FontSize(11).FontColor("#2c3e50");
+                                            });
+                                    }
+                                    
+                                    // Información adicional
+                                    flashcardColumn.Item().PaddingTop(3).Text(text =>
+                                    {
+                                        text.Span("Dificultad: ").FontSize(9).FontColor("#7f8c8d");
+                                        text.Span(FormatearDificultad(flashcard.Dificultad)).FontSize(9).FontColor("#7f8c8d");
+                                    });
+                                });
+                            }
+                        });
+
+                    page.Footer()
+                        .AlignCenter()
+                        .Text(x =>
+                        {
+                            x.Span("Página ");
+                            x.CurrentPageNumber();
+                            x.Span(" de ");
+                            x.TotalPages();
+                        });
+                });
+            });
+
+            var pdfBytes = document.GeneratePdf();
+            var materiaNombre = materiaId.HasValue && flashcardsList.Any() 
+                ? flashcardsList.First().Materia?.Nombre?.Replace(" ", "_") 
+                : "Todas";
+            var sufijo = incluirRespuestas ? "_con_respuestas" : "_solo_preguntas";
+            var fileName = $"Flashcards_{materiaNombre}{sufijo}_{DateTime.Now:yyyyMMdd}.pdf";
+            
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error al generar PDF de flashcards para usuario {UserId}", usuario.Id);
+            TempData["Error"] = "Error al generar el PDF. Por favor, intenta nuevamente.";
+            return RedirectToAction(nameof(Index), new { materiaId });
+        }
     }
 
     #endregion
