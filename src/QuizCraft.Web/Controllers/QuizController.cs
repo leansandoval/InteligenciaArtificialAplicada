@@ -877,7 +877,7 @@ namespace QuizCraft.Web.Controllers
         }
 
         // GET: Quiz/DownloadPdf/5
-        public async Task<IActionResult> DownloadPdf(int id)
+        public async Task<IActionResult> DownloadPdf(int id, bool incluirRespuestas = true)
         {
             var usuarioId = _userManager.GetUserId(User);
             var quiz = await _unitOfWork.QuizRepository.GetQuizCompletoAsync(id);
@@ -968,7 +968,7 @@ namespace QuizCraft.Web.Controllers
                                                 {
                                                     if (!string.IsNullOrEmpty(texto))
                                                     {
-                                                        bool esCorrecta = pregunta.RespuestaCorrecta == letra;
+                                                        bool esCorrecta = incluirRespuestas && pregunta.RespuestaCorrecta == letra;
                                                         
                                                         opcionesColumn.Item().PaddingTop(3).Text(text =>
                                                         {
@@ -984,26 +984,29 @@ namespace QuizCraft.Web.Controllers
                                                 }
                                             });
 
-                                            // Respuesta correcta destacada
-                                            preguntaColumn.Item().PaddingTop(10).Background("#d5f4e6")
-                                                .Padding(8).Text(text =>
-                                                {
-                                                    text.Span("Respuesta correcta: ").Bold().FontColor("#27ae60");
-                                                    text.Span($"{pregunta.RespuestaCorrecta}) ");
-                                                    
-                                                    var textoRespuesta = pregunta.RespuestaCorrecta switch
+                                            // Respuesta correcta destacada (solo si incluirRespuestas es true)
+                                            if (incluirRespuestas)
+                                            {
+                                                preguntaColumn.Item().PaddingTop(10).Background("#d5f4e6")
+                                                    .Padding(8).Text(text =>
                                                     {
-                                                        "A" => pregunta.OpcionA,
-                                                        "B" => pregunta.OpcionB,
-                                                        "C" => pregunta.OpcionC,
-                                                        "D" => pregunta.OpcionD,
-                                                        _ => ""
-                                                    };
-                                                    text.Span(textoRespuesta ?? "");
-                                                });
+                                                        text.Span("Respuesta correcta: ").Bold().FontColor("#27ae60");
+                                                        text.Span($"{pregunta.RespuestaCorrecta}) ");
+                                                        
+                                                        var textoRespuesta = pregunta.RespuestaCorrecta switch
+                                                        {
+                                                            "A" => pregunta.OpcionA,
+                                                            "B" => pregunta.OpcionB,
+                                                            "C" => pregunta.OpcionC,
+                                                            "D" => pregunta.OpcionD,
+                                                            _ => ""
+                                                        };
+                                                        text.Span(textoRespuesta ?? "");
+                                                    });
+                                            }
 
-                                            // Explicación si existe
-                                            if (!string.IsNullOrEmpty(pregunta.Explicacion))
+                                            // Explicación si existe (solo si incluirRespuestas es true)
+                                            if (incluirRespuestas && !string.IsNullOrEmpty(pregunta.Explicacion))
                                             {
                                                 preguntaColumn.Item().PaddingTop(5).Background("#fff9e6")
                                                     .Padding(8).Text(text =>
@@ -1030,7 +1033,8 @@ namespace QuizCraft.Web.Controllers
                 });
 
                 var pdfBytes = document.GeneratePdf();
-                var fileName = $"{quiz.Titulo.Replace(" ", "_")}_{DateTime.Now:yyyyMMdd}.pdf";
+                var sufijo = incluirRespuestas ? "_con_respuestas" : "";
+                var fileName = $"{quiz.Titulo.Replace(" ", "_")}{sufijo}_{DateTime.Now:yyyyMMdd}.pdf";
                 
                 return File(pdfBytes, "application/pdf", fileName);
             }

@@ -256,10 +256,26 @@
 
                     @if (Model.MostrarPreguntas && Model.Preguntas.Any())
                     {
-                        <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="btn btn-outline-danger w-100 mb-2" target="_blank">
-                            <i class="fas fa-file-pdf me-1"></i>
-                            Descargar PDF
-                        </a>
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <button type="button" class="btn btn-outline-danger dropdown-toggle w-100" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-file-pdf me-1"></i>
+                                Descargar PDF
+                            </button>
+                            <ul class="dropdown-menu w-100">
+                                <li>
+                                    <a class="dropdown-item" asp-action="DownloadPdf" asp-route-id="@Model.Id" asp-route-incluirRespuestas="true" target="_blank">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        Con respuestas y explicaciones
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-action="DownloadPdf" asp-route-id="@Model.Id" asp-route-incluirRespuestas="false" target="_blank">
+                                        <i class="fas fa-file-alt text-secondary me-2"></i>
+                                        Sin respuestas (solo preguntas)
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     }
 
                     <a asp-action="Index" class="btn btn-outline-secondary w-100 mb-2">
