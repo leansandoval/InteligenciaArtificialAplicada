@@ -166,22 +166,11 @@ namespace QuizCraft.Web.Controllers
             // Cargar materias del usuario autenticado
             var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
 
-            var materiasConFlashcards = new List<MateriaSelectViewModel>();
-
-            foreach (var materia in materias)
+            viewModel.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
             {
-                // Obtener el conteo real de flashcards por materia
-                var flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materia.Id);
-
-                materiasConFlashcards.Add(new MateriaSelectViewModel
-                {
-                    Id = materia.Id,
-                    Nombre = materia.Nombre,
-                    TotalFlashcards = flashcards.Count()
-                });
-            }
-
-            viewModel.MateriasDisponibles = materiasConFlashcards;
+                Id = m.Id,
+                Nombre = m.Nombre
+            }).ToList();
 
             // Preseleccionar materia si se especifica
             if (materiaId.HasValue)
@@ -200,13 +189,16 @@ namespace QuizCraft.Web.Controllers
             if (!ModelState.IsValid)
             {
                 // Recargar materias en caso de error
-                var materias = await _unitOfWork.MateriaRepository.GetAllAsync();
-                model.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
+                var usuarioIdForReload = _userManager.GetUserId(User);
+                if (usuarioIdForReload != null)
                 {
-                    Id = m.Id,
-                    Nombre = m.Nombre,
-                    TotalFlashcards = m.Flashcards?.Count ?? 0
-                }).ToList();
+                    var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioIdForReload);
+                    model.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
+                    {
+                        Id = m.Id,
+                        Nombre = m.Nombre
+                    }).ToList();
+                }
                 return View(model);
             }
 
@@ -217,63 +209,18 @@ namespace QuizCraft.Web.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            // Obtener flashcards filtradas por dificultad si se especifica
-            IEnumerable<Flashcard> flashcards;
-
-            if (model.Dificultad != 0) // Si se seleccionó una dificultad específica
+            // Validar que haya al menos una pregunta
+            if (model.Preguntas == null || !model.Preguntas.Any())
             {
-                flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByDificultadAsync(model.MateriaId, model.Dificultad);
-
-                // Si no hay suficientes flashcards de la dificultad seleccionada, completar con flashcards de todas las dificultades
-                if (flashcards.Count() < model.NumeroPreguntas)
+                ModelState.AddModelError("", "Debes agregar al menos una pregunta al quiz.");
+                
+                var materias = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioId);
+                model.MateriasDisponibles = materias.Select(m => new MateriaSelectViewModel
                 {
-                    var todasLasFlashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
-
-                    // Priorizar las de la dificultad seleccionada y completar con otras
-                    var flashcardsOrdenadas = todasLasFlashcards
-                        .OrderBy(f => f.Dificultad == model.Dificultad ? 0 : 1) // Prioridad a la dificultad seleccionada
-                        .ThenBy(f => Math.Abs((int)f.Dificultad - (int)model.Dificultad)) // Luego por proximidad de dificultad
-                        .ThenBy(x => Guid.NewGuid()); // Aleatorio dentro de cada grupo
-
-                    flashcards = flashcardsOrdenadas.Take(Math.Max(model.NumeroPreguntas, todasLasFlashcards.Count()));
-
-                    _logger.LogInformation($"Se encontraron solo {flashcards.Count()} flashcards de dificultad {model.Dificultad}. Completando con flashcards de otras dificultades.");
-                }
-            }
-            else
-            {
-                // Si no se especifica dificultad, obtener todas las flashcards de la materia
-                flashcards = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(model.MateriaId);
-            }
-
-            if (!flashcards.Any())
-            {
-                ModelState.AddModelError("", $"No hay flashcards disponibles en la materia seleccionada{(model.Dificultad != 0 ? $" para el nivel de dificultad {model.Dificultad}" : "")}.");
-
-                // Recargar datos para la vista
-                var usuarioIdForReload = _userManager.GetUserId(User);
-                if (usuarioIdForReload == null)
-                {
-                    return RedirectToAction("Login", "Account");
-                }
-
-                var materiasForReload = await _unitOfWork.MateriaRepository.GetMateriasByUsuarioIdAsync(usuarioIdForReload);
-
-                var materiasConFlashcardsForReload = new List<MateriaSelectViewModel>();
-
-                foreach (var materia in materiasForReload)
-                {
-                    var flashcardsCount = await _unitOfWork.FlashcardRepository.GetFlashcardsByMateriaIdAsync(materia.Id);
-
-                    materiasConFlashcardsForReload.Add(new MateriaSelectViewModel
-                    {
-                        Id = materia.Id,
-                        Nombre = materia.Nombre,
-                        TotalFlashcards = flashcardsCount.Count()
-                    });
-                }
-
-                model.MateriasDisponibles = materiasConFlashcardsForReload;
+                    Id = m.Id,
+                    Nombre = m.Nombre
+                }).ToList();
+                
                 return View(model);
             }
 
@@ -282,66 +229,63 @@ namespace QuizCraft.Web.Controllers
             {
                 Titulo = model.Titulo,
                 Descripcion = model.Descripcion,
-                NumeroPreguntas = model.NumeroPreguntas,
+                NumeroPreguntas = model.Preguntas.Count,
                 TiempoLimite = model.TiempoLimite,
-                TiempoPorPregunta = 30,
+                TiempoPorPregunta = model.TiempoPorPreguntaSegundos ?? 30,
                 NivelDificultad = (int)model.Dificultad,
                 EsPublico = model.EsPublico,
                 MostrarRespuestasInmediato = model.MostrarRespuestasInmediato,
-                PermitirReintento = true,
+                PermitirReintento = model.PermitirReintento,
                 MateriaId = model.MateriaId,
                 CreadorId = usuarioId,
                 FechaCreacion = DateTime.UtcNow
             };
 
-            // Seleccionar flashcards usando algoritmo inteligente
-            var flashcardsSeleccionadas = SeleccionarFlashcardsInteligente(flashcards, model.NumeroPreguntas, model.Dificultad);
-
-            // Obtener el nombre de la materia para contexto en la generación
-            var materiaQuiz = await _unitOfWork.MateriaRepository.GetByIdAsync(model.MateriaId);
-            var materiaNombre = materiaQuiz?.Nombre ?? "General";
-
-            // Crear preguntas basadas en las flashcards con distractores mejorados
+            // Crear preguntas del quiz
             var preguntas = new List<PreguntaQuiz>();
-            for (int i = 0; i < flashcardsSeleccionadas.Count; i++)
+            for (int i = 0; i < model.Preguntas.Count; i++)
             {
-                var flashcard = flashcardsSeleccionadas[i];
+                var preguntaData = model.Preguntas[i];
                 
-                // Generar 3 opciones incorrectas inteligentes con IA
-                var distractor1 = await GenerarDistractorInteligente(flashcard, flashcardsSeleccionadas.ToList(), materiaNombre);
-                var distractor2 = await GenerarDistractorInteligente(flashcard, flashcardsSeleccionadas.ToList(), materiaNombre);
-                var distractor3 = await GenerarDistractorInteligente(flashcard, flashcardsSeleccionadas.ToList(), materiaNombre);                var pregunta = new PreguntaQuiz
+                // Crear array con todas las opciones
+                var opciones = new List<(string letra, string texto)>
                 {
-                    TextoPregunta = flashcard.Pregunta,
-                    RespuestaCorrecta = flashcard.Respuesta,
-                    OpcionA = flashcard.Respuesta,
-                    OpcionB = distractor1,
-                    OpcionC = distractor2,
-                    OpcionD = distractor3,
-                    Explicacion = flashcard.Pista ?? "",
+                    ("A", preguntaData.OpcionA),
+                    ("B", preguntaData.OpcionB),
+                    ("C", preguntaData.OpcionC),
+                    ("D", preguntaData.OpcionD)
+                };
+
+                // Obtener el texto de la respuesta correcta
+                var respuestaCorrectaTexto = preguntaData.RespuestaCorrecta.ToUpper() switch
+                {
+                    "A" => preguntaData.OpcionA,
+                    "B" => preguntaData.OpcionB,
+                    "C" => preguntaData.OpcionC,
+                    "D" => preguntaData.OpcionD,
+                    _ => preguntaData.OpcionA
+                };
+
+                // Si MezclarOpciones está activado, mezclar las opciones
+                if (model.MezclarOpciones)
+                {
+                    opciones = opciones.OrderBy(x => Guid.NewGuid()).ToList();
+                }
+
+                var pregunta = new PreguntaQuiz
+                {
+                    TextoPregunta = preguntaData.Pregunta,
+                    RespuestaCorrecta = respuestaCorrectaTexto,
+                    OpcionA = opciones[0].texto,
+                    OpcionB = opciones[1].texto,
+                    OpcionC = opciones[2].texto,
+                    OpcionD = opciones[3].texto,
+                    Explicacion = preguntaData.Explicacion ?? "",
                     Orden = i + 1,
                     Puntos = 1,
                     TipoPregunta = 1,
-                    FlashcardId = flashcard.Id
+                    FlashcardId = null // No está asociado a ninguna flashcard
                 };
-
-                // Mezclar las opciones para que la correcta no siempre sea la A
-                var opciones = new List<string> { pregunta.OpcionA, pregunta.OpcionB, pregunta.OpcionC, pregunta.OpcionD }
-                    .Where(o => !string.IsNullOrEmpty(o))
-                    .OrderBy(x => Guid.NewGuid())
-                    .ToList();
-
-                if (opciones.Count >= 4)
-                {
-                    pregunta.OpcionA = opciones[0];
-                    pregunta.OpcionB = opciones[1];
-                    pregunta.OpcionC = opciones[2];
-                    pregunta.OpcionD = opciones[3];
-
-                    // Determinar cuál opción es la correcta después del mezclado
-                    var indiceCorrecta = opciones.IndexOf(flashcard.Respuesta);
-                    pregunta.RespuestaCorrecta = ((char)('A' + indiceCorrecta)).ToString();
-                }
 
                 preguntas.Add(pregunta);
             }

@@ -6,7 +6,7 @@
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-10">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
@@ -15,7 +15,7 @@
                     </h4>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" id="quizForm">
                         <div class="row">
                             <!-- Información Básica -->
                             <div class="col-12">
@@ -40,28 +40,23 @@
 
                             <div class="col-md-6 mb-3">
                                 <label asp-for="MateriaId" class="form-label">Materia</label>
-                                <select asp-for="MateriaId" class="form-select" id="materiaSelect">
+                                <select asp-for="MateriaId" class="form-select">
                                     <option value="">Selecciona una materia</option>
                                     @foreach (var materia in Model.MateriasDisponibles)
                                     {
-                                        <option value="@materia.Id" 
-                                                data-flashcards="@materia.TotalFlashcards"
-                                                selected="@(Model.MateriaId == materia.Id)">
-                                            @materia.Nombre (@materia.TotalFlashcards flashcards)
+                                        <option value="@materia.Id" selected="@(Model.MateriaId == materia.Id)">
+                                            @materia.Nombre
                                         </option>
                                     }
                                 </select>
                                 <span asp-validation-for="MateriaId" class="text-danger"></span>
-                                <div id="flashcardsInfo" class="form-text"></div>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Dificultad" class="form-label">Nivel de Dificultad</label>
                                 <select asp-for="Dificultad" class="form-select" asp-items="Html.GetEnumSelectList<QuizCraft.Core.Enums.NivelDificultad>()">
-                                    <option value="">Todas las dificultades</option>
                                 </select>
                                 <span asp-validation-for="Dificultad" class="text-danger"></span>
-                                <div id="dificultadInfo" class="form-text"></div>
                             </div>
 
                             <!-- Configuración del Quiz -->
@@ -73,16 +68,6 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label asp-for="NumeroPreguntas" class="form-label">Número de Preguntas</label>
-                                <input asp-for="NumeroPreguntas" type="number" class="form-control" 
-                                       min="1" max="50" id="numPreguntasInput">
-                                <span asp-validation-for="NumeroPreguntas" class="text-danger"></span>
-                                <div class="form-text">
-                                    <span id="preguntasHelp">Las preguntas se generarán automáticamente desde las flashcards</span>
-                                </div>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
                                 <label asp-for="TiempoLimite" class="form-label">Tiempo Límite (minutos)</label>
                                 <input asp-for="TiempoLimite" type="number" class="form-control" 
                                        min="0" max="180" placeholder="0 = Sin límite">
@@ -90,49 +75,8 @@
                                 <div class="form-text">0 = Sin límite de tiempo</div>
                             </div>
 
-                            <!-- Opciones Avanzadas -->
-                            <div class="col-12 mt-4">
-                                <h5 class="text-primary mb-3">
-                                    <i class="fas fa-sliders-h me-1"></i>
-                                    Opciones Avanzadas
-                                </h5>
-                            </div>
-
                             <div class="col-md-6 mb-3">
-                                <div class="form-check">
-                                    <input asp-for="MezclarPreguntas" class="form-check-input" type="checkbox" checked>
-                                    <label asp-for="MezclarPreguntas" class="form-check-label">
-                                        <i class="fas fa-random me-1"></i>
-                                        Mezclar orden de preguntas
-                                    </label>
-                                </div>
-                                <div class="form-text">Las preguntas aparecerán en orden aleatorio</div>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <div class="form-check">
-                                    <input asp-for="MezclarOpciones" class="form-check-input" type="checkbox" checked>
-                                    <label asp-for="MezclarOpciones" class="form-check-label">
-                                        <i class="fas fa-shuffle me-1"></i>
-                                        Mezclar opciones de respuesta
-                                    </label>
-                                </div>
-                                <div class="form-text">Las opciones A, B, C, D se mostrarán aleatoriamente</div>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <div class="form-check">
-                                    <input asp-for="MostrarRespuestasInmediato" class="form-check-input" type="checkbox" checked>
-                                    <label asp-for="MostrarRespuestasInmediato" class="form-check-label">
-                                        <i class="fas fa-eye me-1"></i>
-                                        Mostrar respuestas inmediatas
-                                    </label>
-                                </div>
-                                <div class="form-text">Mostrar la respuesta correcta después de cada pregunta</div>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <div class="form-check">
+                                <div class="form-check mt-4">
                                     <input asp-for="EsPublico" class="form-check-input" type="checkbox">
                                     <label asp-for="EsPublico" class="form-check-label">
                                         <i class="fas fa-globe me-1"></i>
@@ -142,20 +86,55 @@
                                 <div class="form-text">Otros usuarios podrán realizar este quiz</div>
                             </div>
 
-                            <!-- Información de Generación -->
+                            <!-- Opciones Avanzadas -->
+                            <div class="col-12 mt-3">
+                                <h6 class="text-secondary mb-2">
+                                    <i class="fas fa-sliders-h me-1"></i>
+                                    Opciones Avanzadas
+                                </h6>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="MezclarPreguntas" class="form-check-input" type="checkbox" checked>
+                                    <label asp-for="MezclarPreguntas" class="form-check-label">
+                                        Mezclar preguntas
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="MezclarOpciones" class="form-check-input" type="checkbox" checked>
+                                    <label asp-for="MezclarOpciones" class="form-check-label">
+                                        Mezclar opciones
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check">
+                                    <input asp-for="MostrarRespuestasInmediato" class="form-check-input" type="checkbox" checked>
+                                    <label asp-for="MostrarRespuestasInmediato" class="form-check-label">
+                                        Mostrar respuestas inmediatas
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Preguntas -->
                             <div class="col-12 mt-4">
-                                <div class="alert alert-info">
-                                    <h6 class="alert-heading">
-                                        <i class="fas fa-lightbulb me-1"></i>
-                                        ¿Cómo se generan las preguntas?
-                                    </h6>
-                                    <p class="mb-2">Las preguntas se crean automáticamente usando tus flashcards:</p>
-                                    <ul class="mb-0">
-                                        <li>La <strong>pregunta</strong> de la flashcard se convierte en la pregunta del quiz</li>
-                                        <li>La <strong>respuesta</strong> de la flashcard es la opción correcta</li>
-                                        <li>Se generan 3 <strong>distractores</strong> (opciones incorrectas) desde otras flashcards</li>
-                                        <li>Las opciones se mezclan automáticamente (A, B, C, D)</li>
-                                    </ul>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="text-primary mb-0">
+                                        <i class="fas fa-question-circle me-1"></i>
+                                        Preguntas del Quiz
+                                    </h5>
+                                    <button type="button" class="btn btn-success btn-sm" id="addQuestionBtn">
+                                        <i class="fas fa-plus me-1"></i>
+                                        Agregar Pregunta
+                                    </button>
+                                </div>
+                                <div id="questionsContainer">
+                                    <!-- Las preguntas se agregarán aquí dinámicamente -->
                                 </div>
                             </div>
                         </div>
@@ -166,8 +145,8 @@
                                 Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary" id="crearBtn">
-                                <i class="fas fa-magic me-1"></i>
-                                Generar Quiz
+                                <i class="fas fa-save me-1"></i>
+                                Crear Quiz
                             </button>
                         </div>
                     </form>
@@ -179,140 +158,116 @@
 
 @section Scripts {
     <script>
+        let questionIndex = 0;
+
         $(document).ready(function() {
-            // Actualizar información cuando cambia la materia seleccionada
-            $('#materiaSelect').change(function() {
-                var selectedOption = $(this).find(':selected');
-                var flashcardsCount = selectedOption.data('flashcards');
-                var materiaId = $(this).val();
-                var numPreguntas = $('#numPreguntasInput').val();
-                
-                if (flashcardsCount && materiaId) {
-                    $('#flashcardsInfo').html(
-                        '<i class="fas fa-info-circle text-info"></i> ' +
-                        'Esta materia tiene <strong>' + flashcardsCount + '</strong> flashcards disponibles'
-                    );
-                    
-                    // Actualizar máximo número de preguntas
-                    $('#numPreguntasInput').attr('max', flashcardsCount);
-                    
-                    // Validar número actual de preguntas
-                    if (numPreguntas > flashcardsCount) {
-                        $('#numPreguntasInput').val(flashcardsCount);
-                        $('#preguntasHelp').html(
-                            '<i class="fas fa-exclamation-triangle text-warning"></i> ' +
-                            'Máximo ' + flashcardsCount + ' preguntas para esta materia'
-                        );
-                    }
-                    
-                    // Cargar estadísticas de dificultad
-                    cargarEstadisticasDificultad(materiaId);
-                } else {
-                    $('#flashcardsInfo').html('');
-                    $('#preguntasHelp').html('Las preguntas se generarán automáticamente desde las flashcards');
-                    $('#dificultadInfo').html('');
-                }
-                
-                actualizarBotonCrear();
+            // Agregar primera pregunta automáticamente
+            addQuestion();
+
+            // Evento para agregar pregunta
+            $('#addQuestionBtn').click(function() {
+                addQuestion();
             });
 
-            // Validar número de preguntas en tiempo real
-            $('#numPreguntasInput').on('input', function() {
-                var numPreguntas = parseInt($(this).val());
-                var selectedOption = $('#materiaSelect').find(':selected');
-                var flashcardsCount = selectedOption.data('flashcards');
-                
-                if (flashcardsCount && numPreguntas > flashcardsCount) {
-                    $('#preguntasHelp').html(
-                        '<i class="fas fa-exclamation-triangle text-warning"></i> ' +
-                        'Máximo ' + flashcardsCount + ' preguntas para esta materia'
-                    ).addClass('text-warning');
-                } else {
-                    $('#preguntasHelp').html(
-                        'Las preguntas se generarán automáticamente desde las flashcards'
-                    ).removeClass('text-warning');
-                }
-                
-                actualizarBotonCrear();
+            // Delegación de eventos para eliminar preguntas
+            $(document).on('click', '.remove-question-btn', function() {
+                $(this).closest('.question-card').remove();
+                updateQuestionNumbers();
             });
-
-            // Función para habilitar/deshabilitar botón de crear
-            function actualizarBotonCrear() {
-                var materiaId = $('#materiaSelect').val();
-                var numPreguntas = parseInt($('#numPreguntasInput').val());
-                var selectedOption = $('#materiaSelect').find(':selected');
-                var flashcardsCount = selectedOption.data('flashcards') || 0;
-                
-                var puedeCrear = materiaId && numPreguntas > 0 && numPreguntas <= flashcardsCount;
-                
-                $('#crearBtn').prop('disabled', !puedeCrear);
-                
-                if (!puedeCrear && materiaId && flashcardsCount === 0) {
-                    $('#crearBtn').prop('disabled', true);
-                    $('#flashcardsInfo').html(
-                        '<i class="fas fa-exclamation-circle text-danger"></i> ' +
-                        'Esta materia no tiene flashcards. <a href="/Flashcard/Create?materiaId=' + materiaId + '">Crear flashcards</a>'
-                    );
-                }
-            }
-
-            // Función para cargar estadísticas de dificultad
-            function cargarEstadisticasDificultad(materiaId) {
-                if (!materiaId) {
-                    $('#dificultadInfo').html('');
-                    return;
-                }
-                
-                $('#dificultadInfo').html('<i class="fas fa-spinner fa-spin"></i> Cargando estadísticas...');
-                
-                $.get('@Url.Action("GetEstadisticasDificultad", "Quiz")', { materiaId: materiaId })
-                    .done(function(data) {
-                        if (data.success && data.estadisticas.length > 0) {
-                            var html = '<div class="mt-2"><small class="text-muted">Flashcards por dificultad:</small><br>';
-                            
-                            data.estadisticas.forEach(function(est) {
-                                if (est.cantidad > 0) {
-                                    var badgeClass = getBadgeClassForDificultad(est.dificultadValue);
-                                    html += '<span class="badge ' + badgeClass + ' me-1" title="' + est.descripcion + '">' +
-                                           '<i class="fas fa-layer-group"></i> ' + est.dificultad + ': ' + est.cantidad +
-                                           '</span>';
-                                }
-                            });
-                            
-                            html += '</div>';
-                            $('#dificultadInfo').html(html);
-                        } else {
-                            $('#dificultadInfo').html('<small class="text-muted">No hay estadísticas disponibles</small>');
-                        }
-                    })
-                    .fail(function() {
-                        $('#dificultadInfo').html('<small class="text-danger">Error al cargar estadísticas</small>');
-                    });
-            }
-            
-            // Función para obtener la clase CSS del badge según la dificultad
-            function getBadgeClassForDificultad(dificultadValue) {
-                switch(dificultadValue) {
-                    case 1: return 'bg-success'; // Muy Fácil
-                    case 2: return 'bg-info';    // Fácil
-                    case 3: return 'bg-warning'; // Intermedio
-                    case 4: return 'bg-danger';  // Difícil
-                    case 5: return 'bg-dark';    // Muy Difícil
-                    default: return 'bg-secondary';
-                }
-            }
-
-            // Validación inicial
-            actualizarBotonCrear();
-            $('#materiaSelect').trigger('change');
         });
+
+        function addQuestion() {
+            const questionHtml = `
+                <div class="card mb-3 question-card">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-question me-1"></i>
+                            Pregunta <span class="question-number">${questionIndex + 1}</span>
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-danger remove-question-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Pregunta <span class="text-danger">*</span></label>
+                            <textarea name="Preguntas[${questionIndex}].Pregunta" class="form-control" rows="2" 
+                                      placeholder="Escribe la pregunta aquí..." required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Opción A <span class="text-danger">*</span></label>
+                                <input type="text" name="Preguntas[${questionIndex}].OpcionA" class="form-control" 
+                                       placeholder="Primera opción de respuesta" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Opción B <span class="text-danger">*</span></label>
+                                <input type="text" name="Preguntas[${questionIndex}].OpcionB" class="form-control" 
+                                       placeholder="Segunda opción de respuesta" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Opción C <span class="text-danger">*</span></label>
+                                <input type="text" name="Preguntas[${questionIndex}].OpcionC" class="form-control" 
+                                       placeholder="Tercera opción de respuesta" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Opción D <span class="text-danger">*</span></label>
+                                <input type="text" name="Preguntas[${questionIndex}].OpcionD" class="form-control" 
+                                       placeholder="Cuarta opción de respuesta" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Respuesta Correcta <span class="text-danger">*</span></label>
+                            <select name="Preguntas[${questionIndex}].RespuestaCorrecta" class="form-select" required>
+                                <option value="">Selecciona la respuesta correcta</option>
+                                <option value="A">Opción A</option>
+                                <option value="B">Opción B</option>
+                                <option value="C">Opción C</option>
+                                <option value="D">Opción D</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label">Explicación (Opcional)</label>
+                            <textarea name="Preguntas[${questionIndex}].Explicacion" class="form-control" rows="2" 
+                                      placeholder="Explica por qué esta es la respuesta correcta..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#questionsContainer').append(questionHtml);
+            questionIndex++;
+        }
+
+        function updateQuestionNumbers() {
+            $('.question-number').each(function(index) {
+                $(this).text(index + 1);
+            });
+        }
     </script>
 }
 
 @section Styles {
     <style>
-        .alert-info {
-            border-left: 4px solid #17a2b8;
+        .question-card {
+            border: 1px solid #dee2e6;
+            transition: box-shadow 0.2s;
+        }
+        
+        .question-card:hover {
+            box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+        }
+        
+        .question-card .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .remove-question-btn {
+            padding: 0.25rem 0.5rem;
         }
         
         .form-check-input:checked {
@@ -320,27 +275,12 @@
             border-color: #0d6efd;
         }
         
-        .card-header {
+        .card-header.bg-primary {
             border-bottom: 3px solid rgba(255,255,255,0.2);
         }
         
-        #crearBtn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .badge {
-            font-size: 0.75em;
-            margin-bottom: 2px;
-        }
-        
-        #dificultadInfo .badge:hover {
-            transform: scale(1.05);
-            transition: transform 0.2s ease;
-        }
-        
-        .form-text {
-            margin-top: 0.25rem;
+        #addQuestionBtn {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
 }

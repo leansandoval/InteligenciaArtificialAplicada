@@ -62,9 +62,6 @@ namespace QuizCraft.Application.ViewModels
         [Required(ErrorMessage = "Debe seleccionar una materia")]
         public int MateriaId { get; set; }
 
-        [Range(1, 50, ErrorMessage = "El número de preguntas debe estar entre 1 y 50")]
-        public int NumeroPreguntas { get; set; } = 10;
-
         [Range(0, 180, ErrorMessage = "El tiempo límite debe estar entre 0 y 180 minutos")]
         public int TiempoLimite { get; set; } = 0;
 
@@ -78,9 +75,40 @@ namespace QuizCraft.Application.ViewModels
         public bool PermitirReintento { get; set; } = true;
         public int? TiempoPorPreguntaSegundos { get; set; } = 30;
 
+        // Lista de preguntas para crear el quiz
+        public List<QuestionItemViewModel> Preguntas { get; set; } = new();
+
         // Para los dropdowns
         public List<MateriaSelectViewModel> MateriasDisponibles { get; set; } = new();
-        public int FlashcardsDisponibles { get; set; }
+    }
+
+    public class QuestionItemViewModel
+    {
+        [Required(ErrorMessage = "La pregunta es requerida")]
+        [StringLength(1000, ErrorMessage = "La pregunta no puede exceder 1000 caracteres")]
+        public string Pregunta { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La opción A es requerida")]
+        [StringLength(500, ErrorMessage = "La opción no puede exceder 500 caracteres")]
+        public string OpcionA { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La opción B es requerida")]
+        [StringLength(500, ErrorMessage = "La opción no puede exceder 500 caracteres")]
+        public string OpcionB { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La opción C es requerida")]
+        [StringLength(500, ErrorMessage = "La opción no puede exceder 500 caracteres")]
+        public string OpcionC { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La opción D es requerida")]
+        [StringLength(500, ErrorMessage = "La opción no puede exceder 500 caracteres")]
+        public string OpcionD { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Debe indicar cuál es la respuesta correcta")]
+        public string RespuestaCorrecta { get; set; } = string.Empty; // "A", "B", "C", o "D"
+
+        [StringLength(1000, ErrorMessage = "La explicación no puede exceder 1000 caracteres")]
+        public string? Explicacion { get; set; }
     }
 
     public class TakeQuizViewModel

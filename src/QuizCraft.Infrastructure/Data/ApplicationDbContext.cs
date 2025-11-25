@@ -148,7 +148,7 @@ namespace QuizCraft.Infrastructure.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.RespuestaCorrecta)
-                    .HasMaxLength(1)
+                    .HasMaxLength(500)
                     .IsRequired();
 
                 entity.Property(e => e.Explicacion)
