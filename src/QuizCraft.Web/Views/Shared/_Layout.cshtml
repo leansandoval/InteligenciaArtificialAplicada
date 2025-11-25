@@ -11,13 +11,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
     @await RenderSectionAsync("Styles", required: false)
     
-    <!-- Script inmediato para aplicar tema antes de renderizar -->
+    <!-- Forzar tema claro siempre -->
     <script>
         (function() {
-            const storedTheme = localStorage.getItem('theme');
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            const theme = storedTheme || systemTheme;
-            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-theme', 'light');
         })();
     </script>
 </head>

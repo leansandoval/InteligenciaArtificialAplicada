@@ -145,7 +145,7 @@ public class AccountController : Controller
                 NotificacionesWeb = true,
                 NotificacionesHabilitadas = true,
                 PreferenciaIdioma = "es",
-                TemaPreferido = "dark"
+                TemaPreferido = "light"
             };
 
             _logger.LogInformation("Creando usuario en la base de datos...");
@@ -280,7 +280,7 @@ public class AccountController : Controller
             user.NotificacionesEmail = model.NotificacionesEmail;
             user.NotificacionesWeb = model.NotificacionesWeb;
             user.PreferenciaIdioma = model.PreferenciaIdioma;
-            user.TemaPreferido = model.TemaPreferido;
+            user.TemaPreferido = "light";
 
             var result = await _userManager.UpdateAsync(user);
 

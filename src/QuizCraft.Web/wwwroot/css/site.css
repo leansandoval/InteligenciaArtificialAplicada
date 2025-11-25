@@ -157,15 +157,15 @@ footer {
 
 /* ===== CARDS MEJORADAS ===== */
 .card {
-  background-color: var(--card-bg) !important;
+  background-color: #e3f2fd !important;
   border-color: var(--border-color) !important;
   color: var(--text-primary) !important;
-  transition: all 0.3s ease;
+  transition: none;
   box-shadow: 0 2px 4px var(--card-shadow);
 }
 
 .card-header {
-  background-color: var(--bg-secondary) !important;
+  background-color: transparent !important;
   border-bottom-color: var(--border-color) !important;
   color: var(--text-primary) !important;
   font-weight: 600;
@@ -197,12 +197,94 @@ footer {
 
 /* Card hover effects */
 .card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 25px var(--hover-shadow);
+}
+
+/* Disable pointer events and hover on regular cards (no card-hover class) */
+.card:not(.card-hover) {
+  pointer-events: auto;
+}
+
+.card:not(.card-hover):hover {
+  background-color: var(--card-bg) !important;
+  transform: none !important;
+}
+
+/* Make links inside cards always inherit their color */
+.card a:not(.btn) {
+  color: inherit !important;
+}
+
+/* Preserve button colors inside cards */
+.card .btn {
+  color: inherit !important;
+}
+
+.card .btn-primary,
+.card .btn-primary:hover {
+  color: white !important;
+}
+
+.card .btn-success,
+.card .btn-success:hover {
+  color: white !important;
+}
+
+.card .btn-warning,
+.card .btn-warning:hover {
+  color: #212529 !important;
+}
+
+.card .btn-outline-primary,
+.card .btn-outline-success,
+.card .btn-outline-warning {
+  color: inherit !important;
+}
+
+/* Force text to stay visible on card hover */
+.card:hover .card-body,
+.card:hover p {
+  color: #212529 !important;
+}
+
+.card:hover h3,
+.card:hover h1,
+.card:hover h2,
+.card:hover h4,
+.card:hover h5,
+.card:hover h6 {
+  color: inherit !important;
+}
+
+.card:hover .text-muted {
+  color: #6c757d !important;
+}
+
+.card:hover .text-primary {
+  color: #0d6efd !important;
+}
+
+.card:hover .text-success {
+  color: #198754 !important;
+}
+
+.card:hover .text-warning {
+  color: #ffc107 !important;
+}
+
+.card:hover .text-info {
+  color: #0dcaf0 !important;
+}
+
+/* Prevent hover color changes on list items */
+.list-group-item:hover {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-secondary) !important;
 }
 
 /* Navbar con tema */
