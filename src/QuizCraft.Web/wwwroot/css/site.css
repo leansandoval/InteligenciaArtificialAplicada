@@ -38,41 +38,41 @@
 }
 
 [data-theme="dark"] {
-  /* Tema Oscuro */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #2d2d2d;
-  --text-primary: #f8f9fa;
-  --text-secondary: #adb5bd;
-  --text-muted: #6c757d;
-  --border-color: #495057;
-  --card-bg: #212529;
-  --card-shadow: rgba(0, 0, 0, 0.5);
-  --navbar-bg: #0d1117;
-  --footer-bg: #0d1117;
-  --footer-text: #f0f6fc;
-  --input-bg: #343a40;
-  --input-border: #6c757d;
-  --input-focus-border: #86b7fe;
-  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%);
-  --gradient-shadow: rgba(99, 102, 241, 0.4);
+  /* Tema Oscuro - Mejorado para mejor contraste */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #808080;
+  --border-color: #404040;
+  --card-bg: #1e1e1e;
+  --card-shadow: rgba(0, 0, 0, 0.6);
+  --navbar-bg: #1a1a2e;
+  --footer-bg: #16213e;
+  --footer-text: #ffffff;
+  --input-bg: #2a2a2a;
+  --input-border: #505050;
+  --input-focus-border: #6ea8fe;
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #4c9aff 100%);
+  --gradient-shadow: rgba(102, 126, 234, 0.4);
   --hover-shadow: rgba(255, 255, 255, 0.1);
   
-  /* Colores específicos para modo oscuro */
-  --success-bg: #0f2027;
-  --success-text: #75dd8b;
-  --warning-bg: #2d1b08;
-  --warning-text: #ffda6a;
-  --danger-bg: #2c0b0e;
-  --danger-text: #ff7979;
-  --info-bg: #0c1e2a;
-  --info-text: #74c0fc;
+  /* Colores específicos para modo oscuro - Mejor contraste */
+  --success-bg: #1a3a1a;
+  --success-text: #4ade80;
+  --warning-bg: #3d2a00;
+  --warning-text: #fbbf24;
+  --danger-bg: #3d1a1a;
+  --danger-text: #f87171;
+  --info-bg: #1a2a3d;
+  --info-text: #38bdf8;
   
   /* Badges y etiquetas para modo oscuro */
   --badge-text: #ffffff;
-  --badge-muted-bg: #495057;
+  --badge-muted-bg: #505050;
   /* Banner (welcome) text defaults for dark theme */
-  --banner-text: var(--text-primary);
-  --banner-lead-color: rgba(248,249,250,0.92);
+  --banner-text: #ffffff;
+  --banner-lead-color: rgba(255, 255, 255, 0.95);
 }
 
 html {
@@ -164,6 +164,13 @@ footer {
   box-shadow: 0 2px 4px var(--card-shadow);
 }
 
+/* Corregir cards en tema oscuro */
+[data-theme="dark"] .card {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
 .card-header {
   background-color: transparent !important;
   border-bottom-color: var(--border-color) !important;
@@ -246,10 +253,10 @@ footer {
   color: inherit !important;
 }
 
-/* Force text to stay visible on card hover */
+/* Force text to stay visible on card hover - Mejorado para tema oscuro */
 .card:hover .card-body,
 .card:hover p {
-  color: #212529 !important;
+  color: var(--text-primary) !important;
 }
 
 .card:hover h3,
@@ -258,11 +265,11 @@ footer {
 .card:hover h4,
 .card:hover h5,
 .card:hover h6 {
-  color: inherit !important;
+  color: var(--text-primary) !important;
 }
 
 .card:hover .text-muted {
-  color: #6c757d !important;
+  color: var(--text-secondary) !important;
 }
 
 .card:hover .text-primary {
@@ -281,10 +288,63 @@ footer {
   color: #0dcaf0 !important;
 }
 
+/* Mejorar contraste en hover para tema oscuro */
+[data-theme="dark"] .card:hover .text-primary {
+  color: #6ea8fe !important;
+}
+
+[data-theme="dark"] .card:hover .text-success {
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .card:hover .text-warning {
+  color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .card:hover .text-info {
+  color: #38bdf8 !important;
+}
+
 /* Prevent hover color changes on list items */
 .list-group-item:hover {
   color: var(--text-primary) !important;
   background-color: var(--bg-secondary) !important;
+}
+
+/* ===== BANNER DE BIENVENIDA ===== */
+.welcome-banner {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--border-color);
+}
+
+.welcome-title {
+  color: var(--text-primary) !important;
+}
+
+.welcome-text {
+  color: var(--text-secondary) !important;
+  font-size: 1.1rem;
+}
+
+/* Asegurar que los números y estadísticas sean visibles */
+.card h3 {
+  color: inherit !important;
+  font-weight: 700;
+}
+
+/* Mejorar visibilidad de enlaces en hover */
+a:hover {
+  color: var(--navbar-bg) !important;
+  text-decoration: underline;
+  opacity: 1 !important;
+}
+
+/* Evitar que los elementos se vuelvan invisibles en hover */
+.card:hover .text-primary,
+.card:hover .text-success,
+.card:hover .text-warning,
+.card:hover .text-info {
+  opacity: 1 !important;
 }
 
 /* Navbar con tema */
@@ -1233,19 +1293,48 @@ p, span, div {
 
 /* Colores de iconos adaptativos para modo oscuro */
 [data-theme="dark"] .text-primary {
-  color: #6366f1 !important;
+  color: #6ea8fe !important;
 }
 
 [data-theme="dark"] .text-success {
-  color: #10b981 !important;
+  color: #4ade80 !important;
 }
 
 [data-theme="dark"] .text-warning {
-  color: #f59e0b !important;
+  color: #fbbf24 !important;
 }
 
 [data-theme="dark"] .text-info {
-  color: #06b6d4 !important;
+  color: #38bdf8 !important;
+}
+
+/* Asegurar máxima visibilidad de números y estadísticas */
+.card h3,
+.card .display-4,
+.card-body h3 {
+  font-weight: 700;
+  text-shadow: none;
+}
+
+/* Prevenir que los números se vuelvan del mismo color del fondo */
+[data-theme="dark"] .card h3.text-primary {
+  color: #6ea8fe !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card h3.text-success {
+  color: #4ade80 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card h3.text-warning {
+  color: #fbbf24 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card h3.text-info {
+  color: #38bdf8 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Botones de acciones rápidas */

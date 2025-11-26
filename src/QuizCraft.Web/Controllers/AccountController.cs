@@ -280,7 +280,7 @@ public class AccountController : Controller
             user.NotificacionesEmail = model.NotificacionesEmail;
             user.NotificacionesWeb = model.NotificacionesWeb;
             user.PreferenciaIdioma = model.PreferenciaIdioma;
-            user.TemaPreferido = "light";
+            user.TemaPreferido = model.TemaPreferido ?? "light";
 
             var result = await _userManager.UpdateAsync(user);
 

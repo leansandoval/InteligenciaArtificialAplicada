@@ -77,6 +77,20 @@
                                 </select>
                                 <span asp-validation-for="PreferenciaIdioma" class="text-danger"></span>
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TemaPreferido" class="form-label">
+                                    <i class="fas fa-palette me-1"></i>Tema de la Aplicación
+                                </label>
+                                <select asp-for="TemaPreferido" class="form-select" id="temaSelect">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Oscuro</option>
+                                </select>
+                                <span asp-validation-for="TemaPreferido" class="text-danger"></span>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    El cambio de tema se aplicará automáticamente al guardar.
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Notificaciones -->
@@ -202,6 +216,17 @@
     <partial name="_ValidationScriptsPartial" />
     
     <script>
+        // Vista previa del tema al cambiar el select
+        document.getElementById('temaSelect')?.addEventListener('change', function(e) {
+            const selectedTheme = e.target.value;
+            document.documentElement.setAttribute('data-theme', selectedTheme);
+            localStorage.setItem('theme', selectedTheme);
+            
+            // Mostrar un mensaje de confirmación
+            const themeName = selectedTheme === 'dark' ? 'Oscuro' : 'Claro';
+            showToast(`Vista previa del tema ${themeName}. Guarda los cambios para aplicarlo permanentemente.`, 'info');
+        });
+        
         function changePassword() {
             // Implementar cambio de contraseña
             mostrarModalAlerta({
