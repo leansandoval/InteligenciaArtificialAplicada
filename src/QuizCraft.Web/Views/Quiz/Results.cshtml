@@ -186,23 +186,33 @@
                                         <div class="row">
                                             @foreach (var opcion in respuesta.TodasLasOpciones)
                                             {
-                                                var letra = respuesta.TodasLasOpciones.IndexOf(opcion) switch {
-                                                    0 => "A",
-                                                    1 => "B", 
-                                                    2 => "C",
-                                                    3 => "D",
-                                                    _ => "X"
-                                                };
+                                                var letra = !string.IsNullOrEmpty(opcion.Valor)
+                                                    ? opcion.Valor
+                                                    : respuesta.TodasLasOpciones.IndexOf(opcion) switch {
+                                                        0 => "A",
+                                                        1 => "B", 
+                                                        2 => "C",
+                                                        3 => "D",
+                                                        _ => "X"
+                                                    };
 
                                                 var claseOpcion = "";
                                                 var icono = "";
+                                                var esSeleccionUsuario = 
+                                                    (!string.IsNullOrEmpty(opcion.Valor) &&
+                                                     !string.IsNullOrEmpty(respuesta.RespuestaUsuarioValor) &&
+                                                     opcion.Valor.Equals(respuesta.RespuestaUsuarioValor, StringComparison.OrdinalIgnoreCase))
+                                                     || (!string.IsNullOrEmpty(opcion.Valor) &&
+                                                         !string.IsNullOrEmpty(respuesta.RespuestaUsuario) &&
+                                                         opcion.Valor.Equals(respuesta.RespuestaUsuario, StringComparison.OrdinalIgnoreCase))
+                                                     || (!string.IsNullOrEmpty(respuesta.RespuestaUsuario) && opcion.Texto == respuesta.RespuestaUsuario);
                                                 
                                                 if (opcion.EsCorrecta)
                                                 {
                                                     claseOpcion = "border-success bg-success bg-opacity-10";
                                                     icono = "<i class='fas fa-check text-success'></i>";
                                                 }
-                                                else if (opcion.Texto == respuesta.RespuestaUsuario && !respuesta.EsCorrecta)
+                                                else if (esSeleccionUsuario && !respuesta.EsCorrecta)
                                                 {
                                                     claseOpcion = "border-danger bg-danger bg-opacity-10";
                                                     icono = "<i class='fas fa-times text-danger'></i>";
@@ -227,8 +237,10 @@
                                         {
                                             <div class="mt-2">
                                                 <small class="text-muted">
-                                                    <strong>Tu respuesta:</strong> @respuesta.RespuestaUsuario<br>
-                                                    <strong>Respuesta correcta:</strong> @respuesta.RespuestaCorrecta
+                                                    <strong>Tu respuesta:</strong>
+                                                    @((!string.IsNullOrEmpty(respuesta.RespuestaUsuarioValor) ? $"{respuesta.RespuestaUsuarioValor}) " : string.Empty) + respuesta.RespuestaUsuario)<br>
+                                                    <strong>Respuesta correcta:</strong>
+                                                    @((!string.IsNullOrEmpty(respuesta.RespuestaCorrectaValor) ? $"{respuesta.RespuestaCorrectaValor}) " : string.Empty) + respuesta.RespuestaCorrecta)
                                                 </small>
                                             </div>
                                         }

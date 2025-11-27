@@ -121,9 +121,6 @@
                         <!-- Botones de Acción -->
                         <div class="row mt-4">
                             <div class="col-12 text-center">
-                                <button type="button" class="btn btn-outline-info me-2" id="btnVistaPrevia">
-                                    <i class="fas fa-eye"></i> Vista Previa
-                                </button>
                                 <button type="submit" class="btn btn-success">
                                     <i class="fas fa-magic"></i> Generar Flashcards
                                 </button>
@@ -153,26 +150,6 @@
         </div>
     </div>
 
-    <!-- Modal de Vista Previa -->
-    <div class="modal fade" id="modalVistaPrevia" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-eye"></i> Vista Previa</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="contenidoVistaPrevia"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-success" id="btnConfirmarGeneracion">
-                        <i class="fas fa-check"></i> Confirmar y Generar Todas
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 @section Scripts {
@@ -196,56 +173,7 @@
                 window.location.href = '@Url.Action("Index", "Flashcard")';
             });
 
-            // Vista previa
-            $('#btnVistaPrevia').on('click', function(e) {
-                if (!validarFormulario()) return;
 
-                const formData = new FormData();
-                
-                // Datos básicos
-                const archivo = $('#documento')[0].files[0];
-                formData.append('documento', archivo);
-                formData.append('modo', modoSeleccionado);
-
-                // Configuraciones específicas del modo
-                if (modoSeleccionado === 'traditional') {
-                    const config = $('#configuracionTraditional');
-                    formData.append('config.MaxCards', config.find('input[name="maxCards"]').val());
-                    formData.append('config.SplitByParagraph', config.find('input[name="splitByParagraph"]').is(':checked'));
-                    formData.append('config.DetectQuestions', config.find('input[name="detectQuestions"]').is(':checked'));
-                    formData.append('config.UseStructural', config.find('input[name="useStructural"]').is(':checked'));
-                    formData.append('config.FilterShort', config.find('input[name="filterShort"]').is(':checked'));
-                    formData.append('config.CustomSeparator', config.find('input[name="customSeparator"]').val() || '');
-                } else {
-                    const config = $('#configuracionAI');
-                    formData.append('config.MaxCards', config.find('input[name="maxCards"]').val());
-                    formData.append('config.Difficulty', config.find('select[name="difficulty"]').val());
-                    formData.append('config.IncludeExplanations', config.find('input[name="includeExplanations"]').is(':checked'));
-                    formData.append('config.FocusArea', config.find('input[name="focusArea"]').val() || '');
-                }
-
-                mostrarCargando('Generando vista previa...');
-
-                $.ajax({
-                    url: '@Url.Action("VistaPrevia", "Generacion")',
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-                        ocultarCargando();
-                        if (response.success) {
-                            mostrarVistaPrevia(response);
-                        } else {
-                            mostrarError(response.message || 'Error desconocido');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        ocultarCargando();
-                        mostrarError('Error de conexión: ' + error);
-                    }
-                });
-            });
 
             // Generar flashcards
             $('#formGeneracion').on('submit', function(e) {
@@ -304,11 +232,7 @@
                 });
             });
 
-            // Confirmar generación desde vista previa
-            $('#btnConfirmarGeneracion').on('click', function(e) {
-                $('#modalVistaPrevia').modal('hide');
-                $('#formGeneracion').submit();
-            });
+
 
             function validarFormulario() {
                 const documento = $('#documento')[0].files[0];
@@ -342,32 +266,7 @@
                 return true;
             }
 
-            function mostrarVistaPrevia(response) {
-                let html = `
-                    <div class="alert alert-info">
-                        <strong>Vista previa:</strong> Mostrando hasta 5 flashcards de ${response.totalPossible} posibles.
-                        <br><strong>Modo:</strong> ${response.modeUsed}
-                    </div>
-                `;
 
-                response.flashcards.forEach((card, index) => {
-                    html += `
-                        <div class="card mb-2">
-                            <div class="card-body">
-                                <h6 class="card-title">Flashcard ${index + 1}</h6>
-                                <p><strong>Pregunta:</strong> ${card.pregunta}</p>
-                                <p><strong>Respuesta:</strong> ${card.respuesta}</p>
-                                <small class="text-muted">
-                                    Confianza: ${card.confidence}% | Fuente: ${card.source}
-                                </small>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                $('#contenidoVistaPrevia').html(html);
-                $('#modalVistaPrevia').modal('show');
-            }
 
             function mostrarResultados(response) {
                 const estadisticas = `

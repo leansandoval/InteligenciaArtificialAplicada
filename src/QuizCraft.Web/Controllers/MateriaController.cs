@@ -254,7 +254,7 @@ namespace QuizCraft.Web.Controllers
                     return RedirectToAction("Login", "Account");
                 }
 
-                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(id);
+                var materia = await _unitOfWork.MateriaRepository.GetMateriaCompletaAsync(id);
                 if (materia == null || materia.UsuarioId != user.Id)
                 {
                     TempData["ErrorMessage"] = "Materia no encontrada.";
@@ -296,7 +296,7 @@ namespace QuizCraft.Web.Controllers
                     return RedirectToAction("Login", "Account");
                 }
 
-                var materia = await _unitOfWork.MateriaRepository.GetByIdAsync(id);
+                var materia = await _unitOfWork.MateriaRepository.GetMateriaCompletaAsync(id);
                 if (materia == null || materia.UsuarioId != user.Id)
                 {
                     TempData["ErrorMessage"] = "Materia no encontrada.";

@@ -29,6 +29,19 @@ namespace QuizCraft.Web.Controllers
         private readonly IDocumentTextExtractor _textExtractor;
         private readonly IRepasoProgramadoService _repasoProgramadoService;
 
+        private class QuizSessionData
+        {
+            public int QuizId { get; set; }
+            public List<QuizPreguntaSession> Preguntas { get; set; } = new();
+        }
+
+        private class QuizPreguntaSession
+        {
+            public int PreguntaId { get; set; }
+            public string RespuestaCorrecta { get; set; } = string.Empty;
+            public List<OpcionRespuestaViewModel> Opciones { get; set; } = new();
+        }
+
         public QuizController(
             IUnitOfWork unitOfWork,
             UserManager<ApplicationUser> userManager,
@@ -371,7 +384,8 @@ namespace QuizCraft.Web.Controllers
                     Puntos = p.Puntos,
                     RespuestaCorrecta = nuevaRespuestaCorrecta,
                     Explicacion = p.Explicacion,
-                    Opciones = opciones
+                    Opciones = opciones,
+                    TodasLasOpciones = opciones
                 };
 
                 preguntasViewModel.Add(preguntaViewModel);
@@ -393,6 +407,28 @@ namespace QuizCraft.Web.Controllers
                 FechaInicio = DateTime.UtcNow,
                 Preguntas = preguntasViewModel
             };
+
+            // Guardar en sesi�n el orden aleatorizado y la respuesta correcta seg�n se muestra al usuario
+            try
+            {
+                var sessionData = new QuizSessionData
+                {
+                    QuizId = quiz.Id,
+                    Preguntas = preguntasViewModel.Select(p => new QuizPreguntaSession
+                    {
+                        PreguntaId = p.Id,
+                        RespuestaCorrecta = p.RespuestaCorrecta ?? string.Empty,
+                        Opciones = p.Opciones
+                    }).ToList()
+                };
+
+                var sessionKey = ObtenerClaveSesionQuiz(quiz.Id, usuarioId);
+                HttpContext.Session.SetString(sessionKey, JsonSerializer.Serialize(sessionData));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo almacenar el orden de opciones en sesi�n para el quiz {QuizId}", quiz.Id);
+            }
 
             // Log para debugging
             _logger.LogInformation($"Quiz {id}: TotalPreguntas={viewModel.TotalPreguntas}, PreguntasCargadas={viewModel.Preguntas.Count}");
@@ -500,14 +536,25 @@ namespace QuizCraft.Web.Controllers
             var random = new Random(Guid.NewGuid().GetHashCode());
             var opciones = new List<OpcionQuizViewModel>
             {
-                new OpcionQuizViewModel { Id = 1, Texto = pregunta.OpcionA ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
-                new OpcionQuizViewModel { Id = 2, Texto = pregunta.OpcionB ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
-                new OpcionQuizViewModel { Id = 3, Texto = pregunta.OpcionC ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
-                new OpcionQuizViewModel { Id = 4, Texto = pregunta.OpcionD ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
+                new OpcionQuizViewModel { Id = 1, Texto = pregunta.OpcionA ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A", LetraOriginal = "A" },
+                new OpcionQuizViewModel { Id = 2, Texto = pregunta.OpcionB ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B", LetraOriginal = "B" },
+                new OpcionQuizViewModel { Id = 3, Texto = pregunta.OpcionC ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C", LetraOriginal = "C" },
+                new OpcionQuizViewModel { Id = 4, Texto = pregunta.OpcionD ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D", LetraOriginal = "D" }
             }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
 
             // Aleatorizar opciones
             opciones = opciones.OrderBy(x => random.Next()).ToList();
+            
+            // Reasignar IDs secuenciales después de aleatorizar
+            for (int i = 0; i < opciones.Count; i++)
+            {
+                opciones[i].Id = i + 1;
+            }
+            
+            // Guardar el mapeo de IDs a letras originales para esta pregunta
+            var opcionesMapeo = opciones.ToDictionary(o => o.Id, o => o.LetraOriginal);
+            TempData[$"OpcionesMapeo_{preguntaId}"] = JsonSerializer.Serialize(opcionesMapeo);
+            TempData.Keep();
 
             var viewModel = new TomarQuizViewModel
             {
@@ -554,18 +601,24 @@ namespace QuizCraft.Web.Controllers
                 return Json(new { success = false, message = "Pregunta no encontrada" });
             }
 
-            // Crear lista de opciones en el mismo orden que en MostrarPregunta
-            var random = new Random(Guid.NewGuid().GetHashCode());
-            var opciones = new List<OpcionQuizViewModel>
+            // Recuperar el mapeo de opciones guardado en MostrarPregunta
+            var mapeoJson = TempData[$"OpcionesMapeo_{preguntaId}"]?.ToString();
+            TempData.Keep();
+            
+            if (string.IsNullOrEmpty(mapeoJson))
             {
-                new OpcionQuizViewModel { Id = 1, Texto = pregunta.OpcionA ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
-                new OpcionQuizViewModel { Id = 2, Texto = pregunta.OpcionB ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
-                new OpcionQuizViewModel { Id = 3, Texto = pregunta.OpcionC ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
-                new OpcionQuizViewModel { Id = 4, Texto = pregunta.OpcionD ?? "", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
-            }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
-
-            var opcionSeleccionada = opciones.FirstOrDefault(o => o.Id == opcionSeleccionadaId);
-            var esCorrecta = opcionSeleccionada?.EsCorrecta ?? false;
+                return Json(new { success = false, message = "Sesión expirada. El mapeo de opciones no está disponible." });
+            }
+            
+            var opcionesMapeo = JsonSerializer.Deserialize<Dictionary<int, string>>(mapeoJson);
+            if (opcionesMapeo == null || !opcionesMapeo.ContainsKey(opcionSeleccionadaId))
+            {
+                return Json(new { success = false, message = "Opción seleccionada no válida" });
+            }
+            
+            // Obtener la letra original de la opción seleccionada
+            var letraSeleccionada = opcionesMapeo[opcionSeleccionadaId];
+            var esCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == letraSeleccionada;
 
             // Guardar la respuesta en TempData
             var respuestasJson = TempData["Respuestas"]?.ToString() ?? "[]";
@@ -575,6 +628,7 @@ namespace QuizCraft.Web.Controllers
             {
                 PreguntaId = preguntaId,
                 OpcionSeleccionadaId = opcionSeleccionadaId,
+                LetraSeleccionada = letraSeleccionada,
                 EsCorrecta = esCorrecta
             });
 
@@ -1208,6 +1262,22 @@ namespace QuizCraft.Web.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
+                // Recuperar el orden y respuestas correctas que vio el usuario
+                QuizSessionData? sessionData = null;
+                try
+                {
+                    var sessionKey = ObtenerClaveSesionQuiz(QuizId, usuarioId);
+                    var sessionJson = HttpContext.Session.GetString(sessionKey);
+                    if (!string.IsNullOrEmpty(sessionJson))
+                    {
+                        sessionData = JsonSerializer.Deserialize<QuizSessionData>(sessionJson);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No se pudo recuperar la sesi�n del quiz {QuizId}", QuizId);
+                }
+
                 // Procesar las respuestas del usuario
                 var respuestas = ProcesarRespuestas(RespuestasUsuario);
                 var preguntas = quiz.Preguntas.OrderBy(p => p.Orden).ToList();
@@ -1254,8 +1324,29 @@ namespace QuizCraft.Web.Controllers
                         respuestaUsuario = respuestasDict[pregunta.Id.ToString()];
                     }
 
+                    var sessionPregunta = sessionData?.Preguntas.FirstOrDefault(p => p.PreguntaId == pregunta.Id);
+                    var opcionesPregunta = sessionPregunta?.Opciones ?? ConstruirOpcionesDesdePregunta(pregunta);
+
+                    var respuestaCorrecta = sessionPregunta?.RespuestaCorrecta?.Trim().ToUpper()
+                        ?? pregunta.RespuestaCorrecta?.Trim().ToUpper()
+                        ?? string.Empty;
+
+                    // Asegurar que la letra correcta coincide con las opciones mostradas al usuario
+                    var respuestaCorrectaDesdeOpciones = opcionesPregunta.FirstOrDefault(o => o.EsCorrecta)?.Valor;
+                    if (!string.IsNullOrEmpty(respuestaCorrectaDesdeOpciones))
+                    {
+                        respuestaCorrecta = respuestaCorrectaDesdeOpciones;
+                    }
+
+                    var textoSeleccionado = opcionesPregunta
+                        .FirstOrDefault(o => o.Valor.Equals(respuestaUsuario, StringComparison.OrdinalIgnoreCase))
+                        ?.Texto ?? respuestaUsuario;
+
+                    var textoCorrecto = opcionesPregunta.FirstOrDefault(o => o.EsCorrecta)?.Texto ?? respuestaCorrecta;
+
                     bool esCorrecta = !string.IsNullOrEmpty(respuestaUsuario) &&
-                                    respuestaUsuario.Equals(pregunta.RespuestaCorrecta, StringComparison.OrdinalIgnoreCase);
+                                      !string.IsNullOrEmpty(respuestaCorrecta) &&
+                                      respuestaUsuario.Equals(respuestaCorrecta, StringComparison.OrdinalIgnoreCase);
 
                     if (esCorrecta)
                     {
@@ -1268,7 +1359,7 @@ namespace QuizCraft.Web.Controllers
                         PreguntaQuizId = pregunta.Id,
                         PreguntaId = pregunta.Id, // Mismo valor para que funcione con la FK
                         RespuestaSeleccionada = respuestaUsuario,
-                        RespuestaDada = respuestaUsuario,
+                        RespuestaDada = textoSeleccionado,
                         EsCorrecta = esCorrecta,
                         PuntosObtenidos = esCorrecta ? pregunta.Puntos : 0,
                         FechaRespuesta = DateTime.UtcNow
@@ -1357,6 +1448,22 @@ namespace QuizCraft.Web.Controllers
                 _logger.LogWarning(ex, "Error al procesar respuestas del usuario: {RespuestasUsuario}", respuestasUsuario);
                 return new List<string>();
             }
+        }
+
+        private static List<OpcionRespuestaViewModel> ConstruirOpcionesDesdePregunta(PreguntaQuiz pregunta)
+        {
+            return new List<OpcionRespuestaViewModel>
+            {
+                new() { Texto = pregunta.OpcionA ?? "", Valor = "A", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
+                new() { Texto = pregunta.OpcionB ?? "", Valor = "B", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
+                new() { Texto = pregunta.OpcionC ?? "", Valor = "C", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
+                new() { Texto = pregunta.OpcionD ?? "", Valor = "D", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
+            }.Where(o => !string.IsNullOrWhiteSpace(o.Texto)).ToList();
+        }
+
+        private string ObtenerClaveSesionQuiz(int quizId, string? usuarioId)
+        {
+            return $"QUIZ_SESSION_{quizId}_{usuarioId}";
         }
 
         /// <summary>
@@ -1515,48 +1622,56 @@ namespace QuizCraft.Web.Controllers
 
                 // Crear detalle de respuestas
                 var preguntasOrdenadas = resultado.Quiz.Preguntas.OrderBy(p => p.Orden).ToList();
-                
-                // Usar el ID del resultado como semilla para mantener consistencia en la aleatorización
-                var random = new Random(resultado.Id);
-                
+
+                QuizSessionData? sessionData = null;
+                try
+                {
+                    var sessionKey = ObtenerClaveSesionQuiz(resultado.QuizId, usuarioId);
+                    var sessionJson = HttpContext.Session.GetString(sessionKey);
+                    if (!string.IsNullOrEmpty(sessionJson))
+                    {
+                        sessionData = JsonSerializer.Deserialize<QuizSessionData>(sessionJson);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "No se pudo recuperar la sesión de opciones para los resultados del quiz {QuizId}", resultado.QuizId);
+                }
+
                 foreach (var pregunta in preguntasOrdenadas)
                 {
                     var respuestaUsuario = resultado.RespuestasUsuario.FirstOrDefault(r => r.PreguntaQuizId == pregunta.Id);
 
-                    // Crear lista de opciones con sus valores originales
-                    var opciones = new List<OpcionRespuestaViewModel>
-                    {
-                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionA ?? "", Valor = "A", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "A" },
-                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionB ?? "", Valor = "B", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "B" },
-                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionC ?? "", Valor = "C", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "C" },
-                        new OpcionRespuestaViewModel { Texto = pregunta.OpcionD ?? "", Valor = "D", EsCorrecta = pregunta.RespuestaCorrecta?.Trim().ToUpper() == "D" }
-                    }.Where(o => !string.IsNullOrEmpty(o.Texto)).ToList();
+                    var sessionPregunta = sessionData?.Preguntas.FirstOrDefault(p => p.PreguntaId == pregunta.Id);
+                    var opciones = sessionPregunta?.Opciones ?? ConstruirOpcionesDesdePregunta(pregunta);
 
-                    // Aleatorizar las opciones usando Fisher-Yates shuffle (mismo algoritmo que en Take)
-                    for (int i = opciones.Count - 1; i > 0; i--)
-                    {
-                        int j = random.Next(i + 1);
-                        var temp = opciones[i];
-                        opciones[i] = opciones[j];
-                        opciones[j] = temp;
-                    }
-
-                    // Reasignar letras A, B, C, D según el nuevo orden
+                    // Asegurar que todas las opciones tengan letra asignada
                     for (int i = 0; i < opciones.Count; i++)
                     {
-                        opciones[i].Valor = new[] { "A", "B", "C", "D" }[i];
+                        if (string.IsNullOrWhiteSpace(opciones[i].Valor))
+                        {
+                            opciones[i].Valor = new[] { "A", "B", "C", "D" }[i];
+                        }
                     }
 
-                    // Determinar cuál es la nueva respuesta correcta después de aleatorizar
                     var opcionCorrecta = opciones.FirstOrDefault(o => o.EsCorrecta);
-                    string nuevaRespuestaCorrecta = opcionCorrecta?.Valor ?? pregunta.RespuestaCorrecta ?? "A";
+                    string respuestaCorrectaValor = sessionPregunta?.RespuestaCorrecta
+                        ?? opcionCorrecta?.Valor
+                        ?? pregunta.RespuestaCorrecta
+                        ?? "A";
+
+                    var respuestaCorrectaTexto = opcionCorrecta?.Texto
+                        ?? opciones.FirstOrDefault(o => o.Valor.Equals(respuestaCorrectaValor, StringComparison.OrdinalIgnoreCase))?.Texto
+                        ?? respuestaCorrectaValor;
 
                     var detalleRespuesta = new RespuestaDetalleViewModel
                     {
                         Orden = pregunta.Orden,
                         Pregunta = pregunta.TextoPregunta,
-                        RespuestaUsuario = respuestaUsuario?.RespuestaSeleccionada ?? "Sin respuesta",
-                        RespuestaCorrecta = nuevaRespuestaCorrecta,
+                        RespuestaUsuario = respuestaUsuario?.RespuestaDada ?? "Sin respuesta",
+                        RespuestaUsuarioValor = respuestaUsuario?.RespuestaSeleccionada ?? string.Empty,
+                        RespuestaCorrecta = respuestaCorrectaTexto,
+                        RespuestaCorrectaValor = respuestaCorrectaValor,
                         EsCorrecta = respuestaUsuario?.EsCorrecta ?? false,
                         Explicacion = pregunta.Explicacion,
                         TodasLasOpciones = opciones
@@ -2830,7 +2945,12 @@ Solo responde con el dato incorrecto específico.";
     {
         public int PreguntaId { get; set; }
         public int OpcionSeleccionadaId { get; set; }
+        public string LetraSeleccionada { get; set; } = string.Empty;
         public bool EsCorrecta { get; set; }
     }
 }
+
+
+
+
 

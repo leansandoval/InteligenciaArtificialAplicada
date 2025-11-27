@@ -188,7 +188,9 @@ namespace QuizCraft.Application.ViewModels
         public int Orden { get; set; }
         public string Pregunta { get; set; } = string.Empty;
         public string RespuestaUsuario { get; set; } = string.Empty;
+        public string RespuestaUsuarioValor { get; set; } = string.Empty;
         public string RespuestaCorrecta { get; set; } = string.Empty;
+        public string RespuestaCorrectaValor { get; set; } = string.Empty;
         public bool EsCorrecta { get; set; }
         public string? Explicacion { get; set; }
         public int TiempoRespuesta { get; set; } // en segundos
@@ -319,6 +321,7 @@ namespace QuizCraft.Application.ViewModels
         public int Id { get; set; }
         public string Texto { get; set; } = string.Empty;
         public bool EsCorrecta { get; set; }
+        public string LetraOriginal { get; set; } = string.Empty; // A, B, C o D
     }
 
     public class EstadisticasQuizViewModel
