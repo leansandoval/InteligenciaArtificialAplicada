@@ -179,6 +179,9 @@ public class QuizCompartidoService : IQuizCompartidoService
                 nuevoQuiz.Preguntas.Add(nuevaPregunta);
             }
 
+            // Actualizar número de preguntas
+            nuevoQuiz.NumeroPreguntas = nuevoQuiz.Preguntas.Count;
+
             // Guardar nuevo quiz primero para obtener su ID
             await _quizRepository.AddAsync(nuevoQuiz);
             await _unitOfWork.SaveChangesAsync();
