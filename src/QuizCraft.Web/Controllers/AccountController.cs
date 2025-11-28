@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using QuizCraft.Application.ViewModels;
 using QuizCraft.Core.Entities;
 
@@ -215,6 +216,43 @@ public class AccountController : Controller
     }
 
     /// <summary>
+    /// Cambiar contrase�a del usuario autenticado
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmNewPassword)
+    {
+        if (string.IsNullOrWhiteSpace(currentPassword) ||
+            string.IsNullOrWhiteSpace(newPassword) ||
+            string.IsNullOrWhiteSpace(confirmNewPassword))
+        {
+            return BadRequest(new { success = false, message = "Todos los campos son obligatorios." });
+        }
+
+        if (!newPassword.Equals(confirmNewPassword))
+        {
+            return BadRequest(new { success = false, message = "La nueva contrase�a y su confirmaci�n no coinciden." });
+        }
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return Unauthorized(new { success = false, message = "Usuario no autenticado." });
+        }
+
+        var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (result.Succeeded)
+        {
+            await _signInManager.RefreshSignInAsync(user);
+            return Json(new { success = true, message = "Contraseña actualizada correctamente." });
+        }
+
+        var errores = string.Join(" ", result.Errors.Select(e => e.Description));
+        return BadRequest(new { success = false, message = errores });
+    }
+
+    /// <summary>
     /// FUNC_PerfilUsuario - Muestra el perfil del usuario actual
     /// </summary>
     [HttpGet]
@@ -276,9 +314,6 @@ public class AccountController : Controller
             user.Nombre = model.Nombre;
             user.Apellido = model.Apellido;
             user.NombreCompleto = $"{model.Nombre} {model.Apellido}";
-            user.NotificacionesHabilitadas = model.NotificacionesHabilitadas;
-            user.NotificacionesEmail = model.NotificacionesEmail;
-            user.NotificacionesWeb = model.NotificacionesWeb;
             user.PreferenciaIdioma = model.PreferenciaIdioma;
             user.TemaPreferido = model.TemaPreferido ?? "light";
 

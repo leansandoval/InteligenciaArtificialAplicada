@@ -92,39 +92,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Notificaciones -->
-                        <h6 class="text-secondary mb-3">
-                            <i class="fas fa-bell me-2"></i>Configuración de Notificaciones
-                        </h6>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check form-switch">
-                                    <input asp-for="NotificacionesHabilitadas" class="form-check-input" type="checkbox" />
-                                    <label asp-for="NotificacionesHabilitadas" class="form-check-label">
-                                        Notificaciones Habilitadas
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check form-switch">
-                                    <input asp-for="NotificacionesEmail" class="form-check-input" type="checkbox" />
-                                    <label asp-for="NotificacionesEmail" class="form-check-label">
-                                        Notificaciones por Email
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="form-check form-switch">
-                                    <input asp-for="NotificacionesWeb" class="form-check-input" type="checkbox" />
-                                    <label asp-for="NotificacionesWeb" class="form-check-label">
-                                        Notificaciones Web
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
                         <hr class="my-4">
 
                         <!-- Información de la Cuenta -->
@@ -188,6 +155,7 @@
             </div>
             <div class="modal-body">
                 <form id="changePasswordForm">
+                    @Html.AntiForgeryToken()
                     <div class="mb-3">
                         <label for="currentPassword" class="form-label">Contraseña Actual</label>
                         <input type="password" class="form-control" id="currentPassword" required />
@@ -200,11 +168,12 @@
                         <label for="confirmNewPassword" class="form-label">Confirmar Nueva Contraseña</label>
                         <input type="password" class="form-control" id="confirmNewPassword" required />
                     </div>
+                    <div id="changePasswordAlert" class="alert d-none" role="alert"></div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-warning" onclick="changePassword()">
+                <button type="button" class="btn btn-warning" id="changePasswordBtn" onclick="changePassword()">
                     <i class="fas fa-save me-1"></i>Cambiar Contraseña
                 </button>
             </div>
@@ -228,13 +197,72 @@
         });
         
         function changePassword() {
-            // Implementar cambio de contraseña
-            mostrarModalAlerta({
-                titulo: 'Próximamente',
-                mensaje: 'La funcionalidad de cambio de contraseña estará disponible pronto.',
-                tipo: 'info',
-                icono: 'fas fa-info-circle'
+            const currentPassword = document.getElementById('currentPassword')?.value || '';
+            const newPassword = document.getElementById('newPassword')?.value || '';
+            const confirmPassword = document.getElementById('confirmNewPassword')?.value || '';
+            const alertBox = document.getElementById('changePasswordAlert');
+            const btn = document.getElementById('changePasswordBtn');
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            const showMessage = (message, isSuccess) => {
+                if (!alertBox) return;
+                alertBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+                alertBox.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
+                alertBox.textContent = message;
+            };
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showMessage('Completa todos los campos.', false);
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showMessage('La nueva contraseña y su confirmación no coinciden.', false);
+                return;
+            }
+
+            btn?.setAttribute('disabled', 'disabled');
+
+            const formData = new FormData();
+            formData.append('currentPassword', currentPassword);
+            formData.append('newPassword', newPassword);
+            formData.append('confirmNewPassword', confirmPassword);
+            formData.append('__RequestVerificationToken', token);
+
+            fetch('@Url.Action("ChangePassword", "Account")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (response.ok && data.success) {
+                    showMessage(data.message || 'Contraseña actualizada.', true);
+                    const form = document.getElementById('changePasswordForm');
+                    if (form && typeof form.reset === 'function') {
+                        form.reset();
+                    }
+                    setTimeout(() => {
+                        const modalElement = document.getElementById('changePasswordModal');
+                        if (modalElement) {
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            modal?.hide();
+                        }
+                    }, 1200);
+                } else {
+                    showMessage(data.message || 'No se pudo cambiar la contraseña.', false);
+                }
+            })
+            .catch(() => {
+                showMessage('Error al cambiar la contraseña. Intenta nuevamente.', false);
+            })
+            .finally(() => {
+                btn?.removeAttribute('disabled');
             });
         }
     </script>
 }
+
+
+
+
+
