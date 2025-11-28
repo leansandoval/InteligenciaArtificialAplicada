@@ -239,8 +239,12 @@
     function updateCountdowns() {
         if (!@Json.Serialize(Model != null)) return;
 
-        const minuteReset = new Date('@Model.MinuteResetTime.ToString("o")');
-        const dailyReset = new Date('@Model.DailyResetTime.ToString("o")');
+        const minuteResetStr = '@(Model?.MinuteResetTime.ToString("o") ?? "")';
+        const dailyResetStr = '@(Model?.DailyResetTime.ToString("o") ?? "")';
+        if (!minuteResetStr || !dailyResetStr) return;
+
+        const minuteReset = new Date(minuteResetStr);
+        const dailyReset = new Date(dailyResetStr);
         const now = new Date();
 
         // Countdown para minuto

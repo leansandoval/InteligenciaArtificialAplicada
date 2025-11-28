@@ -83,6 +83,17 @@ namespace QuizCraft.Web.Controllers
             // Debug: Log para verificar los datos
             _logger.LogInformation($"Usuario: {usuarioId}, Mis Quizzes: {todosLosQuizzes.Count()}, Quizzes Públicos: {quizzesPublicos.Count()}, Materias: {materias.Count()}");
 
+            string ObtenerNombreUsuario(ApplicationUser? user) =>
+                !string.IsNullOrWhiteSpace(user?.NombreCompleto) ? user!.NombreCompleto :
+                !string.IsNullOrWhiteSpace(user?.Nombre) || !string.IsNullOrWhiteSpace(user?.Apellido)
+                    ? $"{user?.Nombre} {user?.Apellido}".Trim()
+                    : user?.UserName ?? "Usuario";
+
+            int ObtenerTotalPreguntas(Quiz q) =>
+                (q.Preguntas != null && q.Preguntas.Any())
+                    ? q.Preguntas.Count
+                    : (q.NumeroPreguntas > 0 ? q.NumeroPreguntas : 0);
+
             var viewModel = new QuizIndexViewModel
             {
                 MisQuizzes = misQuizzesFiltrados.Select(q => new QuizItemViewModel
@@ -90,9 +101,9 @@ namespace QuizCraft.Web.Controllers
                     Id = q.Id,
                     Titulo = q.Titulo ?? string.Empty,
                     Descripcion = q.Descripcion,
-                    NumeroPreguntas = q.Preguntas?.Count ?? q.NumeroPreguntas,
+                    NumeroPreguntas = ObtenerTotalPreguntas(q),
                     MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
-                    CreadorNombre = q.Creador?.UserName ?? "Usuario",
+                    CreadorNombre = ObtenerNombreUsuario(q.Creador),
                     FechaCreacion = q.FechaCreacion,
                     EsPublico = q.EsPublico,
                     TotalResultados = q.Resultados?.Count ?? 0,
@@ -110,9 +121,9 @@ namespace QuizCraft.Web.Controllers
                     Id = q.Id,
                     Titulo = q.Titulo ?? string.Empty,
                     Descripcion = q.Descripcion,
-                    NumeroPreguntas = q.Preguntas?.Count ?? q.NumeroPreguntas,
+                    NumeroPreguntas = ObtenerTotalPreguntas(q),
                     MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
-                    CreadorNombre = q.Creador?.UserName ?? "Usuario",
+                    CreadorNombre = ObtenerNombreUsuario(q.Creador),
                     FechaCreacion = q.FechaCreacion,
                     EsPublico = q.EsPublico,
                     TotalResultados = q.Resultados?.Count ?? 0,
@@ -134,9 +145,9 @@ namespace QuizCraft.Web.Controllers
                         Id = q.Id,
                         Titulo = q.Titulo,
                         Descripcion = q.Descripcion,
-                        NumeroPreguntas = q.Preguntas?.Count ?? q.NumeroPreguntas,
+                        NumeroPreguntas = ObtenerTotalPreguntas(q),
                         MateriaNombre = q.Materia?.Nombre ?? "Sin materia",
-                        CreadorNombre = q.Creador?.UserName ?? "Usuario",
+                        CreadorNombre = ObtenerNombreUsuario(q.Creador),
                         FechaCreacion = q.FechaCreacion,
                         EsPublico = q.EsPublico,
                         TotalResultados = q.Resultados?.Count ?? 0,

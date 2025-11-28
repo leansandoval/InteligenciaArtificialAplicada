@@ -1182,6 +1182,13 @@ p, span, div {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
+/* Mantener el logo legible en hover */
+.navbar-brand:hover,
+.navbar-brand:focus {
+  color: #ffffff !important;
+  opacity: 1;
+}
+
 .navbar-toggler {
   border-color: rgba(255, 255, 255, 0.3);
 }

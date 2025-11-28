@@ -60,6 +60,7 @@ namespace QuizCraft.Infrastructure.Repositories
             IQueryable<Quiz> query = _dbSet
                 .Include(q => q.Materia)
                 .Include(q => q.Creador)
+                .Include(q => q.Preguntas)
                 .Include(q => q.Resultados)
                 .Where(q => q.EsPublico);
 

@@ -17,7 +17,7 @@
                         <div class="d-flex gap-2">
                             @if (Model.PuedeEditar)
                             {
-                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-light btn-sm">
+                                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-sm">
                                     <i class="fas fa-edit me-1"></i>
                                     Editar
                                 </a>
@@ -28,7 +28,7 @@
                             }
                             @if (Model.PuedeEliminar)
                             {
-                                <button type="button" class="btn btn-outline-light btn-sm" 
+                                <button type="button" class="btn btn-outline-danger btn-sm" 
                                         onclick="confirmarEliminacion(@Model.Id, '@Model.Titulo')">
                                     <i class="fas fa-trash me-1"></i>
                                     Eliminar
