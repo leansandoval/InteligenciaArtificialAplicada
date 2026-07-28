@@ -304,11 +304,14 @@ namespace QuizCraft.Infrastructure.Services
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var url = $"{_settings.BaseUrl}/v1beta/models/{_settings.Model}:generateContent";
+            using var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            request.Headers.Add("x-goog-api-key", _settings.ApiKey);
 
-            var url = $"{_settings.BaseUrl}/v1beta/models/{_settings.Model}:generateContent?key={_settings.ApiKey}";
-
-            var response = await _httpClient.PostAsync(url, content);
+            var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {

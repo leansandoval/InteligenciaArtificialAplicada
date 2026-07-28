@@ -6,7 +6,7 @@
 
 1. **Key Vault creado**: `quizcraft-keyvault` en resource group `IAAplicadaGrupo2`
 2. **Secretos almacenados**:
-   - `Gemini--ApiKey`: AIzaSyBnTcX7Plr_lD8aIKdQrLJr0KL6kMdfrXM
+   - `Gemini--ApiKey`: `<valor-secreto-no-versionado>`
    - `Gemini--Model`: gemini-2.0-flash
 3. **Identidad administrada**: Habilitada en `quizcraft-webapp`
 4. **Permisos**: App Service tiene acceso de lectura (get, list) a secretos
@@ -17,7 +17,7 @@
 Por el momento, la aplicación utiliza **variables de entorno** en App Service:
 
 ```bash
-Gemini__ApiKey = AIzaSyBnTcX7Plr_lD8aIKdQrLJr0KL6kMdfrXM
+Gemini__ApiKey = <valor-secreto-no-versionado>
 ```
 
 El modelo se toma del archivo `appsettings.Production.json`:
@@ -37,7 +37,7 @@ Cambiar las variables de entorno para que apunten al Key Vault:
 
 ```bash
 # En vez de:
-Gemini__ApiKey = AIzaSyBnTcX7Plr_lD8aIKdQrLJr0KL6kMdfrXM
+Gemini__ApiKey = <valor-secreto-no-versionado>
 
 # Usar:
 Gemini__ApiKey = @Microsoft.KeyVault(SecretUri=https://quizcraft-keyvault.vault.azure.net/secrets/Gemini--ApiKey/)
@@ -148,7 +148,7 @@ az webapp config appsettings list --name quizcraft-webapp --resource-group IAApl
 
 | Configuración | Development | Production (Actual) |
 |--------------|-------------|---------------------|
-| **API Key** | AIzaSyBnTcX7Plr_lD8aIKdQrLJr0KL6kMdfrXM | AIzaSyBnTcX7Plr_lD8aIKdQrLJr0KL6kMdfrXM ✅ |
+| **API Key** | Configurada mediante Key Vault | Configurada mediante Key Vault ✅ |
 | **Model** | gemini-2.0-flash | gemini-2.0-flash ✅ |
 | **Almacenamiento** | appsettings.Development.json | App Service Variables + Key Vault (backup) |
 

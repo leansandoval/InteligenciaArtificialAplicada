@@ -372,6 +372,10 @@ appsettings.Staging.json
 appsettings.Local.json
 !appsettings.Example.json
 
+# Las claves se cargan desde variables de entorno o Azure Key Vault.
+# Nunca versionar variantes locales adicionales de appsettings.
+appsettings.*.local.json
+
 # Claves API y secretos
 *.secrets.json
 secrets.json

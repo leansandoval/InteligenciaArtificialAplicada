@@ -18,11 +18,6 @@ namespace QuizCraft.Application.Interfaces
         Task<bool> IsConfiguredAsync();
         
         /// <summary>
-        /// Obtiene la clave API configurada
-        /// </summary>
-        Task<string> GetApiKeyAsync();
-        
-        /// <summary>
         /// Valida la configuración actual
         /// </summary>
         Task<bool> ValidateConfigurationAsync();

@@ -41,14 +41,9 @@
                                             }
                                             API Key
                                         </h6>
-                                        @if (Model.ApiKeyConfigurada)
-                                        {
-                                            <p class="mb-0 small font-monospace">@Model.ApiKeyParcial</p>
-                                        }
-                                        else
-                                        {
-                                            <p class="mb-0 text-danger">No configurada</p>
-                                        }
+                                        <p class="mb-0 @(Model.ApiKeyConfigurada ? "text-success" : "text-danger")">
+                                            @(Model.ApiKeyConfigurada ? "Configurada de forma segura" : "No configurada")
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -218,6 +213,7 @@
 </div>
 
 @section Scripts {
+    @Html.AntiForgeryToken()
     <script>
         function verificarNuevamente() {
             const btn = event.target.closest('button');

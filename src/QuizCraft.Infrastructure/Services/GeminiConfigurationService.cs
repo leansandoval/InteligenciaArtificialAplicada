@@ -47,11 +47,6 @@ namespace QuizCraft.Infrastructure.Services
             return Task.FromResult(isConfigured);
         }
 
-        public Task<string> GetApiKeyAsync()
-        {
-            return Task.FromResult(_geminiSettings.ApiKey);
-        }
-
         public Task<bool> ValidateConfigurationAsync()
         {
             try

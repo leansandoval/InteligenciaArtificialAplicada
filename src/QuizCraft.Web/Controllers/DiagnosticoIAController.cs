@@ -8,7 +8,7 @@ namespace QuizCraft.Web.Controllers;
 /// <summary>
 /// Controlador para diagnosticar el estado de la configuración de IA
 /// </summary>
-[Authorize]
+[Authorize(Roles = "Administrador")]
 public class DiagnosticoIAController : Controller
 {
     private readonly IAIService _aiService;
@@ -46,15 +46,6 @@ public class DiagnosticoIAController : Controller
             model.ModeloConfigurudo = settings.Model;
             model.ApiKeyConfigurada = isConfigured;
             
-            if (model.ApiKeyConfigurada)
-            {
-                var apiKey = await _aiConfigurationService.GetApiKeyAsync();
-                if (!string.IsNullOrEmpty(apiKey) && apiKey.Length > 12)
-                {
-                    model.ApiKeyParcial = $"{apiKey.Substring(0, 8)}...{apiKey.Substring(apiKey.Length - 4)}";
-                }
-            }
-
             // Hacer una prueba simple
             if (model.ConfiguracionValida)
             {
@@ -86,7 +77,7 @@ public class DiagnosticoIAController : Controller
         catch (Exception ex)
         {
             model.ConexionExitosa = false;
-            model.MensajeError = $"Error: {ex.Message}";
+            model.MensajeError = "No se pudo verificar la configuración de IA. Revisa los registros del servidor.";
             _logger.LogError(ex, "Error en diagnóstico de IA");
         }
 
@@ -97,6 +88,7 @@ public class DiagnosticoIAController : Controller
     /// Verificar estado de la API mediante AJAX
     /// </summary>
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> VerificarEstado()
     {
         try
@@ -119,7 +111,7 @@ public class DiagnosticoIAController : Controller
             return Json(new
             {
                 success = false,
-                mensaje = ex.Message,
+                mensaje = "No se pudo verificar la conexión. Revisa los registros del servidor.",
                 tokens = 0,
                 timestamp = DateTime.Now
             });
