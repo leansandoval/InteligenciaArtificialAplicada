@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\QuizCraft.Application\QuizCraft.Application.csproj" />
@@ -19,6 +19,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseAppHost>false</UseAppHost>
+    <UserSecretsId>d598b0c4-0f15-4202-9545-63857d85973a</UserSecretsId>
   </PropertyGroup>
 
 </Project>

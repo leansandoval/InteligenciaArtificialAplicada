@@ -157,10 +157,7 @@ QuizCraft/
 │   ├── QuizCraft.Core/             # Entidades y lógica de dominio
 │   ├── QuizCraft.Application/      # Servicios de aplicación y ViewModels
 │   └── QuizCraft.Infrastructure/   # Repositorios y acceso a datos
-├── Documentacion/
-│   ├── ARQUITECTURA.md             # Documentación de arquitectura
-│   ├── REQUISITOS.md               # Requisitos funcionales y no funcionales
-│   └── README-Azure-DevOps-CLI.md  # Comandos útiles de Azure DevOps
+├── deploy/                         # Scripts y notas de despliegue
 └── README.md                       # Este archivo
 ```
 
@@ -184,33 +181,31 @@ QuizCraft/
 
 ## 🔧 Configuración de Desarrollo
 
-### Variables de Entorno
+### Secretos locales
 
-Crea un archivo `appsettings.Development.json` para configuraciones locales:
+No guardes claves ni cadenas de conexión en archivos versionados. Configúralas con
+[User Secrets de .NET](https://learn.microsoft.com/aspnet/core/security/app-secrets):
 
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Debug",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "ConnectionStrings": {
-    "DefaultConnection": "Tu cadena de conexión local"
-  },
-  "Gemini": {
-    "ApiKey": "Tu API Key de Google Gemini (gratuita)"
-  }
-}
+```powershell
+# Ejecutar una única vez para habilitar User Secrets en el proyecto web
+dotnet user-secrets init --project .\src\QuizCraft.Web
+
+# SQL Server LocalDB (ajusta el servidor si usas otra instancia)
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=(localdb)\MSSQLLocalDB;Database=QuizCraftDb;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True" --project .\src\QuizCraft.Web
+
+# Gemini (opcional)
+dotnet user-secrets set "Gemini:ApiKey" "TU_API_KEY_DE_GEMINI" --project .\src\QuizCraft.Web
 ```
+
+En Azure, usa variables de entorno o referencias a Azure Key Vault, por ejemplo
+`Gemini__ApiKey`; nunca incluyas su valor en `appsettings*.json`.
 
 ### Configuración de Google Gemini (Opcional)
 
 Para habilitar la generación automática de contenido:
 
 1. Obtén una API Key GRATUITA de [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Agrégala a tu `appsettings.Development.json`
+2. Agrégala mediante User Secrets con `Gemini:ApiKey`
 3. El sistema detectará automáticamente la disponibilidad
 
 **💡 Ventajas de Gemini:**
@@ -220,6 +215,11 @@ Para habilitar la generación automática de contenido:
 - ✅ **Solo necesitas** una cuenta de Google
 
 ## 🚨 Solución de Problemas Comunes
+
+### Error: `The ConnectionString property has not been initialized`
+
+Falta configurar `ConnectionStrings:DefaultConnection`. Configúrala con User Secrets
+siguiendo la sección anterior y vuelve a iniciar el proyecto.
 
 ### Error de Migraciones
 
@@ -284,10 +284,10 @@ Para reportar bugs o solicitar features:
 - ✅ Base de datos con Entity Framework Core
 - ✅ Arquitectura limpia y escalable
 
-### Próximas Versiones
-- 🔄 **v1.1.0** - Integración con Google Gemini para generación automática
-- 📅 **v1.2.0** - Sistema de quizzes avanzado
-- 📊 **v1.3.0** - Analytics y estadísticas detalladas
+### Funcionalidades incluidas
+- ✅ Integración con Google Gemini para generación automática
+- ✅ Sistema de quizzes
+- ✅ Estadísticas y dashboards
 
 ## 📖 API References
 
@@ -296,15 +296,13 @@ Para reportar bugs o solicitar features:
 - **`HomeController`** - Dashboard y páginas principales
 - **`MateriaController`** - CRUD de materias
 - **`AccountController`** - Autenticación y perfil de usuario
-- **`FlashcardController`** - Gestión de flashcards (próximamente)
+- **`FlashcardController`** - Gestión de flashcards
 
 ### Servicios de Aplicación
 
 - **`IMateriaRepository`** - Repositorio de materias
 - **`IUnitOfWork`** - Patrón Unit of Work
-- **`IGeminiService`** - Integración con Google Gemini AI
-
-Para más detalles, consulta la [documentación de arquitectura](Documentacion/ARQUITECTURA.md).
+- **`IAIService`** - Integración con servicios de IA, incluido Google Gemini
 
 ## 📞 Información del Proyecto
 
@@ -324,8 +322,8 @@ Este proyecto está desarrollado como parte de un proyecto académico para el cu
 - [Documentación de ASP.NET Core](https://docs.microsoft.com/aspnet/core)
 - [Entity Framework Core](https://docs.microsoft.com/ef/core)
 - [Bootstrap 5 Documentation](https://getbootstrap.com/docs/5.3/)
-- [Azure DevOps CLI Commands](Documentacion/README-Azure-DevOps-CLI.md)
+- [Scripts de despliegue](deploy/README.md)
 
 ---
 
-> 💡 **¿Necesitas ayuda?** Consulta la [documentación completa](Documentacion/) o crea un Work Item en Azure DevOps.
+> 💡 **¿Necesitas ayuda?** Abre un Work Item en Azure DevOps con los pasos para reproducir el problema.

@@ -38,13 +38,9 @@ Este script ejecuta automáticamente:
 .\deploy-production.ps1 -SkipMigrations -SkipRestart
 ```
 
-## 📚 Documentación Completa
+## 📚 Recursos de despliegue
 
-Para documentación detallada del proceso de despliegue, consulta:
-
-📖 **[../Documentacion/DESPLIEGUE-PRODUCCION.md](../Documentacion/DESPLIEGUE-PRODUCCION.md)**
-
-Esta guía incluye:
+Consulta también los [comandos rápidos](COMANDOS-RAPIDOS.md). Este README incluye:
 - ✅ Requisitos previos
 - ☁️ Configuración de recursos de Azure
 - 🔧 Configuración inicial (firewall, connection strings)
@@ -129,7 +125,8 @@ Si encuentras errores durante el despliegue:
    .\deploy-production.ps1 -SkipBuild -SkipMigrations
    ```
 
-Para más detalles, consulta la guía completa en **[../Documentacion/DESPLIEGUE-PRODUCCION.md](../Documentacion/DESPLIEGUE-PRODUCCION.md)**.
+Para más detalles, revisa las secciones anteriores de este README y los
+[comandos rápidos](COMANDOS-RAPIDOS.md).
 
 ## 📞 Comandos Útiles
 
