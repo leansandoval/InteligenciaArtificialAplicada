@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using QuizCraft.Core.Entities;
@@ -32,6 +33,15 @@ namespace QuizCraft.Infrastructure.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // Configuración de las tablas de Identity con nomenclatura alineada al dominio
+            builder.Entity<IdentityRole>(entity => entity.ToTable("Roles"));
+            builder.Entity<IdentityRoleClaim<string>>(entity => entity.ToTable("RolesClaims"));
+            builder.Entity<IdentityUserClaim<string>>(entity => entity.ToTable("UsuariosClaims"));
+            builder.Entity<IdentityUserLogin<string>>(entity => entity.ToTable("UsuariosLogins"));
+            builder.Entity<IdentityUserRole<string>>(entity => entity.ToTable("UsuariosRoles"));
+            builder.Entity<IdentityUserToken<string>>(entity => entity.ToTable("UsuariosTokens"));
+            builder.Entity<ApplicationUser>(entity => entity.ToTable("Usuarios"));
 
             // Configuración de ApplicationUser
             builder.Entity<ApplicationUser>(entity =>
