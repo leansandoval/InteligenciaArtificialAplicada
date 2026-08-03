@@ -11,10 +11,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    options.UseSqlServer(connectionString, sqlOptions =>
+    options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)), mysqlOptions =>
     {
-        sqlOptions.MigrationsAssembly("QuizCraft.Infrastructure");
-        sqlOptions.EnableRetryOnFailure(
+        mysqlOptions.MigrationsAssembly("QuizCraft.Infrastructure");
+        mysqlOptions.EnableRetryOnFailure(
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorNumbersToAdd: null);

@@ -41,10 +41,9 @@ namespace QuizCraft.Infrastructure.Data
                     .IsRequired();
 
                 entity.Property(e => e.FechaRegistro)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
-                entity.Property(e => e.UltimoAcceso)
-                    .HasColumnType("datetime2");
+                entity.Property(e => e.UltimoAcceso);
 
                 entity.Property(e => e.PreferenciaIdioma)
                     .HasMaxLength(10)

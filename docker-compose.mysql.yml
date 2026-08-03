@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.0.36
+    container_name: quizcraft-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-QuizCraft}
+      MYSQL_USER: ${MYSQL_USER:?Define MYSQL_USER en el archivo .env}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en el archivo .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en el archivo .env}
+    ports:
+      - "${MYSQL_PORT:-3307}:3306"
+    volumes:
+      - quizcraft_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  quizcraft_mysql_data:
