@@ -10,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 // FUNC_ConfigurarBaseDatos: Configuración de Entity Framework y contexto de BD
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING")
+        ?? builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)), mysqlOptions =>
     {
         mysqlOptions.MigrationsAssembly("QuizCraft.Infrastructure");

@@ -43,7 +43,7 @@
 
 - **Backend:** ASP.NET Core 8 MVC, Entity Framework Core, ASP.NET Identity
 - **Frontend:** Razor Views, Bootstrap 5, JavaScript, Font Awesome
-- **Base de Datos:** SQL Server con migraciones Code-First
+- **Base de Datos:** MySQL con migraciones Code-First
 - **IA:** Integración con Google Gemini API para generación automática
 - **Arquitectura:** Clean Architecture con patrón Repository y Unit of Work
 
@@ -52,7 +52,7 @@
 Antes de comenzar, asegúrate de tener instalado:
 
 - **.NET 8 SDK** - [Descargar aquí](https://dotnet.microsoft.com/download/dotnet/8.0)
-- **SQL Server LocalDB** (incluido con Visual Studio) o SQL Server
+- **MySQL 8** o Docker Desktop para levantar el contenedor local
 - **Visual Studio 2022** o **Visual Studio Code** con extensión C#
 - **Git** para clonar el repositorio
 
@@ -71,8 +71,12 @@ cd QuizCraft
 # Navegar al proyecto principal
 cd src/QuizCraft.Web
 
+# Levantar MySQL con Docker
+docker compose -f docker-compose.mysql.yml up -d
+
 # Aplicar las migraciones de Entity Framework
-dotnet ef database update
+$env:MYSQL_CONNECTION_STRING = "Server=localhost;Port=3307;Database=QuizCraft;User=quizcraft;Password=leandro123"
+dotnet ef database update --project .\src\QuizCraft.Infrastructure\QuizCraft.Infrastructure.csproj --startup-project .\src\QuizCraft.Web\QuizCraft.Web.csproj
 ```
 
 Si no tienes Entity Framework CLI instalado:
@@ -82,12 +86,12 @@ dotnet tool install --global dotnet-ef
 
 ### 3. Configurar la Cadena de Conexión (Opcional)
 
-El proyecto usa LocalDB por defecto. Si necesitas cambiar la conexión, modifica `appsettings.json`:
+El proyecto usa MySQL en local. Si necesitas cambiar la conexión, define la variable de entorno `MYSQL_CONNECTION_STRING` o configura `ConnectionStrings:DefaultConnection`:
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=QuizCraftDb;Trusted_Connection=true;MultipleActiveResultSets=true"
+      "DefaultConnection": "Server=localhost;Port=3307;Database=QuizCraft;User=quizcraft;Password=leandro123"
   }
 }
 ```
@@ -229,13 +233,13 @@ dotnet ef database drop --force
 dotnet ef database update
 ```
 
-### Problemas con LocalDB
+### Problemas con MySQL
 
-1. Verificar que SQL Server LocalDB esté instalado
-2. Comprobar que el servicio esté ejecutándose:
-   ```cmd
-   sqllocaldb info mssqllocaldb
+1. Verificar que el contenedor esté arriba:
+   ```powershell
+   docker compose -f docker-compose.mysql.yml ps
    ```
+2. Confirmar que `MYSQL_CONNECTION_STRING` apunte a `localhost:3307`.
 
 ### Puertos Ocupados
 
